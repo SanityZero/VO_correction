@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
         //motion_Test();
         //waitKey(0);
         Test_model tm1;
-        tm1.generate_test_model(2, 0.01, 100, 1, 50, 1, 180 * M_PI / 180, 0.01 * M_PI / 180);
+        tm1.generate_test_model(8, 0.01, 100, 70, 50, 10, 0 * M_PI / 180, 270 * M_PI / 180);
         //tm1.generate_test_model(3, 1, 100, 20, 100, 20, 90, 0.01);
         tm1.show_gt();
     };

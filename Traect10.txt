@@ -1,1 +1,0 @@
->>>>Average pose  error: lat  124.254 	lon 11.7221 	 alt 7.73398

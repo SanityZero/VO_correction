@@ -75,7 +75,7 @@ public:
     };
 
     Point2d part(double dist) {
-        return this->center + get_arc_end_point(this->center, this->start, -this->angle * (dist / this->len()));
+        return this->center + get_arc_end_point( this->start, this->center,  this->angle * (dist / this->len()));
     };
 
     Point2d orientation(double dist=0) {
@@ -98,19 +98,31 @@ public:
         double stddev_line, 
         double mean_corner_radius, 
         double stddev_radius,
-        double mean_corner_angle,
-        double stddev_angle
+        double min_corner_angle,
+        double max_corner_angle
     ) {
-        default_random_engine generator;
+        random_device rd;
+        default_random_engine generator(rd());
         normal_distribution<double> distribution_line(mean_line_length, stddev_line);
         normal_distribution<double> distribution_radius(mean_corner_radius, stddev_radius);
-        normal_distribution<double> distribution_angle(mean_corner_angle, stddev_angle);
+        uniform_real_distribution<double> distribution_angle(min_corner_angle, max_corner_angle);
+
+        double min_radius = 10;
+        double max_radius = 500;
+        double min_length = 5;
+        double max_length = 500;
+        double min_angle = 0.1;
 
         double line_len = distribution_line(generator);
+        while(line_len < 0 || line_len > max_length) line_len = distribution_line(generator);
         this->line = Line_track_type(start, Point2d(start.x + start_p_vec.x * line_len, start.y + start_p_vec.y * line_len));
 
         double radius = distribution_radius(generator);
+        while(radius < 0) radius = distribution_radius(generator);
+
         double angle = distribution_angle(generator);
+        angle = fmod(angle, 2 * M_PI);
+        angle = abs(angle) > 0 ? angle : min_angle;
         Point2d center = this->line.end + get_norm_vect(this->line.end, this->line.start) * radius;
         Point2d end = center + get_arc_end_point( this->line.end, center, angle);// not sure
 
@@ -198,16 +210,16 @@ private:
         gt_point.push_back(pose1_tmp);
 
         for (int i = 1; i < point_num; i++) {
-            Point2d pose_delta = this->part(i * delta_m);
+            Point2d pose_delta = this->part(i * delta_m) - this->part((i-1) * delta_m);
             
             Pose_type pose_tmp;
-            pose_tmp.lat = gt_point[i - 1].lat + pose_delta.x;
-            pose_tmp.lon = gt_point[i - 1].lon + pose_delta.y;
+            pose_tmp.lat = gt_point[i - 1].lat + pose_delta.y;
+            pose_tmp.lon = gt_point[i - 1].lon + pose_delta.x;
             pose_tmp.alt = gt_point[i - 1].alt;
 
             pose_tmp.roll = 0;
             pose_tmp.pitch = 0;
-            pose_tmp.yaw = acos(zero.x * this->orientation(i * delta_m).x);
+            pose_tmp.yaw = acos(zero.x * this->orientation(i * delta_m).y);
             gt_point.push_back(pose_tmp);
         };
         //и выписать ориентации в каждой точке
@@ -301,13 +313,18 @@ public:
 
         for (int i = 0; i < this->track.size(); i++) {
             Point2i points_arr[5] = {
-                Point2i(border + 1 * (this->track[i].line.start.x - min_x),     border + 1 * (this->track[i].line.start.y - min_y)),
-                Point2i(border + 1 * (this->track[i].line.end.x - min_x),       border + 1 * (this->track[i].line.end.y - min_y)),
-                Point2i(border + 1 * (this->track[i].turn.start.x - min_x),     border + 1 * (this->track[i].turn.start.y - min_y)),
-                Point2i(border + 1 * (this->track[i].turn.center.x - min_x),    border + 1 * (this->track[i].turn.center.y - min_y)),
-                Point2i(border + 1 * (this->track[i].turn.end.x - min_x),       border + 1 * (this->track[i].turn.end.y - min_y)),
+                Point2i(border + im_scale * (this->track[i].line.start.x - min_x),     border + im_scale * (this->track[i].line.start.y - min_y)),
+                Point2i(border + im_scale * (this->track[i].line.end.x - min_x),       border + im_scale * (this->track[i].line.end.y - min_y)),
+                Point2i(border + im_scale * (this->track[i].turn.start.x - min_x),     border + im_scale * (this->track[i].turn.start.y - min_y)),
+                
+                Point2i(border + im_scale * (this->track[i].turn.end.x - min_x),       border + im_scale * (this->track[i].turn.end.y - min_y)),
             };
-            for (int p_i = 0; p_i < 5; p_i++) circle(img, points_arr[p_i], 4, Scalar(0, 0, 0));
+            for (int p_i = 0; p_i < 4; p_i++) circle(img, points_arr[p_i], 4, Scalar(0, 0, 0));
+            circle(
+                img, 
+                Point2i(border + im_scale * (this->track[i].turn.center.x - min_x), border + im_scale * (this->track[i].turn.center.y - min_y)), 
+                4, 
+                Scalar(255, 0, 0));
         };
         
 

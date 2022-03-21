@@ -257,128 +257,88 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(132,34): warning C424
               _Tp=int
           ]
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(144,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(186,31): warning C4244: =: преобразование "double" в "int", возможна потеря данных
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(288,64): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(198,31): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(300,64): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(288,46): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(300,46): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(295,80): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(307,80): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(295,42): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(307,42): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(296,80): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(308,80): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(296,42): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(308,42): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(304,88): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(316,95): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(304,32): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(316,32): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(305,88): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(317,95): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(305,32): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(317,32): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(306,88): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(318,95): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(306,32): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(318,32): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(307,88): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(320,95): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(307,32): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(320,32): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(308,88): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(325,92): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(308,32): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(325,32): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
-          [
-              _Tp=double
-          ]
-          and
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(322,17): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(135): warning C4715: Track_part_type::part: значение возвращается не при всех путях выполнения
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(146): warning C4715: Track_part_type::orientation: значение возвращается не при всех путях выполнения
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(339,17): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(147): warning C4715: Track_part_type::part: значение возвращается не при всех путях выполнения
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(158): warning C4715: Track_part_type::orientation: значение возвращается не при всех путях выполнения
   OpenCV-test.vcxproj -> C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\Actual_NIRS.exe
