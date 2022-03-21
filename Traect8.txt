@@ -1,0 +1,2 @@
+>>>>Average pose  error: lat  376.428 	lon 7.04645 	 alt 2416.45
+>>>>Average pose  error: lat  3.82716 	lon 25.6732 	 alt 0.260063

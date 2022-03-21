@@ -1,0 +1,410 @@
+#include <iostream>
+#include <iomanip> 
+#include <fstream>
+#include <string>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/video.hpp>
+#include <algorithm>
+using namespace cv;
+using namespace std;
+
+#include "ErEstVO.h"
+
+#define M_PI (double)3.14159265358979323846
+
+
+
+struct XYtoAngl
+{
+    Point2f operator()(Point2f n) {
+        return n;
+    };
+};
+
+typedef struct {
+    Mat mat;
+    double timestamp;
+    Pose_type pose;
+} Source_Type;
+
+Point3d rotate(Point3d point, Point3d ang) {
+    Point3d res;
+    Point3d tmp1;
+    Point3d tmp2;
+    double x = point.x, y = point.y, z = point.z;
+    double a = ang.x * M_PI / 180.0, b = ang.y * M_PI / 180.0, c = ang.z * M_PI / 180.0;
+
+    tmp1.x = x;
+    tmp1.y = y * cos(a) + z * sin(a);
+    tmp1.z = z * cos(a) - y * sin(a);
+
+    x = tmp1.x, y = tmp1.y, z = tmp1.z;
+
+    tmp2.x = x * cos(b) - z * sin(b);
+    tmp2.y = y;
+    tmp2.z = x * sin(b) + z * cos(b);
+
+    x = tmp2.x, y = tmp2.y, z = tmp2.z;
+
+    res.x = x*cos(c)+y*sin(c);
+    res.y = y*cos(c) -x*sin(c);
+    res.z = z;
+   
+    return res;
+};
+
+
+Pose_type getGTData(string, int);
+Source_Type getSourceMat(string source_dir, int source_limit);
+
+class Data_seq {
+public:
+    vector<Pose_type> dataline;
+    vector<Pose_type> pose;
+    vector<float> timestamps;
+    string dirname;
+    int limit;
+
+    Data_seq(string dirname= "C:/Kitti/2011_09_26/2011_09_26_drive_0001_sync/oxts/"): dirname(dirname), limit(0){};
+    ~Data_seq() {};
+
+    void loadBINS(string dirname = "C:/Kitti/2011_09_26/2011_09_26_drive_0001_sync/oxts/") {
+        Data_seq res;
+
+        string fn_tmp = dirname + "timestamps.txt";
+        ifstream in(fn_tmp);
+        if (!in) cout << "File in not open\n";
+        
+        this->limit = 0;
+        int limit = 100;
+        int l_tmp = limit;
+        do //while (!in.eof());
+        {
+            l_tmp--;
+            string timeline;
+            getline(in, timeline);
+            this->limit++;
+        
+        
+            timeline = timeline.substr(timeline.find(' ') + 1, timeline.length());
+            double tmp = 0; 
+        
+            tmp += 60.0 * 60.0 * stod(timeline.substr(0, timeline.find(':')));
+            timeline = timeline.substr(timeline.find(':') + 1, timeline.length());
+        
+            tmp += 60.0 * stod(timeline.substr(0, timeline.find(':')));
+            timeline = timeline.substr(timeline.find(':') + 1, timeline.length());
+            tmp += stod(timeline.substr(0, timeline.find(':')));
+            this->timestamps.push_back(tmp);
+        } while (!in.eof() && l_tmp >=0);
+
+        for (int i = 0; i < this->limit; i++)
+            this->dataline.push_back(getGTData(this->dirname + "data/", i));
+
+
+        this->pose.push_back(this->dataline[0]);//начальное время
+        this->pose.push_back(this->dataline[1]);
+
+        Point3d vel(this->dataline[1].lat - this->dataline[0].lat, this->dataline[1].lon - this->dataline[0].lon, this->dataline[1].alt - this->dataline[0].alt);//начальная скорость
+
+        for (int i = 2; i < this->limit; i++) {
+            double deltatime = abs(this->timestamps[i-1] - this->timestamps[i]);
+
+
+            //углы нужно проинтегрировать по датчикам
+            // прям нужно
+            // 
+            // 
+            // 
+            // 
+            // 
+            // 
+            //считывание углов
+            Point3d rot_ang;
+            rot_ang.x = this->dataline[i].roll;
+            rot_ang.y = this->dataline[i].pitch;
+            rot_ang.z = this->dataline[i].yaw;
+
+            //считывание ускорений
+            Point3d axel;
+            axel.x = this->dataline[i].ax;
+            axel.y = this->dataline[i].ay;
+            axel.z = this->dataline[i].az;
+            Point3d axel_rot = rotate(axel, rot_ang);
+            axel_rot.z -= 9.80665;
+            //Нужно вычесть ускорение свободного падения.
+
+            Point3d tmp_vel(0, 0, 0);
+
+            tmp_vel.x += vel.x + axel_rot.x * deltatime;
+            tmp_vel.y += vel.y + axel_rot.y * deltatime;
+            tmp_vel.z += vel.z + axel_rot.z * deltatime;
+
+            Pose_type pose_tmp;
+
+            pose_tmp.lat = pose[i-1].lat + (tmp_vel.x + vel.x) * deltatime/2;
+            pose_tmp.lon = pose[i-1].lon + (tmp_vel.y + vel.y) * deltatime/2;
+            pose_tmp.alt = pose[i-1].alt + (tmp_vel.z + vel.z) * deltatime/2;
+
+            vel = tmp_vel;
+            this->pose.push_back(pose_tmp);
+        }
+    };
+};
+
+
+Pose_type BINS(Pose_type pose) {
+    Pose_type res = pose;
+    return res;
+};
+
+Pose_type calcDisplasment(Pose_type gt, Pose_type pose, Pose_type zero, string name = "", int format = 0) {
+    Pose_type res;
+    Pose_type delta;
+
+    res.lat = pose.lat - gt.lat;
+    res.lon = pose.lon - gt.lon;
+    res.alt = pose.alt - gt.alt;
+
+    res.roll = pose.roll - gt.roll;
+    res.pitch = pose.pitch - gt.pitch;
+    res.yaw = pose.yaw - gt.yaw;
+    
+    delta.lat = zero.lat - gt.lat;
+    delta.lon = zero.lon - gt.lon;
+    delta.alt = zero.alt - gt.alt;
+
+    delta.roll = zero.roll - gt.roll;
+    delta.pitch = zero.pitch - gt.pitch;
+    delta.yaw = zero.yaw - gt.yaw;
+
+    double per_r = 100.0 * sqrt(res.lat * res.lat + res.lon * res.lon + res.alt * res.alt);
+    per_r /= sqrt(delta.lat * delta.lat + delta.lon * delta.lon + delta.alt * delta.alt);
+
+    double per_a = 100.0 * sqrt(res.roll * res.roll + res.pitch * res.pitch + res.yaw * res.yaw);
+
+    switch (format) {
+    case 0:
+        cout << name << ":\t" << resetiosflags(ios_base::floatfield) << per_r <<"%\t" << sqrt(delta.lat * delta.lat + delta.lon * delta.lon + delta.alt * delta.alt) <<"m\t" << res.lat << "\t" << res.lon << "\t" << res.alt << endl;
+        break;
+    case 1:
+        cout << name << ":\t" << res.lat << "\t" << res.lon << "\t" << res.alt << "\t";
+        cout << res.pitch << "\t" << res.roll << "\t" << res.yaw << endl;
+        break;
+    };
+
+    return res;
+};
+
+Pose_type correctionVO(Pose_type pose, vector<Point2f> p0, vector<Point2f> p1) {
+    Pose_type res = pose;
+    vector<Point2f> new_p = p0;
+    for_each(new_p.begin(), new_p.end(), XYtoAngl());
+    vector<Point2f> old_p = p1;
+    for_each(old_p.begin(), old_p.end(), XYtoAngl());
+
+
+    //тут нужен код, который осуществяет коррекцию
+    for (int i = 0; i < new_p.size(); i++) {
+        new_p[i];
+        old_p[i];
+    };
+
+    return res;
+};
+
+//////////////////////////////////////////////////  MAIN
+int main(int argc, char** argv){
+    // Create some random colors
+    //vector<Scalar> colors;
+    //RNG rng;
+    //for (int i = 0; i < 100; i++)
+    //{
+    //    int r = rng.uniform(0, 256);
+    //    int g = rng.uniform(0, 256);
+    //    int b = rng.uniform(0, 256);
+    //    colors.push_back(Scalar(r, g, b));
+    //}
+    //Mat old_frame;
+    //vector<Point2f> p0, p1, p2;
+    // Take first frame and find corners in it
+    //old_frame = getSourceMat("C:/Kitti/2011_09_26/2011_09_26_drive_0001_sync/image_00/", 107).mat;
+
+    //cvtColor(old_frame, old_gray, COLOR_BGR2GRAY);
+    //goodFeaturesToTrack(old_gray, p0, 100, 0.3, 7, Mat(), 7, false, 0.04);
+    // Create a mask image for drawing purposes
+    //Mat mask = Mat::zeros(old_frame.size(), old_frame.type());
+    int i_main = 0;
+
+    Data_seq ds;
+    ds.loadBINS();
+
+    while (i_main < ds.limit-1) {
+        //if (i_main % 3 == 0)
+        //{
+        //    goodFeaturesToTrack(old_frame, p1, 100, 0.3, 7, Mat(), 7, false, 0.04);
+        //};
+        i_main++;
+        //
+        //Mat frame;
+        Source_Type source;
+        source = getSourceMat("C:/Kitti/2011_09_26/2011_09_26_drive_0001_sync/image_00/", 107);
+        //frame = source.mat;
+        //if (frame.empty()) break;
+        ////cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
+        //// calculate optical flow
+        //vector<uchar> status;
+        //vector<float> err;
+        //TermCriteria criteria = TermCriteria((TermCriteria::COUNT)+(TermCriteria::EPS), 10, 0.03);
+        //calcOpticalFlowPyrLK(old_frame, frame, p1, p0, status, err, Size(15, 15), 2, criteria);
+        //vector<Point2f> good_new;
+        //for (uint i = 0; i < p1.size(); i++) {
+        //    // Select good points
+        //    if (status[i] == 1) {
+        //        good_new.push_back(p0[i]);
+        //        // draw the tracks
+        //        line(mask, p0[i], p1[i], colors[i], 2);
+        //        circle(frame, p0[i], 5, colors[i], -1);
+        //    }
+        //};
+        //Mat img;
+        //add(frame, mask, img);
+        //imshow("Frame", img);
+
+        Pose_type GT = source.pose;
+
+        cout << "GT" << scientific << setprecision(6) << ":\t" << GT.lat - ds.pose[0].lat << "\t" << GT.lon - ds.pose[0].lon << "\t" << GT.alt - ds.pose[0].alt << "\t";
+        cout << GT.pitch - ds.pose[0].pitch << "\t" << GT.roll - ds.pose[0].roll << "\t" << GT.yaw - ds.pose[0].yaw << endl;
+        cout << "BINS" << ":\t" << ds.pose[i_main].lat - ds.pose[0].lat << "\t" << ds.pose[i_main].lon - ds.pose[0].lon << "\t" << ds.pose[i_main].alt - ds.pose[0].alt << "\t";
+        cout << ds.pose[i_main].pitch - ds.pose[0].pitch << "\t" << ds.pose[i_main].roll - ds.pose[0].roll << "\t" << ds.pose[i_main].yaw - ds.pose[0].yaw << endl;
+        //calcDisplasment(source.pose, correctionVO(BINS(source.pose), p0, p1), ds.pose[0], "VO");
+        calcDisplasment(source.pose, ds.pose[i_main], ds.pose[0], "BINS");
+        //calcDisplasment(source.pose, ds.pose[i_main], ds.pose[0], "BINS", 1);
+        cout << endl;
+        //Pose_type error_BINS = ds.pose[i_main];
+
+
+
+        int keyboard = waitKey(30);
+        if (keyboard == 'q' || keyboard == 27) break;
+        // Now update the previous frame and previous points
+        //old_frame = frame.clone();
+        //p2 = p1;
+        //cout << p0.size() << "\t" << p1.size() << "\t" << p2.size() << endl;
+       //p1 = good_new;
+    }
+}
+//////////////////////////////////////////////////  MAIN
+
+Pose_type getGTData(string source_dir, int num) {
+    Pose_type res;
+    static Pose_type zero;
+    string filename, num_part;
+    num_part.append(10 - to_string(num).length(), '0') += to_string(num); //000 000 0000.png 000 000 0000
+    filename = source_dir + num_part + ".txt";
+
+    string pose_line;
+    ifstream in_pos(filename);
+    if (!in_pos) cout << "File in_pos not open \"" + filename + "\"" + "\n";
+    getline(in_pos, pose_line);
+   
+    double pose_data[32];
+    for (int i = 0; i < 25; i++) {
+        pose_data[i] = stod(pose_line.substr(0, pose_line.find(' ')));
+        pose_line = pose_line.substr(pose_line.find(' ')+1, pose_line.length());
+    };
+
+    res.lat = 111134.861111 * pose_data[0];
+    //res.lon = cos(M_PI * pose_data[0] / 180.0) * 111134.861111 * pose_data[1];
+    res.lon = cos(M_PI * pose_data[0] / 180.0) * 40075000 / 360;
+    //res.lat = (111132.954 - 559.822 * cos(2 * pose_data[0]) + 1.175 * cos(4 * pose_data[0]))* pose_data[0];
+    //res.lon = 111132.954 * cos(pose_data[0]);
+
+    res.alt = pose_data[2];
+
+    res.roll = -pose_data[3];
+    res.pitch = pose_data[4];
+    res.yaw = pose_data[5];
+
+    res.vn = pose_data[6];
+    res.ve = pose_data[7];
+    res.vf = pose_data[8];
+    res.vl = pose_data[9];
+    res.vu = pose_data[10];
+    res.ax = pose_data[11];
+    res.ay = pose_data[12];
+    res.az = pose_data[13];
+    res.af = pose_data[14];
+    res.al = pose_data[15];
+    res.au = pose_data[16];
+    res.wx = pose_data[17];
+    res.wy = pose_data[18];
+    res.wz = pose_data[19];
+    res.wf = pose_data[20];
+    res.wl = pose_data[21];
+    res.wu = pose_data[22];
+
+    //if (num == 0) zero = res;
+
+    //res.lat = zero.lat - res.lat;
+    //res.lon = zero.lon - res.lon;
+    //res.alt = zero.alt - res.alt;
+    //
+    //res.roll -= zero.roll;
+    //res.pitch -= zero.pitch;
+    //res.yaw -= zero.yaw;
+    //
+    in_pos.close();
+    return res;
+};
+
+Source_Type getSourceMat(string source_dir, int source_limit)
+{
+    Source_Type res;
+    static int source_cnt;
+    static int num = 0;
+
+    string filename, num_part;
+    num_part.append(10 - to_string(num).length(), '0') += to_string(num); //0000000000.png
+    filename = source_dir + "data/" + num_part + ".png";
+    Mat tmp;
+    tmp = imread(filename);
+    if (tmp.empty()) throw 1;
+    cvtColor(tmp, res.mat, COLOR_BGR2GRAY);
+
+    ifstream in(source_dir + "timestamps.txt");
+
+    static ios::pos_type pos = ios::beg;
+    //in.seekg(pos);
+    do //while (!in.eof());
+    {
+        string data_line;
+        for (int i = 0; i < num; i++) getline(in, data_line);
+        getline(in, data_line);
+
+        data_line = data_line.substr(data_line.find(' ') + 1, data_line.length());
+        double tmp = 0;
+
+        tmp += 60.0 * 60.0 * stod(data_line.substr(0, data_line.find(':')));
+        data_line = data_line.substr(data_line.find(':') + 1, data_line.length());
+
+        tmp += 60.0 * stod(data_line.substr(0, data_line.find(':')));
+        data_line = data_line.substr(data_line.find(':') + 1, data_line.length());
+
+        tmp += stod(data_line);
+
+
+        res.timestamp = tmp;
+
+        //in.seekg(-1, ios::cur);
+        pos = in.tellg();//сохранить указатель, чтобы потом перейти в нужное место
+        break;
+    } while (!in.eof());
+    in.close();
+    res.pose = getGTData("E:/ProgStaff/2011_09_26_drive_0001_sync/2011_09_26/2011_09_26_drive_0001_sync/oxts/data/", num++);
+    return res;
+}
+

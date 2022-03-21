@@ -294,7 +294,7 @@ public:
 
             Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
             Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
-            line(img, beg, end, Scalar(0, 0, 0), 3);
+            line(img, beg, end, Scalar(0, 0, 0), 2);
             //circle(img, beg, 6, Scalar(0, 0, 0));
             if (i == 1) circle(img, beg, 6, Scalar(0, 0, 0));
         };

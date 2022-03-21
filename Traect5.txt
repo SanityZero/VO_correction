@@ -1,0 +1,7 @@
+>>>>Average pose  error: lat  144.018 	lon 35.2563 	 alt 22.0065
+>>>>Average pose  error: lat  216.685 	lon 3.64514 	 alt 518.843
+>>>>Average pose  error: lat  0.339412 	lon 2.98084 	 alt 710.51
+>>>>Average pose  error: lat  0.339412 	lon 1.98339 	 alt 710.516
+>>>>Average pose  error: lat  0.339412 	lon 1.98339 	 alt 0.661473
+>>>>Average pose  error: lat  217.068 	lon 2.30472 	 alt 195.166
+>>>>Average pose  error: lat  12.9676 	lon 11.0224 	 alt 0.443872
