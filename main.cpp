@@ -49,9 +49,12 @@ int main(int argc, char** argv) {
         //motion_Test();
         //waitKey(0);
         Test_model tm1;
-        tm1.generate_test_model(8, 0.01, 100, 70, 50, 10, 0 * M_PI / 180, 270 * M_PI / 180);
+        tm1.generate_test_model(1, 0.01, 100, 70, 50, 10, 0 * M_PI / 180, 270 * M_PI / 180, 5);
         //tm1.generate_test_model(3, 1, 100, 20, 100, 20, 90, 0.01);
+        tm1.print_states("states.txt");
         tm1.show_gt();
+        //tm1.show_gt_measures();
+        waitKey(0);
     };
 
     vector<string> sources;

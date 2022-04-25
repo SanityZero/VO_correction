@@ -1,5 +1,6 @@
 #pragma once
 #define M_PI (double)3.14159265358979323846
+#define MASS (double)2000
 
 typedef struct {
     double lat;

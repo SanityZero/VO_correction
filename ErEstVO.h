@@ -6,26 +6,26 @@ Mat cameraModel(string, int);
 
 /////////////////////////////////////////////////////
 //Расчёт ошибки
-Pose_type calcDisplasment(Pose_type, Pose_type, Pose_type, string, int);
-Point3d calcDisplasment_ang(Point3d, Point3d, int);
+inline Pose_type calcDisplasment(Pose_type, Pose_type, Pose_type, string, int);
+inline Point3d calcDisplasment_ang(Point3d, Point3d, int);
 
 
 /////////////////////////////////////////////////////
 //Матричные операции
-Point3d rotateP3d(Point3d, Point3d);
-Mat mat_multi(Mat, Mat);
-Mat mat_add(Mat, Mat, double, double);
+inline Point3d rotateP3d(Point3d, Point3d);
+inline Mat mat_multi(Mat, Mat);
+inline Mat mat_add(Mat, Mat, double, double);
 
-Point3d SpheToDec(Point2d, double);
+inline Point3d SpheToDec(Point2d, double);
 
-double absVec(Point3d);
-double angle2V(Point3d, Point3d);
+inline double absVec(Point3d);
+inline double angle2V(Point3d, Point3d);
 
-Point3d poseDelta(Pose_type, Pose_type);
-Point3d angDelta(Pose_type, Pose_type);
+inline Point3d poseDelta(Pose_type, Pose_type);
+inline Point3d angDelta(Pose_type, Pose_type);
 
 /////////////////////////////////////////////////////
-Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
+inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
     Point2i img_size = Point2i(220, 220);
     Mat img0(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     Mat img1(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
@@ -92,7 +92,7 @@ Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
 
 /////////////////////////////////////////////////////
 //Реализации
-Mat cameraModel(string calibration_filename = "", int cam_number = 0) {
+inline Mat cameraModel(string calibration_filename = "", int cam_number = 0) {
     //static Point2d a = Point2d(984.2439, 0.0);
     //static Point3d T = Point3d(0.0, 0.0, 0.0);
     //static double u0 = 690;
@@ -166,7 +166,7 @@ Mat cameraModel(string calibration_filename = "", int cam_number = 0) {
 
 
 /////////////////////////////////////////////////////
-Pose_type getGTData(string source_dir, int num) {//rad
+inline Pose_type getGTData(string source_dir, int num) {//rad
     Pose_type res;
     static Pose_type zero;
     string filename, num_part;
@@ -218,7 +218,7 @@ Pose_type getGTData(string source_dir, int num) {//rad
 };
 
 /////////////////////////////////////////////////////
-Pose_type calcDisplasment(Pose_type gt, Pose_type pose, Pose_type zero, string name = "", int format = 0) {
+inline Pose_type calcDisplasment(Pose_type gt, Pose_type pose, Pose_type zero, string name = "", int format = 0) {
     Pose_type res;
     Pose_type delta;
     ofstream out;
@@ -266,7 +266,7 @@ Pose_type calcDisplasment(Pose_type gt, Pose_type pose, Pose_type zero, string n
 };
 
 /////////////////////////////////////////////////////
-Point3d calcDisplasment_ang(Point3d gt, Point3d pose, int mode = 0) {
+inline Point3d calcDisplasment_ang(Point3d gt, Point3d pose, int mode = 0) {
     if (mode == 1) return Point3d(gt.x - pose.x, gt.y - pose.y, gt.z - pose.z);
 
     cout << "AnG_disp" << ":\t" << resetiosflags(ios_base::floatfield) << gt.x - pose.x << "del\t" << gt.y - pose.y << "\t" << gt.z - pose.z << endl;
@@ -276,7 +276,7 @@ Point3d calcDisplasment_ang(Point3d gt, Point3d pose, int mode = 0) {
 };
 
 /////////////////////////////////////////////////////
-Point3d rotateP3d(Point3d point, Point3d ang) {//rad
+inline Point3d rotateP3d(Point3d point, Point3d ang) {//rad
     Point3d res;
     Point3d tmp1;
     Point3d tmp2;
@@ -303,7 +303,7 @@ Point3d rotateP3d(Point3d point, Point3d ang) {//rad
 };
 
 /////////////////////////////////////////////////////
-Mat mat_multi(Mat left, Mat rigth) {
+inline Mat mat_multi(Mat left, Mat rigth) {
     Mat res = left.clone();
 
     for (int i = 0; i < 3; i++)
@@ -315,7 +315,7 @@ Mat mat_multi(Mat left, Mat rigth) {
 };
 
 /////////////////////////////////////////////////////
-Mat mat_add(Mat left, Mat rigth, double a = 1.0, double b = 1.0) {
+inline Mat mat_add(Mat left, Mat rigth, double a = 1.0, double b = 1.0) {
     Mat res = left.clone();
 
     for (int i = 0; i < 3; i++)

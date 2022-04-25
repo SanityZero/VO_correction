@@ -149,8 +149,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ba1.cpp" />
+    <ClCompile Include="DataSequence.cpp" />
     <ClCompile Include="ErEstVO.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSequence.h" />
