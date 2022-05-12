@@ -207,31 +207,9 @@ private:
 
     double total_length;
 
-    Point2d part(double dist) {
-        int i = 0;
-        while (true) {
-            dist -= this->track[i].len();
-            if (dist == 0) return this->track[i].end;
-            if (dist < 0) {
-                return this->track[i].part(dist + this->track[i].len());
-            };
-            i++;
-            if (i == track.size()) return Point2d(0, 0);
-        };
-    };
+    Point2d part(double dist);
 
-    State_type orientation(double dist = 0) {
-        int i = 0;
-        while (true) {
-            dist -= this->track[i].len();
-            if (dist == 0) this->track[i].orientation(dist + this->track[i].len());
-            if (dist < 0) {
-                return this->track[i].orientation(dist + this->track[i].len());
-            };
-            i++;
-            if (i == track.size()) return State_type();
-        };
-    };
+    State_type orientation(double dist = 0);
 
     void generate_gt_points(double delta_m, int point_num = 0);
 
@@ -310,9 +288,9 @@ public:
                 out << format(
                     "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
                     this->states[i].vel.x, this->states[i].vel.y, this->states[i].vel.z,
-                    this->states[i].accel.x, this->states[i].accel.y, this->states[i].accel.z,
                     this->states[i].orient.x, this->states[i].orient.y, this->states[i].orient.z,
                     this->states[i].anqular_vel.x, this->states[i].anqular_vel.y, this->states[i].anqular_vel.z,
+                    this->states[i].accel.x, this->states[i].accel.y, this->states[i].accel.z,
                     this->states[i].anqular_accel.x, this->states[i].anqular_accel.y, this->states[i].anqular_accel.z
                 );
             };   

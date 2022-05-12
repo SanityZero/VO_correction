@@ -20,6 +20,31 @@ using namespace std;
 #include "DataSequence.h"
 #include "Tests.h"
 
+State_type Test_model::orientation(double dist) {
+    int i = 0;
+    while (true) {
+        dist -= this->track[i].len();
+        if (dist == 0) this->track[i].orientation(dist + this->track[i].len());
+        if (dist < 0) {
+            return this->track[i].orientation(dist + this->track[i].len());
+        };
+        i++;
+        if (i == track.size()) return State_type();
+    };
+};
+
+Point2d Test_model::part(double dist) {
+    int i = 0;
+    while (true) {
+        dist -= this->track[i].len();
+        if (dist == 0) return this->track[i].end;
+        if (dist < 0) {
+            return this->track[i].part(dist + this->track[i].len());
+        };
+        i++;
+        if (i == track.size()) return Point2d(0, 0);
+    };
+};
 
 State_type Corner_type::orientation(double dist) {///ВОТ ЭТО Я ДЕЛАЛ
     State_type res;
@@ -33,10 +58,10 @@ State_type Corner_type::orientation(double dist) {///ВОТ ЭТО Я ДЕЛАЛ
     res.change_anqular_vel(Point3d(0, 0, omega));
     double sing = 1;
     if (this->angle < 0) sing = -1;
-    Point2d delta = rotate2d(cent_radius2d, this->angle * (dist / this->len()));
+    Point2d delta = rotate2d(cent_radius2d, sing * M_PI/2);
     Point3d n_delta = normalize(Point3d(delta.x, delta.y, 0));
 
-    res.change_vel(sing * n_delta * (this->len() / this->time) + Point3d(this->start_vec.x, this->start_vec.y, 0));
+    res.change_vel(n_delta * (this->len() / this->time));
     res.change_orient(toAngle3d(n_delta));
     return res;
 };
@@ -59,6 +84,7 @@ State_type Line_track_type::orientation(double dist) {
 
 inline Point3d normalize(Point3d vec) {
     double length = sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+    if (length == 0) return vec;
     return vec / length;
 };
 
@@ -586,9 +612,23 @@ Point2d get_arc_end_point(Point2d cent, Point2d start, double angle) {
 };
 
 Point3d toAngle3d(Point3d vec) {
-    Point3d vec_x = normalize(Point3d(0, vec.y, vec.z));
-    Point3d vec_y = normalize(Point3d(vec.x, 0 , vec.z));
-    Point3d vec_z = normalize(Point3d(vec.x, vec.y, 0));
+    Point3d vec_x = normalize(Point3d(0, vec.y, vec.z));    //проекция на YOZ
+    Point3d vec_y = normalize(Point3d(vec.x, 0 , vec.z));   //проекция на XOZ
+    Point3d vec_z = normalize(Point3d(vec.x, vec.y, 0));    //проекция на XOY
+    vec = normalize(vec);
+
+    Point3d res(0, 0, 0);
+    res.x = vec == vec_x ? 0 : acos(vec.dot(vec_x));
+    res.y = vec == vec_y ? 0 : acos(vec.dot(vec_y));
+    res.z = vec == vec_z ? 0 : acos(vec.dot(vec_z));
+
+    return res;
+};
+
+Point3d Angle3dtoPA(Point3d vec) {
+    Point3d vec_x = normalize(Point3d(0, vec.y, vec.z));    //проекция на YOZ
+    Point3d vec_y = normalize(Point3d(vec.x, 0, vec.z));   //проекция на XOZ
+    Point3d vec_z = normalize(Point3d(vec.x, vec.y, 0));    //проекция на XOY
     vec = normalize(vec);
 
     Point3d res(0, 0, 0);

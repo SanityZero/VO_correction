@@ -49,7 +49,17 @@ int main(int argc, char** argv) {
         //motion_Test();
         //waitKey(0);
         Test_model tm1;
-        tm1.generate_test_model(1, 0.01, 100, 70, 50, 10, 0 * M_PI / 180, 270 * M_PI / 180, 5);
+        tm1.generate_test_model(
+            12, //max_track_parts
+            0.1, //dicret
+            2, //mean_line_length
+            1, //stddev_line
+            20, //mean_corner_radius
+            10, //stddev_radius
+            0 * M_PI / 180, //mean_corner_angle
+            270 * M_PI / 180, //stddev_angle
+            5   //average_vel
+        );
         //tm1.generate_test_model(3, 1, 100, 20, 100, 20, 90, 0.01);
         tm1.print_states("states.txt");
         tm1.show_gt();
