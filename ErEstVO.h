@@ -30,7 +30,7 @@ inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
     Mat img0(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     Mat img1(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     Mat img2(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
-    
+
     Point center(img_size.x / 2, img_size.x / 2);
 
     //Point3d W_t = rotate(rotate(rotate(Point3d(0, 1, 0), Point3d(gtrue.yaw,0,0)), Point3d(gtrue.pitch, 0, 0)), Point3d(gtrue.roll, 0, 0));
@@ -42,7 +42,7 @@ inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
 
     Point3d W_t = Point3d(scale, scale, scale);
     Point3d W_e = rotateP3d(Point3d(scale, scale, scale), Point3d(angles.x, angles.y, angles.z));
-    
+
     line(img0, center, center + Point(W_t.y, W_t.z), Scalar(0, 0, 0), 2);
     line(img0, center, center + Point(W_e.y, W_e.z), Scalar(0, 0, 255), 1);
     putText(img0,
@@ -54,8 +54,8 @@ inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
         0.5
     );
 
-    line(img1, center, center+Point(W_t.x, W_t.z), Scalar(0, 0, 0), 2);
-    line(img1, center, center+Point(W_e.x, W_e.z), Scalar(0, 0, 255), 1);
+    line(img1, center, center + Point(W_t.x, W_t.z), Scalar(0, 0, 0), 2);
+    line(img1, center, center + Point(W_e.x, W_e.z), Scalar(0, 0, 255), 1);
     putText(img1,
         "pitch",
         Point(0, 20), 0,
@@ -79,14 +79,14 @@ inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
     img0.copyTo(res(Rect(0, 0, img0.cols, img0.rows)));
     img1.copyTo(res(Rect(img0.cols, 0, img1.cols, img1.rows)));
     img2.copyTo(res(Rect(img0.cols + img1.cols, 0, img2.cols, img2.rows)));
- /*   static int i = 0;
-    putText(res,
-        to_string(i++),
-        Point(res.cols - 60, 40), 0,
-        0.5,
-        CV_RGB(0, 0, 0),
-        0.5
-    );*/
+    /*   static int i = 0;
+       putText(res,
+           to_string(i++),
+           Point(res.cols - 60, 40), 0,
+           0.5,
+           CV_RGB(0, 0, 0),
+           0.5
+       );*/
     return res;
 };
 

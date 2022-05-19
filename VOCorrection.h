@@ -153,8 +153,6 @@ void print_prv(vector<Point3d> data, Point3d true_data, string name, int plot_co
 
     waitKey(0);
     imshow("PRV window", res);
-    
-    
 };
 
 void eraseLostFeatures(vector<Point2f>& p0, vector<Point2f>& p1, vector<Point2f>& p2, vector<Point2f>& p3, 
@@ -259,8 +257,6 @@ vector<Point3d> finalFilter(vector<Point3d> angl_vec, vector<Point3d> tran_vec, 
         res.push_back(Point3d(0, 0, 0));
         res.push_back(Point3d(0, 0, 0));
     };
-
-
 
     return res;
 };
@@ -378,7 +374,6 @@ Mat transMat(Point3d delta) {
 };
 
 Mat ExternalCalibMat(Mat A, Mat R, Mat t) {
-
     double E_ar[3][4] = {
         {1, 0, 0, 0},
         {0, 1, 0, 0},

@@ -6,9 +6,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/video.hpp>
-#include <algorithm>
 #include <random>
 #include <cmath>
 
@@ -18,7 +15,112 @@ using namespace std;
 #include "Types.h"
 #include "ErEstVO.h"
 #include "DataSequence.h"
+#include "Track_part_type.h"
 #include "Tests.h"
+
+void Test_model::generate_s_points(
+    double border,
+    Point2d z_limits,
+    Point3d grid_spacing,
+    Point2d displacement
+) {
+    double max_x = this->gt_point[0].lon;
+    double max_y = this->gt_point[0].lat;
+    double min_x = this->gt_point[0].lon;
+    double min_y = this->gt_point[0].lat;
+
+    for (int i = 0; i < this->gt_point.size(); i++)
+    {
+        max_x = this->gt_point[i].lon > max_x ? this->gt_point[i].lon : max_x;
+        max_y = this->gt_point[i].lat > max_y ? this->gt_point[i].lat : max_y;
+
+        min_x = this->gt_point[i].lon < min_x ? this->gt_point[i].lon : min_x;
+        min_y = this->gt_point[i].lat < min_y ? this->gt_point[i].lat : min_y;
+    };
+
+    double min_z = z_limits.x;
+    double max_z = z_limits.y;
+
+    random_device rd;
+    default_random_engine generator(rd());
+    double mean_displacement = displacement.x;
+    double stddev_displacement = displacement.y;
+    normal_distribution<double> distribution_displacement(mean_displacement, stddev_displacement);
+    for (double x_shift = min_x - border; x_shift < max_x + border; x_shift += grid_spacing.x)
+        for (double y_shift = min_y - border; y_shift < max_y + border; y_shift += grid_spacing.y)
+            for (double z_shift = min_z - border; z_shift < max_z + border; z_shift += grid_spacing.z)
+            {
+                Point3d displacement_vec = Point3d(distribution_displacement(generator), distribution_displacement(generator), distribution_displacement(generator));
+                Point3d new_s_point = Point3d(x_shift, y_shift, z_shift) + displacement_vec;
+                s_points.push_back(new_s_point);
+            };
+    //потом можно добавить, чтобы точки совсем рядом с дорогой стирались
+
+};
+
+void Test_model::generate_timestaps(double delta_m, double vel) {
+    double deltatime = delta_m / vel;
+    this->timestaps.push_back(0.0);
+    for (int i = 1; i < this->states.size(); i++) {
+        this->timestaps.push_back(this->timestaps[i - 1] + deltatime);
+    };
+
+};
+
+State_type Test_model::get_state(int number) {
+    if (number < 0)
+        return this->states[0];
+    else if (number > this->states.size())
+        return this->states[this->states.size()];
+    else
+        return this->states[number];
+};
+
+void Test_model::smooth_anqular_vel(double T, double U) {
+    vector<Point3d> res_orient_vec;
+    vector<Point3d> res_ang_vel_vec;
+
+    res_orient_vec.push_back(this->get_state(0).orient);
+    res_orient_vec.push_back(this->get_state(1).orient);
+    res_ang_vel_vec.push_back(this->get_state(0).anqular_vel);
+    res_ang_vel_vec.push_back(this->get_state(1).anqular_vel);
+    for (int i = 2; i < this->states.size(); i++) {
+        Point3d old = this->get_state(i).orient;
+        Point3d anq_tmp =
+            -(T / 2) * (this->get_state(i).orient + this->get_state(i - 1).orient) +
+            (U * T / 2 + 1) * res_orient_vec[i - 1] +
+            (U * T / 2) * res_orient_vec[i - 2];
+        res_orient_vec.push_back(anq_tmp);
+        res_ang_vel_vec.push_back((res_orient_vec[i] - res_orient_vec[i - 1]) / T);
+    };
+    for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);
+    for (int i = 1; i < this->states.size(); i++) this->states[i].change_anqular_vel(res_ang_vel_vec[i]);
+};
+
+
+void Test_model::print_states(string filename) {
+    ofstream out;          // поток для записи
+    out.open(filename); // окрываем файл для записи
+    if (out.is_open())
+    {
+        //Point3d vel;
+        //Point3d accel;
+        //Point3d orient;
+        //Point3d anqular_vel;
+        //Point3d anqular_accel;
+        for (int i = 0; i < this->states.size(); i++) {
+            out << format(
+                "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
+                this->states[i].vel.x, this->states[i].vel.y, this->states[i].vel.z,
+                this->states[i].orient.x, this->states[i].orient.y, this->states[i].orient.z,
+                this->states[i].anqular_vel.x, this->states[i].anqular_vel.y, this->states[i].anqular_vel.z,
+                this->states[i].accel.x, this->states[i].accel.y, this->states[i].accel.z,
+                this->states[i].anqular_accel.x, this->states[i].anqular_accel.y, this->states[i].anqular_accel.z
+            );
+        };
+    }
+    out.close();
+};
 
 State_type Test_model::orientation(double dist) {
     int i = 0;
@@ -44,48 +146,6 @@ Point2d Test_model::part(double dist) {
         i++;
         if (i == track.size()) return Point2d(0, 0);
     };
-};
-
-State_type Corner_type::orientation(double dist) {///ВОТ ЭТО Я ДЕЛАЛ
-    State_type res;
-    // 
-    double omega = this->angle / this->time;
-    Point3d cent_radius = Point3d(this->part(dist).x, this->part(dist).y, 0) - Point3d(this->center.x, this->center.y, 0);
-    Point2d cent_radius2d = Point2d(this->part(dist).x, this->part(dist).y) - Point2d(this->center.x, this->center.y);
-
-    res.change_accel(Point3d(0, 0, GCONST) + cent_radius*omega*omega);
-
-    res.change_anqular_vel(Point3d(0, 0, omega));
-    double sing = 1;
-    if (this->angle < 0) sing = -1;
-    Point2d delta = rotate2d(cent_radius2d, sing * M_PI/2);
-    Point3d n_delta = normalize(Point3d(delta.x, delta.y, 0));
-
-    res.change_vel(n_delta * (this->len() / this->time));
-    res.change_orient(toAngle3d(n_delta));
-    return res;
-};
-
-
-State_type Line_track_type::orientation(double dist) {
-    State_type res;
-    // 
-    res.change_accel(Point3d(0, 0, GCONST));
-    Point2d delta = this->end - this->start;
-    Point3d n_delta = normalize(Point3d(delta.x, delta.y, 0));
-
-    res.change_orient(toAngle3d(n_delta));
-    res.change_vel(Point3d(delta.x, delta.y, 0) / this->time);
-
-
-    return res;
-};
-
-
-inline Point3d normalize(Point3d vec) {
-    double length = sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-    if (length == 0) return vec;
-    return vec / length;
 };
 
 
@@ -135,55 +195,14 @@ inline DataSeq_model_Type generate_model(
     Point3d accel = Point3d(0, 0, 0),
     Point3d vel_0 = Point3d(0, 0, 0)*/
 
-
-Track_part_type::Track_part_type(
-    Point2d start,
-    Point2d start_p_vec,
-    double mean_line_length,
-    double stddev_line,
-    double mean_corner_radius,
-    double stddev_radius,
-    double min_corner_angle,
-    double max_corner_angle,
-    double average_vel
-) {
-    random_device rd;
-    default_random_engine generator(rd());
-    normal_distribution<double> distribution_line(mean_line_length, stddev_line);
-    normal_distribution<double> distribution_radius(mean_corner_radius, stddev_radius);
-    uniform_real_distribution<double> distribution_angle(min_corner_angle, max_corner_angle);
-
-    double min_radius = 10;
-    double max_radius = 500;
-    double min_length = 5;
-    double max_length = 500;
-    double min_angle = 0.1;
-
-    double line_len = distribution_line(generator);
-    while (line_len < 0 || line_len > max_length) line_len = distribution_line(generator);
-    double line_time = line_len / average_vel;
-    this->line = Line_track_type(start, Point2d(start.x + start_p_vec.x * line_len, start.y + start_p_vec.y * line_len), line_time);
-
-    double radius = distribution_radius(generator);
-    while (radius < 0) radius = distribution_radius(generator);
-
-    double angle = distribution_angle(generator);
-    angle = fmod(angle, 2 * M_PI);
-    angle = abs(angle) > 0 ? angle : min_angle;
-    Point2d center = this->line.end + get_norm_vect(this->line.end, this->line.start) * radius;
-    Point2d end = center + get_arc_end_point(this->line.end, center, angle);// not sure
-
-    double corner_time = (length(center - this->line.end) * angle) / average_vel;
-    this->turn = Corner_type(this->line.end, end, center, angle, corner_time, start_p_vec);
-    this->exit_vec = get_norm_vect(this->turn.end, this->turn.center);
-    this->end = this->turn.end;
-};
-
 void Test_model::generate_states(double delta_m, int point_num) {
     point_num = point_num == 0 ? this->total_length / delta_m : point_num;
 
     for (int i = 0; i < point_num; i++) {
         State_type state = this->orientation(i * delta_m);
+        Point3d v3_orient = normalize(state.orient);
+        double z_rot = (acos((v3_orient.y + v3_orient.x)/2) + asin((v3_orient.y - v3_orient.x)/2)) / 2;
+        state.change_orient(Point3d(0, 0, z_rot));
         states.push_back(state);
     };
 };
@@ -274,6 +293,18 @@ void Test_model::show_gt(string mode, bool pause_enable) {
             Scalar(255, 0, 0));
     };
 
+    for (int i = 0; i < this->s_points.size(); i++) {
+        Point2i cross_size = Point2i(3, 3);
+        Point2i s_point_location = Point2i(border + im_scale * (this->s_points[i].x - min_x), border + im_scale * (this->s_points[i].y - min_y));
+        Point2i cross_points[4] = {
+            s_point_location + Point2i(-cross_size.x / 2, -cross_size.y / 2),
+            s_point_location + Point2i(-cross_size.x / 2, cross_size.y / 2),
+            s_point_location + Point2i(cross_size.x / 2, cross_size.y / 2),
+            s_point_location + Point2i(cross_size.x / 2, -cross_size.y / 2)
+        };
+        line(img, cross_points[0], cross_points[2], Scalar(255, 0, 0), 1);
+        line(img, cross_points[1], cross_points[3], Scalar(255, 0, 0), 1);
+    };
 
     if (mode.find("screen") != std::string::npos)
     {
@@ -567,74 +598,4 @@ void motion_Test(double accel_std, double sko, double delta, double duration) {
         test_3.print_traect(3, "screen save", true);
     };
 };
-
-double min(double a, double b, double c) {
-    if ((a <= b) && (a <= c)) return a;
-    if ((b <= a) && (b <= c)) return b;
-    if ((c <= b) && (c <= a)) return c;
-};
-
-double max(double a, double b, double c) {
-    if ((a >= b) && (a >= c)) return a;
-    if ((b >= a) && (b >= c)) return b;
-    if ((c >= b) && (c >= a)) return c;
-};
-
-Point2d rotate2d(Point2d vec, double angle) {
-    double rot_arr[2][2] = {
-        {cos(angle), -sin(angle)},
-        {sin(angle), cos(angle)}
-    };
-    Mat rot = Mat(2, 2, CV_64F, rot_arr);
-    double radius_vec_arr[2][1] = {
-        {vec.x},
-        {vec.y}
-    };
-    Mat radius_vec = Mat(2, 1, CV_64F, radius_vec_arr);
-    Mat end_vec = rot * radius_vec;
-    return Point2d(end_vec.at<double>(0, 0), end_vec.at<double>(1, 0));
-};
-
-double length(Point2d vec) {
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
-};
-
-Point2d get_point_vect(Point2d end, Point2d start) {
-    return Point2d((end.x - start.x) / length(end - start), (end.y - start.y) / length(end - start));
-};
-
-Point2d get_norm_vect(Point2d end, Point2d start) {
-    return rotate2d(end - start, M_PI / 2) / length(end - start);
-};
-
-Point2d get_arc_end_point(Point2d cent, Point2d start, double angle) {
-    return rotate2d(cent - start, angle);
-};
-
-Point3d toAngle3d(Point3d vec) {
-    Point3d vec_x = normalize(Point3d(0, vec.y, vec.z));    //проекция на YOZ
-    Point3d vec_y = normalize(Point3d(vec.x, 0 , vec.z));   //проекция на XOZ
-    Point3d vec_z = normalize(Point3d(vec.x, vec.y, 0));    //проекция на XOY
-    vec = normalize(vec);
-
-    Point3d res(0, 0, 0);
-    res.x = vec == vec_x ? 0 : acos(vec.dot(vec_x));
-    res.y = vec == vec_y ? 0 : acos(vec.dot(vec_y));
-    res.z = vec == vec_z ? 0 : acos(vec.dot(vec_z));
-
-    return res;
-};
-
-Point3d Angle3dtoPA(Point3d vec) {
-    Point3d vec_x = normalize(Point3d(0, vec.y, vec.z));    //проекция на YOZ
-    Point3d vec_y = normalize(Point3d(vec.x, 0, vec.z));   //проекция на XOZ
-    Point3d vec_z = normalize(Point3d(vec.x, vec.y, 0));    //проекция на XOY
-    vec = normalize(vec);
-
-    Point3d res(0, 0, 0);
-    res.x = acos(vec.dot(vec_x));
-    res.y = acos(vec.dot(vec_y));
-    res.z = acos(vec.dot(vec_z));
-
-    return res;
-};
+////END FILE
