@@ -86,7 +86,20 @@ private:
             bins_total_time += bins_deltatime;
         };
         //сгенерировать таймстемпы
-        for (int i = 0; i < this->bins_timestamps.size(); i++) {
+
+        //начальное то же самое
+        for (int i = 1; i < this->bins_timestamps.size(); i++) {
+            double bins_time = bins_deltatime * i;
+            int lesser_ts_i = 0;
+            for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
+                if (this->timestaps[ts_i] < bins_time) {
+                
+                }
+                else {
+                    ts_i;
+                };
+            };
+            double interp_multi = 0;
             //интреполировать на них позиции
             //интреполировать на них ориентации
             //интреполировать на них скорости
