@@ -3,39 +3,46 @@
 
 class Test_model {
 private:
+    //геометрическая модель
     vector<Track_part_type> track;
     vector<double> track_length;
-    vector<Pose_type> gt_point;
-    vector<State_type> states;
-    vector<double> timestaps;
-    vector<Point3d> s_points;
-
-    vector<vector<Point2i>> point_tracks;
-    vector<vector<Point2i>> point_camera_proections;
-
     double total_length;
 
     Point2d part(double dist);
     State_type orientation(double dist = 0);
+    void generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
+        double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel);
+
+
+    //модель движения
+    vector<Pose_type> gt_point;
+    vector<State_type> states;
+    vector<double> timestaps;
+    double total_time;
 
     State_type get_state(int number);
-
     void generate_gt_points(double delta_m, int point_num = 0);
     void generate_states(double delta_m, int point_num = 0);
     void generate_timestaps(double delta_m, double vel);
-    void generate_mesured_points(double mean_angle, double stddev_angle, double mean_pose, double pose_stddev) {
-        default_random_engine generator;
-        normal_distribution<double> distribution_angle(mean_angle, stddev_angle);
-        normal_distribution<double> distribution_pose(mean_pose, pose_stddev);
-    };//НЕ РЕАЛИЗОВАНО!!!1!1!1!!!!
-
     void smooth_anqular_vel(double T, double U);
+    void smooth_vel(double T, double U);
+    void regenerate_gt_points();
+
+
+    //модель камеры
+    vector<Point3d> s_points;
+
     void generate_s_points(
         double border = 50,
         Point2d z_limits = Point2d(0, 40),
         Point3d grid_spacing = Point3d(10, 10, 10),
         Point2d displacement = Point2d(0, 3)
     );
+
+
+    //модель движения блестящих точек
+    vector<vector<Point2i>> point_tracks;
+    vector<vector<Point2i>> point_camera_proections;
 
     Point2i point_proection(Point3d point, Mat Ex_calib, Point2i cam_size) {
         return Point2i(0, 0);
@@ -66,6 +73,32 @@ private:
 
     };
 
+    //модель БИНС
+    vector<Pose_type> bins_gt_points;
+    vector<Pose_type> bins_points;
+    vector<double> bins_timestamps;
+
+    void generate_bins_gt(double bins_deltatime) {
+        double bins_total_time = 0.0;
+        this->bins_timestamps.push_back(0.0);
+        while (bins_total_time < (this->total_time - bins_deltatime)) {
+            this->bins_timestamps.push_back(this->bins_timestamps[this->bins_timestamps.size() - 1] + bins_deltatime);
+            bins_total_time += bins_deltatime;
+        };
+        //сгенерировать таймстемпы
+        for (int i = 0; i < this->bins_timestamps.size(); i++) {
+            //интреполировать на них позиции
+            //интреполировать на них ориентации
+            //интреполировать на них скорости
+            //интреполировать на них ускорения
+            //интреполировать на них угловые скорости
+            //получить проекции в соотв с ориентацией вектора скоростей
+            //получить проекции в соотв с ориентацией вектора ускорений
+        };      
+    };
+
+    
+
 public:
     void generate_test_model(
         int max_track_parts, 
@@ -80,40 +113,15 @@ public:
         double T,
         double U
     ) {
-        track.push_back(Track_part_type(
-            Point2d(0,0),
-            Point2d(-1,0),
-            mean_line_length,
-            stddev_line,
-            mean_corner_radius,
-            stddev_radius,
-            mean_corner_angle,
-            stddev_angle,
-            average_vel
-        ));
-        track_length.push_back(track[0].len());
-        this->total_length = track_length[0];
-        for (int i = 1; i < max_track_parts; i++) {
-            track.push_back(Track_part_type(
-                this->track[i - 1].end,
-                this->track[i - 1].exit_vec,
-                mean_line_length,
-                stddev_line,
-                mean_corner_radius,
-                stddev_radius,
-                mean_corner_angle,
-                stddev_angle,
-                average_vel
-            ));
-            track_length.push_back(track[i].len());
-            this->total_length += track_length[i];
-        };// сгенерировать трак в соответствии с ограничениями
+        generate_track(max_track_parts, mean_line_length, stddev_line, mean_corner_radius, stddev_radius, mean_corner_angle, stddev_angle, average_vel);
+        // сгенерировать трак в соответствии с ограничениями
         
-        // сгенерировать гт данные по ограничениям т.е. набор значений 
         generate_states(dicret);
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
         smooth_anqular_vel(T, U);
+        //smooth_vel(T, U/10000);
+        regenerate_gt_points();
         generate_s_points();
         
         // сгенерировать бинс данные по ограничениям, т.е. набор значений
@@ -127,7 +135,8 @@ public:
     void print_states(string filename);
 };
 
-DataSeq_model_Type generate_model(
+
+DataSeq_model_Type generate_old_model(
     double mean_1,
     const int size,
     double stddev,
@@ -149,5 +158,5 @@ DataSeq_model_Type generate_model(
     Point3d vel_0 = Point3d(0, 0, 0)*/
 
 
-void motion_Test(double accel_std = 1, double sko = 0.2, double delta = 0.004, double duration = 10);
-void angle_Test(double w_std = 0.0001 * M_PI/180, Point3d vel_0 = Point3d(0,0,0), double sko = 0.000001 * M_PI/180, double delta = 0.004, double duration = 60);
+void old_motion_Test(double accel_std = 1, double sko = 0.2, double delta = 0.004, double duration = 10);
+void old_angle_Test(double w_std = 0.0001 * M_PI/180, Point3d vel_0 = Point3d(0,0,0), double sko = 0.000001 * M_PI/180, double delta = 0.004, double duration = 60);

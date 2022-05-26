@@ -2,9 +2,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-//using namespace std;
-//using namespace cv;
-
 #include "Track_part_type.h"
 #define GCONST  9.80665
 
@@ -15,7 +12,7 @@ State_type Corner_type::orientation(double dist = 0) {
     cv::Point3d cent_radius = cv::Point3d(this->part(dist).x, this->part(dist).y, 0) - cv::Point3d(this->center.x, this->center.y, 0);
     cv::Point2d cent_radius2d = cv::Point2d(this->part(dist).x, this->part(dist).y) - cv::Point2d(this->center.x, this->center.y);
 
-    res.change_accel(cv::Point3d(0, 0, GCONST) + cent_radius * omega * omega);
+    res.change_accel(cv::Point3d(0, 0, GCONST) - cent_radius * omega * omega);
 
     res.change_anqular_vel(cv::Point3d(0, 0, omega));
     double sing = 1;
@@ -27,7 +24,6 @@ State_type Corner_type::orientation(double dist = 0) {
     res.change_orient(toAngle3d(n_delta));
     return res;
 };
-
 
 State_type Line_track_type::orientation(double dist = 0) {
     State_type res;

@@ -18,6 +18,61 @@ using namespace std;
 #include "Track_part_type.h"
 #include "Tests.h"
 
+
+void Test_model::generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
+    double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel)
+{
+    track.push_back(Track_part_type(
+        Point2d(0, 0),
+        Point2d(-1, 0),
+        mean_line_length,
+        stddev_line,
+        mean_corner_radius,
+        stddev_radius,
+        mean_corner_angle,
+        stddev_angle,
+        average_vel
+    ));
+    track_length.push_back(track[0].len());
+    this->total_length = track_length[0];
+    for (int i = 1; i < max_track_parts; i++) {
+        track.push_back(Track_part_type(
+            this->track[i - 1].end,
+            this->track[i - 1].exit_vec,
+            mean_line_length,
+            stddev_line,
+            mean_corner_radius,
+            stddev_radius,
+            mean_corner_angle,
+            stddev_angle,
+            average_vel
+        ));
+        track_length.push_back(track[i].len());
+        this->total_length += track_length[i];
+    };
+};
+
+void  Test_model::regenerate_gt_points() {
+    for (int i = 1; i < this->gt_point.size(); i++) {
+        this->gt_point[i].lat = this->gt_point[i - 1].lat + this->states[i].vel.y * (this->timestaps[i] - this->timestaps[i - 1]);
+        this->gt_point[i].lon = this->gt_point[i - 1].lon + this->states[i].vel.x * (this->timestaps[i] - this->timestaps[i - 1]);
+        this->gt_point[i].alt = this->gt_point[i - 1].alt + this->states[i].vel.z * (this->timestaps[i] - this->timestaps[i - 1]);
+
+        this->gt_point[i].roll = states[i].orient.x;
+        this->gt_point[i].pitch = states[i].orient.y;
+        this->gt_point[i].yaw = states[i].orient.z;
+
+        this->gt_point[i].ax = states[i].accel.x;
+        this->gt_point[i].ay = states[i].accel.y;
+        this->gt_point[i].az = states[i].accel.z;
+
+        this->gt_point[i].wx = states[i].anqular_accel.x;
+        this->gt_point[i].wy = states[i].anqular_accel.y;
+        this->gt_point[i].wz = states[i].anqular_accel.z;
+    };
+
+};
+
 void Test_model::generate_s_points(
     double border,
     Point2d z_limits,
@@ -64,7 +119,7 @@ void Test_model::generate_timestaps(double delta_m, double vel) {
     for (int i = 1; i < this->states.size(); i++) {
         this->timestaps.push_back(this->timestaps[i - 1] + deltatime);
     };
-
+    this->total_time = this->timestaps[this->states.size()-1];
 };
 
 State_type Test_model::get_state(int number) {
@@ -97,6 +152,26 @@ void Test_model::smooth_anqular_vel(double T, double U) {
     for (int i = 1; i < this->states.size(); i++) this->states[i].change_anqular_vel(res_ang_vel_vec[i]);
 };
 
+void Test_model::smooth_vel(double T, double U) {
+    vector<Point3d> res_vel_vec;
+    vector<Point3d> res_accel_vec;
+
+    res_vel_vec.push_back(this->get_state(0).vel);
+    res_vel_vec.push_back(this->get_state(1).vel);
+    res_accel_vec.push_back(this->get_state(0).accel);
+    res_accel_vec.push_back(this->get_state(1).accel);
+    for (int i = 2; i < this->states.size(); i++) {
+        Point3d old = this->get_state(i).vel;
+        Point3d anq_tmp =
+            -(T / 2) * (this->get_state(i).vel + this->get_state(i - 1).vel) +
+            (U * T / 2 + 1) * res_vel_vec[i - 1] +
+            (U * T / 2) * res_vel_vec[i - 2];
+        res_vel_vec.push_back(anq_tmp);
+        res_accel_vec.push_back((res_vel_vec[i] - res_vel_vec[i - 1]) / T);
+    };
+    for (int i = 1; i < this->states.size(); i++) this->states[i].change_vel(res_vel_vec[i]);
+    for (int i = 1; i < this->states.size(); i++) this->states[i].change_accel(res_accel_vec[i]);
+};
 
 void Test_model::print_states(string filename) {
     ofstream out;          // поток для записи
@@ -149,7 +224,7 @@ Point2d Test_model::part(double dist) {
 };
 
 
-inline DataSeq_model_Type generate_model(
+inline DataSeq_model_Type generate_old_model(
     double mean_1,
     const int size,
     double stddev,
@@ -393,7 +468,7 @@ void Test_model::show_gt_measures(bool pause_enable) {
 };
 
 
-void angle_Test(double w_std, Point3d vel_0, double sko, double delta, double duration) {
+void old_angle_Test(double w_std, Point3d vel_0, double sko, double delta, double duration) {
     cout << endl;
     cout << endl;
     cout << "-------------<<<" << "Testing angle models" << ">>>-------------" << endl;
@@ -405,7 +480,7 @@ void angle_Test(double w_std, Point3d vel_0, double sko, double delta, double du
 
     Data_seq test_0("Test0 stand still");
     vector<Point3d> test_0_ang_err_vec;
-    test_0.load_model(generate_model(0.0, (int)(duration / delta), sko, Point3d(0, 0, 0), Point3d(M_PI / 2, 0, 0), delta, sko));
+    test_0.load_model(generate_old_model(0.0, (int)(duration / delta), sko, Point3d(0, 0, 0), Point3d(M_PI / 2, 0, 0), delta, sko));
     for (int i = 0; i < test_0.limit; i++)
         test_0_ang_err_vec.push_back(calcDisplasment_ang(test_0.rot_ang_GT[i], test_0.rot_ang[i], 1));
     Point3d test_0_av_ang_err = Point3d(0, 0, 0);
@@ -427,7 +502,7 @@ void angle_Test(double w_std, Point3d vel_0, double sko, double delta, double du
 
     Data_seq test_1("Test1 yaw rotation");
     vector<Point3d> test_1_ang_err_vec;
-    test_1.load_model(generate_model(0.0, (int)(duration / delta), sko, Point3d(w_std, 0, 0), Point3d(M_PI / 2, 0, 0), delta, sko));
+    test_1.load_model(generate_old_model(0.0, (int)(duration / delta), sko, Point3d(w_std, 0, 0), Point3d(M_PI / 2, 0, 0), delta, sko));
     for (int i = 0; i < test_1.limit; i++)
         test_1_ang_err_vec.push_back(calcDisplasment_ang(test_1.rot_ang_GT[i], test_1.rot_ang[i], 1));
     Point3d test_1_av_ang_err = Point3d(0, 0, 0);
@@ -449,7 +524,7 @@ void angle_Test(double w_std, Point3d vel_0, double sko, double delta, double du
 
     Data_seq test_3("Test3 pitch rotation");
     vector<Point3d> test_3_ang_err_vec;
-    test_3.load_model(generate_model(0.0, (int)(duration / delta), sko, Point3d(0, 0, w_std), Point3d(M_PI / 2, 0, 0), delta, sko));
+    test_3.load_model(generate_old_model(0.0, (int)(duration / delta), sko, Point3d(0, 0, w_std), Point3d(M_PI / 2, 0, 0), delta, sko));
     for (int i = 0; i < test_1.limit; i++)
         test_3_ang_err_vec.push_back(calcDisplasment_ang(test_3.rot_ang_GT[i], test_3.rot_ang[i], 1));
     Point3d test_3_av_ang_err = Point3d(0, 0, 0);
@@ -471,7 +546,7 @@ void angle_Test(double w_std, Point3d vel_0, double sko, double delta, double du
 };
 
 
-void motion_Test(double accel_std, double sko, double delta, double duration) {
+void old_motion_Test(double accel_std, double sko, double delta, double duration) {
 
     cout << endl;
     cout << endl;
@@ -484,7 +559,7 @@ void motion_Test(double accel_std, double sko, double delta, double duration) {
 
     Data_seq test_1("Test1 stand still"); {
         vector<Pose_type> pose_err_vec;
-        test_1.load_model(generate_model(
+        test_1.load_model(generate_old_model(
             0.0,
             (int)(duration / delta),
             sko,
@@ -522,7 +597,7 @@ void motion_Test(double accel_std, double sko, double delta, double duration) {
 
     Data_seq test_2("Test2 ecvi_dist"); {
         vector<Pose_type> pose_err_vec;
-        test_2.load_model(generate_model(
+        test_2.load_model(generate_old_model(
             0.0,
             (int)(duration / delta),
             sko,
@@ -561,7 +636,7 @@ void motion_Test(double accel_std, double sko, double delta, double duration) {
 
     Data_seq test_3("Test3 accel"); {
         vector<Pose_type> pose_err_vec;
-        test_3.load_model(generate_model(
+        test_3.load_model(generate_old_model(
             0.0,
             (int)(duration / delta),
             sko,

@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     //cout << angle2V(Point3d(0,0,1), Point3d(M_PI/2, 0, 1));
 
     if (TEST_ANGLE) {
-        angle_Test();
+        old_angle_Test();
         waitKey(0);
     };
 
