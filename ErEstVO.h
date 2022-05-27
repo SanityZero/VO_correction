@@ -1,4 +1,5 @@
 #pragma once
+using namespace cv;
 /////////////////////////////////////////////////////
 //—читывание данных
 Pose_type getGTData(string, int);

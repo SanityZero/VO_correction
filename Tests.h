@@ -89,24 +89,31 @@ private:
 
         //начальное то же самое
         for (int i = 1; i < this->bins_timestamps.size(); i++) {
+            Pose_type tmp;
             double bins_time = bins_deltatime * i;
             int lesser_ts_i = 0;
+            double interp_multi = 0;
             for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
-                if (this->timestaps[ts_i] < bins_time) {
-                
-                }
-                else {
-                    ts_i;
+                if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
+                    interp_multi = (bins_time - (this->timestaps[ts_i + 1] - this->timestaps[ts_i])) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
+                    lesser_ts_i = ts_i;
                 };
             };
-            double interp_multi = 0;
-            //интреполировать на них позиции
-            //интреполировать на них ориентации
-            //интреполировать на них скорости
-            //интреполировать на них ускорения
-            //интреполировать на них угловые скорости
-            //получить проекции в соотв с ориентацией вектора скоростей
-            //получить проекции в соотв с ориентацией вектора ускорений
+            Pose_type prev = this->gt_point[lesser_ts_i];
+            Pose_type next = this->gt_point[lesser_ts_i + 1];
+
+            //интреполировать на них позиции, ориентации, ускорения, угловые скорости
+            tmp.setPose(prev.getPose()*(1- interp_multi) + next.getPose());
+            tmp.setOrient(prev.getOrient()*(1- interp_multi) + next.getOrient());
+
+            //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
+            Point3d w_curr = this->states[lesser_ts_i].anqular_vel * (1 - interp_multi) + this->states[lesser_ts_i + 1].anqular_vel;
+            Point3d accel_curr = this->states[lesser_ts_i].accel * (1 - interp_multi) + this->states[lesser_ts_i + 1].accel;
+            
+            //tmp.setAccel(rotate3d()));
+            tmp.setW(prev.getW() * (1 - interp_multi) + next.getW());
+
+
         };      
     };
 

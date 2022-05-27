@@ -1,48 +1,42 @@
 #include <iostream>
-#include <locale>
 #include <iomanip> 
 #include <fstream>
-#include <string>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/video.hpp>
-#include <algorithm>
-#include <random>
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 #include "Types.h"
 #include "ErEstVO.h"
 #include "DataSequence.h"
 
-Point3d Data_seq::interpolatedAxel(double time, Point3d rotation_angle) {
-    Point3d rot_an = Point3d(rotation_angle.x, rotation_angle.y, rotation_angle.z);
+cv::Point3d Data_seq::interpolatedAxel(double time, cv::Point3d rotation_angle) {
+    cv::Point3d rot_an = cv::Point3d(rotation_angle.x, rotation_angle.y, rotation_angle.z);
     if (time >= timestamps[this->limit - 1]) {
-        Point3d res = Point3d(this->dataline[this->limit - 1].ax, this->dataline[this->limit - 1].ay, this->dataline[this->limit - 1].az);
-        Point3d res_rot = rotateP3d(res, rot_an) + Point3d(0, 0, GCONST);
+        cv::Point3d res = cv::Point3d(this->dataline[this->limit - 1].ax, this->dataline[this->limit - 1].ay, this->dataline[this->limit - 1].az);
+        cv::Point3d res_rot = rotateP3d(res, rot_an) + cv::Point3d(0, 0, GCONST);
         return res_rot;
     };
     for (int i = 0; i < this->limit; i++) {
         if (this->timestamps[i] > time) {
-            Point3d prev(
+            cv::Point3d prev(
                 this->dataline[i - 1].ax,
                 this->dataline[i - 1].ay,
                 this->dataline[i - 1].az
             );
-            Point3d next(
+            cv::Point3d next(
                 this->dataline[i].ax,
                 this->dataline[i].ay,
                 this->dataline[i].az
             );
-            Point3d res = (time - this->timestamps[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]) * (prev - next) - prev;
-            Point3d res_rot = rotateP3d(res, rot_an) + Point3d(0, 0, GCONST);
+            cv::Point3d res = (time - this->timestamps[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]) * (prev - next) - prev;
+            cv::Point3d res_rot = rotateP3d(res, rot_an) + cv::Point3d(0, 0, GCONST);
             return res_rot;
         };
     };
-    Point3d res = Point3d(this->dataline[this->limit].ax, this->dataline[this->limit].ay, this->dataline[this->limit].az);
-    Point3d res_rot = rotateP3d(res, rot_an) + Point3d(0, 0, GCONST);
+    cv::Point3d res = cv::Point3d(this->dataline[this->limit].ax, this->dataline[this->limit].ay, this->dataline[this->limit].az);
+    cv::Point3d res_rot = rotateP3d(res, rot_an) + cv::Point3d(0, 0, GCONST);
     return res_rot;
 };
 
@@ -85,15 +79,15 @@ void Data_seq::loadBINS(string angle_type = "", string integration_mode = "E") {
 };
 
 bool Data_seq::calculate_next_point(string integr_method) {
-    //static Point3d vel;
-    static Mat C0;
-    static Mat C;
+    //static cv::Point3d vel;
+    static cv::Mat C0;
+    static cv::Mat C;
     if (this->this_ds_i >= this->limit) return false;
     if (this->this_ds_i == 0) {
         this->deltatime.push_back(0.0);
         this->deltatime.push_back(this->timestamps[0] - this->timestamps[1]);
         this->vel.push_back(
-            Point3d(
+            cv::Point3d(
                 this->dataline[1].lat - this->dataline[0].lat,
                 (this->dataline[1].lon - this->dataline[0].lon),
                 this->dataline[1].alt - this->dataline[0].alt
@@ -111,11 +105,11 @@ bool Data_seq::calculate_next_point(string integr_method) {
             C = (Mat_<double>(3, 3) << cos(w2) * cos(w1), sin(w3) * sin(w1) - cos(w3) * cos(w1) * cos(w2), cos(w3) * sin(w1) + sin(w3) * cos(w1) * sin(w2), sin(w2), cos(w3) * cos(w2), -sin(w3) * cos(w2), -cos(w2) * sin(w1), sin(w3) * cos(w1) + cos(w3) * cos(w1) * sin(w2), cos(w3) * cos(w1) - sin(w3) * sin(w1) * sin(w2));
         };
 
-        this->rot_ang_GT.push_back(Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
-        this->rot_ang_GT.push_back(Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
+        this->rot_ang_GT.push_back(cv::Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
+        this->rot_ang_GT.push_back(cv::Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
 
-        this->rot_ang.push_back(Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
-        this->rot_ang.push_back(Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
+        this->rot_ang.push_back(cv::Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
+        this->rot_ang.push_back(cv::Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
         this->this_ds_i = 2;
 
     };
@@ -124,8 +118,8 @@ bool Data_seq::calculate_next_point(string integr_method) {
     };
     this->deltatime.push_back(this->timestamps[this->this_ds_i - 1] - this->timestamps[this->this_ds_i]);
 
-    Point3d rot_v;
-    Point3d rot_vu = Point3d(0, 0, 0);//rad
+    cv::Point3d rot_v;
+    cv::Point3d rot_vu = cv::Point3d(0, 0, 0);//rad
 
     // по направляющим косинусам
 
@@ -134,9 +128,9 @@ bool Data_seq::calculate_next_point(string integr_method) {
     rot_v.y = dataline[1].wz - rot_vu.y;//rad
     rot_v.z = dataline[1].wy - rot_vu.y;//rad
 
-    Point3d rot_ang;
+    cv::Point3d rot_ang;
 
-    Point3d rot_ang_GT;
+    cv::Point3d rot_ang_GT;
 
     rot_ang_GT.x = this->dataline[this->this_ds_i].roll;
     rot_ang_GT.y = this->dataline[this->this_ds_i].pitch;
@@ -145,22 +139,22 @@ bool Data_seq::calculate_next_point(string integr_method) {
 
     if (this->angle_type == "") {
         // формирование кососимметричной матрицы
-        Mat CSM = (Mat_<double>(3, 3) << 0, -rot_v.z, rot_v.y, rot_v.z, 0, -rot_v.x, -rot_v.y, rot_v.x, 0);
+        cv::Mat CSM = (Mat_<double>(3, 3) << 0, -rot_v.z, rot_v.y, rot_v.z, 0, -rot_v.x, -rot_v.y, rot_v.x, 0);
         //double CSM[3][3] = {
         //    {0, -rot_v.z, rot_v.y},
         //    {rot_v.z, 0, rot_v.x},
         //    {-rot_v.y, rot_v.x, 0}
         //};
         //матричное произведение
-        Mat Do_Int = mat_multi(C, CSM);
-        Mat C_TMP = mat_add(Do_Int, C, this->deltatime.back());
+        cv::Mat Do_Int = mat_multi(C, CSM);
+        cv::Mat C_TMP = mat_add(Do_Int, C, this->deltatime.back());
         C = C_TMP.clone();
 
         double psi = atan(-C.at<double>(2, 0) / C.at<double>(0, 0));//rad
         double theta = asin(-C.at<double>(1, 0));//rad
         double gamma = atan(-C.at<double>(1, 2) / C.at<double>(1, 1));//rad
 
-        rot_ang = Point3d(psi, gamma, -theta);
+        rot_ang = cv::Point3d(psi, gamma, -theta);
     }
     else
         if (this->angle_type == "EC") {
@@ -173,10 +167,10 @@ bool Data_seq::calculate_next_point(string integr_method) {
             double wy = rot_v.y;//rad
             double wz = rot_v.z;//rad
 
-            //Point3d rotw_EC;
+            //cv::Point3d rotw_EC;
             //rotw_EC.x = (sin(pitch) * wx + wy * cos(pitch))/sin(roll);
 
-            Point3d ang_tmp(0, 0, 0);
+            cv::Point3d ang_tmp(0, 0, 0);
 
             ang_tmp.z += (sin(pitch) * wx + wy * cos(pitch)) / sin(roll) * this->deltatime.back();
             ang_tmp.x += (wx - sin(pitch) * sin(pitch) * wx + sin(pitch) * wy * cos(pitch)) / cos(pitch) * this->deltatime.back();
@@ -192,7 +186,7 @@ bool Data_seq::calculate_next_point(string integr_method) {
             //rotw_EC.z = tmp * tan(theta);
             //gamma += rotw_EC.z * this->deltatime.back();
 
-            rot_ang = Point3d(roll, pitch, yaw);
+            rot_ang = cv::Point3d(roll, pitch, yaw);
         }
         else
             if (this->angle_type == "EC2") {
@@ -205,10 +199,10 @@ bool Data_seq::calculate_next_point(string integr_method) {
                 double wy = rot_v.y;//rad
                 double wz = rot_v.z;//rad
 
-                //Point3d rotw_EC;
+                //cv::Point3d rotw_EC;
                 //rotw_EC.x = (sin(pitch) * wx + wy * cos(pitch))/sin(roll);
 
-                Point3d ang_delta(0, 0, 0);
+                cv::Point3d ang_delta(0, 0, 0);
 
 
                 ang_delta.x = wx * sin(roll) - cos(roll) * wz;
@@ -225,7 +219,7 @@ bool Data_seq::calculate_next_point(string integr_method) {
                 //rotw_EC.z = tmp * tan(theta);
                 //gamma += rotw_EC.z * this->deltatime.back();
 
-                rot_ang = Point3d(roll, pitch, yaw);
+                rot_ang = cv::Point3d(roll, pitch, yaw);
             }
             else
                 if (this->angle_type == "GT") {
@@ -238,10 +232,10 @@ bool Data_seq::calculate_next_point(string integr_method) {
     //Нужно вычесть ускорение свободного падения.
 
     Pose_type pose_tmp;
-    Point3d pose_delta;
+    cv::Point3d pose_delta;
     if (integr_method == "E") {
-        Point3d axel = this->interpolatedAxel(this->timestamps[this->this_ds_i], Point3d(rot_ang.x, rot_ang.y, rot_ang.z));
-        Point3d tmp_vel(0, 0, 0);
+        cv::Point3d axel = this->interpolatedAxel(this->timestamps[this->this_ds_i], cv::Point3d(rot_ang.x, rot_ang.y, rot_ang.z));
+        cv::Point3d tmp_vel(0, 0, 0);
 
         tmp_vel.x += this->vel.back().x + axel.x * this->deltatime.back();
         tmp_vel.y += this->vel.back().y + axel.y * this->deltatime.back();
@@ -263,10 +257,10 @@ bool Data_seq::calculate_next_point(string integr_method) {
     }
     else
         if (integr_method == "RK") {
-            Point3d tmp_vel0(0, 0, 0);
-            Point3d tmp_vel1(0, 0, 0);
+            cv::Point3d tmp_vel0(0, 0, 0);
+            cv::Point3d tmp_vel1(0, 0, 0);
 
-            vector<Point3d> vel0_k;
+            vector<cv::Point3d> vel0_k;
 
             vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i], rot_ang));
             vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i] + this->deltatime.back() / 2, rot_ang));
@@ -275,7 +269,7 @@ bool Data_seq::calculate_next_point(string integr_method) {
 
             tmp_vel0 += this->vel.back() + 1 / 6 * (vel0_k[0] + 2 * vel0_k[1] + 2 * vel0_k[2] + vel0_k[3]);
 
-            vector<Point3d> vel1_k;
+            vector<cv::Point3d> vel1_k;
 
 
             double tmp_time;
@@ -292,7 +286,7 @@ bool Data_seq::calculate_next_point(string integr_method) {
 
             tmp_vel1 += tmp_vel0 + 1 / 6 * (vel1_k[0] + 2 * vel1_k[1] + 2 * vel1_k[2] + vel1_k[3]);
 
-            vector<Point3d> pose_k;
+            vector<cv::Point3d> pose_k;
 
             pose_k.push_back(this->deltatime.back() * tmp_vel0);
             pose_k.push_back(this->deltatime.back() * (tmp_vel0 + tmp_vel1) / 2);
@@ -325,7 +319,7 @@ bool Data_seq::calculate_next_point(string integr_method) {
 
 void Data_seq::print_traect(int num, string mode = "screen", bool pause_enable = true) {
     static Point2i img_size = Point2i(520, 520);
-    Mat img(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
+    cv::Mat img(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     int border = 3;
     double max_x = this->pose[0].lon;
     double max_y = this->pose[0].lat;
@@ -411,11 +405,11 @@ void Data_seq::print_traect(int num, string mode = "screen", bool pause_enable =
 
 void Data_seq::load_model(DataSeq_model_Type model, string angle_type) {
     this->angle_type = angle_type;
-    vector<Point3d> w = model.w;
+    vector<cv::Point3d> w = model.w;
     vector<double> time = model.timestamp;
-    vector<Point3d> GT_angle = model.angle;
-    vector<Point3d> pose_GT = model.pose;
-    vector<Point3d> accel = model.accel;
+    vector<cv::Point3d> GT_angle = model.angle;
+    vector<cv::Point3d> pose_GT = model.pose;
+    vector<cv::Point3d> accel = model.accel;
     Data_seq res;
 
     this->limit = time.size() - 1;
@@ -460,7 +454,7 @@ void Data_seq::load_model(DataSeq_model_Type model, string angle_type) {
 
         this->dataline.push_back(tmp);
 
-        Point3d rot_ang_GT;
+        cv::Point3d rot_ang_GT;
 
         rot_ang_GT.x = this->dataline[i].roll;
         rot_ang_GT.y = this->dataline[i].pitch;
@@ -468,8 +462,8 @@ void Data_seq::load_model(DataSeq_model_Type model, string angle_type) {
         this->rot_ang_GT.push_back(rot_ang_GT);
     };
 
-    this->rot_ang_GT.push_back(Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
-    this->rot_ang_GT.push_back(Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
+    this->rot_ang_GT.push_back(cv::Point3d(this->dataline[0].roll, this->dataline[0].pitch, this->dataline[0].yaw));
+    this->rot_ang_GT.push_back(cv::Point3d(this->dataline[1].roll, this->dataline[1].pitch, this->dataline[1].yaw));
 
     this->pose.push_back(this->dataline[0]);
     this->pose.push_back(this->dataline[1]);
