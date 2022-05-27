@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
         );
         //tm1.generate_test_model(3, 1, 100, 20, 100, 20, 90, 0.01);
         tm1.print_states("states.txt");
+        tm1.print_bins_gts("gt_points.txt");
         tm1.show_gt();
         waitKey(0);
         //tm1.show_gt_measures();
@@ -179,10 +180,10 @@ int main(int argc, char** argv) {
                         //VOC_res_deltapose = rotateP3d(VOC_res_deltapose, Point3d(VOC_res_angles.x, VOC_res_angles.y, VOC_res_angles.z));
                         
                         //Pose_type last = ds.dataline.back();
-                        Pose_type corrected = Pose_type({
+                        Pose_type corrected = Pose_type(Point3d(
                             VOC_res_deltapose.x + last.lat,
                             VOC_res_deltapose.y + last.lon,
-                            VOC_res_deltapose.z + last.alt,
+                            VOC_res_deltapose.z + last.alt),
 
                             //last.lat,
                             //last.lon,
@@ -200,18 +201,12 @@ int main(int argc, char** argv) {
                             //VOC_res_angles.y,
                             //VOC_res_angles.z,
 
-                            last.roll,
+                            Point3d(last.roll,
                             last.pitch,
-                            last.yaw,
+                            last.yaw),
 
-                            0,
-                            0,
-                            0,
-
-                            0,
-                            0,
-                            0
-                            }
+                            Point3d(0,0,0),
+                            Point3d(0,0,0)
                         );
                         //ds.pose.push_back(last);
                         ds.pose_VOcr.push_back(corrected);

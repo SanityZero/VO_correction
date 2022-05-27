@@ -3,7 +3,7 @@ using namespace cv;
 /////////////////////////////////////////////////////
 //Считывание данных
 Pose_type getGTData(string, int);
-Mat cameraModel(string, int);
+Mat loadCameraModel(string, int);
 
 /////////////////////////////////////////////////////
 //Расчёт ошибки
@@ -93,7 +93,7 @@ inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
 
 /////////////////////////////////////////////////////
 //Реализации
-inline Mat cameraModel(string calibration_filename = "", int cam_number = 0) {
+inline Mat loadCameraModel(string calibration_filename = "", int cam_number = 0) {
     //static Point2d a = Point2d(984.2439, 0.0);
     //static Point3d T = Point3d(0.0, 0.0, 0.0);
     //static double u0 = 690;
@@ -197,23 +197,23 @@ inline Pose_type getGTData(string source_dir, int num) {//rad
     res.pitch = pose_data[4];
     res.yaw = M_PI/2 + pose_data[5];
 
-   /* res.vn = pose_data[6];
-    res.ve = pose_data[7];
-    res.vf = pose_data[8];
-    res.vl = pose_data[9];
-    res.vu = pose_data[10];*/
+    //res.vn = pose_data[6];
+    //res.ve = pose_data[7];
+    //res.vf = pose_data[8];
+    //res.vl = pose_data[9];
+    //res.vu = pose_data[10];
     res.ax = pose_data[11];
     res.ay = -pose_data[12];
     res.az = pose_data[13];
-   /* res.af = pose_data[14];
-    res.al = pose_data[15];
-    res.au = pose_data[16];*/
+    //res.af = pose_data[14];
+    //res.al = pose_data[15];
+    //res.au = pose_data[16];
     res.wx = pose_data[17];
     res.wy = pose_data[18];
     res.wz = pose_data[19];
-   /* res.wf = pose_data[20];
-    res.wl = pose_data[21];
-    res.wu = pose_data[22];*/
+    //res.wf = pose_data[20];
+    //res.wl = pose_data[21];
+    //res.wu = pose_data[22];
     in_pos.close();
     return res;
 };

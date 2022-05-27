@@ -18,6 +18,44 @@ using namespace std;
 #include "Track_part_type.h"
 #include "Tests.h"
 
+void Test_model::generate_bins_gt(double bins_deltatime) {
+    double bins_total_time = 0.0;
+    this->bins_timestamps.push_back(0.0);
+    while (bins_total_time < (this->total_time - bins_deltatime)) {
+        this->bins_timestamps.push_back(this->bins_timestamps[this->bins_timestamps.size() - 1] + bins_deltatime);
+        bins_total_time += bins_deltatime;
+    };
+    //сгенерировать таймстемпы
+
+    //начальное то же самое
+    this->bins_gt_points.push_back(Pose_type(this->gt_point[0].getPose(), this->gt_point[0].getOrient(), this->gt_point[0].getAccel(), this->gt_point[0].getW()));
+    for (int i = 1; i < this->bins_timestamps.size(); i++) {
+        Pose_type tmp;
+        double bins_time = bins_deltatime * i;
+        int lesser_ts_i = 0;
+        double interp_multi = 0;
+        for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
+            if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
+                interp_multi = (bins_time - (this->timestaps[ts_i + 1] - this->timestaps[ts_i])) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
+                lesser_ts_i = ts_i;
+            };
+        };
+        Pose_type prev = this->gt_point[lesser_ts_i];
+        Pose_type next = this->gt_point[lesser_ts_i + 1];
+
+        //интреполировать на них позиции, ориентации, ускорения, угловые скорости
+        tmp.setPose(prev.getPose() * (1 - interp_multi) + next.getPose());
+        tmp.setOrient(prev.getOrient() * (1 - interp_multi) + next.getOrient());
+
+        //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
+        Point3d w_curr = this->states[lesser_ts_i].anqular_vel * (1 - interp_multi) + this->states[lesser_ts_i + 1].anqular_vel;
+        Point3d accel_curr = this->states[lesser_ts_i].accel * (1 - interp_multi) + this->states[lesser_ts_i + 1].accel;
+
+        tmp.setAccel(rotateP3d(accel_curr, -tmp.getOrient()));
+        tmp.setW(w_curr);
+        this->bins_gt_points.push_back(tmp);
+    };
+};
 
 void Test_model::generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
     double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel)

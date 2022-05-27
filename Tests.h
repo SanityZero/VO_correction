@@ -78,44 +78,7 @@ private:
     vector<Pose_type> bins_points;
     vector<double> bins_timestamps;
 
-    void generate_bins_gt(double bins_deltatime) {
-        double bins_total_time = 0.0;
-        this->bins_timestamps.push_back(0.0);
-        while (bins_total_time < (this->total_time - bins_deltatime)) {
-            this->bins_timestamps.push_back(this->bins_timestamps[this->bins_timestamps.size() - 1] + bins_deltatime);
-            bins_total_time += bins_deltatime;
-        };
-        //сгенерировать таймстемпы
-
-        //начальное то же самое
-        for (int i = 1; i < this->bins_timestamps.size(); i++) {
-            Pose_type tmp;
-            double bins_time = bins_deltatime * i;
-            int lesser_ts_i = 0;
-            double interp_multi = 0;
-            for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
-                if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
-                    interp_multi = (bins_time - (this->timestaps[ts_i + 1] - this->timestaps[ts_i])) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
-                    lesser_ts_i = ts_i;
-                };
-            };
-            Pose_type prev = this->gt_point[lesser_ts_i];
-            Pose_type next = this->gt_point[lesser_ts_i + 1];
-
-            //интреполировать на них позиции, ориентации, ускорения, угловые скорости
-            tmp.setPose(prev.getPose()*(1- interp_multi) + next.getPose());
-            tmp.setOrient(prev.getOrient()*(1- interp_multi) + next.getOrient());
-
-            //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
-            Point3d w_curr = this->states[lesser_ts_i].anqular_vel * (1 - interp_multi) + this->states[lesser_ts_i + 1].anqular_vel;
-            Point3d accel_curr = this->states[lesser_ts_i].accel * (1 - interp_multi) + this->states[lesser_ts_i + 1].accel;
-            
-            //tmp.setAccel(rotate3d()));
-            tmp.setW(prev.getW() * (1 - interp_multi) + next.getW());
-
-
-        };      
-    };
+    void generate_bins_gt(double bins_deltatime);
 
     
 
@@ -133,26 +96,54 @@ public:
         double T,
         double U
     ) {
-        generate_track(max_track_parts, mean_line_length, stddev_line, mean_corner_radius, stddev_radius, mean_corner_angle, stddev_angle, average_vel);
         // сгенерировать трак в соответствии с ограничениями
-        
+        generate_track(max_track_parts, mean_line_length, stddev_line, mean_corner_radius, stddev_radius, mean_corner_angle, stddev_angle, average_vel);
         generate_states(dicret);
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
         smooth_anqular_vel(T, U);
         //smooth_vel(T, U/10000);
         regenerate_gt_points();
-        generate_s_points();
         
+
         // сгенерировать бинс данные по ограничениям, т.е. набор значений
+        generate_bins_gt(0.1);
+        
         // расставить точки
+        generate_s_points();
+
         // сгенерировать изображения в соответствии с точками
 
     };
 
+
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_gt_measures(bool pause_enable = false);
+
     void print_states(string filename);
+    void print_bins_gts(string filename) {
+        ofstream out;          // поток для записи
+        out.open(filename); // окрываем файл для записи
+        if (out.is_open())
+        {
+            //Point3d vel;
+            //Point3d accel;
+            //Point3d orient;
+            //Point3d anqular_vel;
+            //Point3d anqular_accel;
+            for (int i = 0; i < this->bins_timestamps.size(); i++) {
+                out << format(
+                    "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n",
+                    this->bins_timestamps[i], 
+                    this->bins_gt_points[i].getPose().x, this->bins_gt_points[i].getPose().y, this->bins_gt_points[i].getPose().z,
+                    this->bins_gt_points[i].getOrient().x, this->bins_gt_points[i].getOrient().y, this->bins_gt_points[i].getOrient().z,
+                    this->bins_gt_points[i].getAccel().x, this->bins_gt_points[i].getAccel().y, this->bins_gt_points[i].getAccel().z,
+                    this->bins_gt_points[i].getW().x, this->bins_gt_points[i].getW().y, this->bins_gt_points[i].getW().z
+                );
+            };
+        }
+        out.close();
+    };
 };
 
 

@@ -20,6 +20,14 @@ public:
     double wy;
     double wz;
 
+    Pose_type() {};
+    Pose_type(cv::Point3d pose_vec, cv::Point3d orient_vec, cv::Point3d accel_vec, cv::Point3d W_vec) {
+        this->setPose(pose_vec);
+        this->setOrient(orient_vec);
+        this->setAccel(accel_vec);
+        this->setW(W_vec);
+    };
+
     cv::Point3d getPose() {
         return cv::Point3d(lon, lat, alt);
     };
