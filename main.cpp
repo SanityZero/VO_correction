@@ -46,26 +46,27 @@ int main(int argc, char** argv) {
     };
 
     if (TEST_MOTION) {
-        //motion_Test();
-        //waitKey(0);
         Test_model tm1;
         tm1.generate_test_model(
-            5, //max_track_parts
-            0.01, //dicret
-            2, //mean_line_length
-            1, //stddev_line
+            1, //max_track_parts
+            0.1, //dicret
+            30, //mean_line_length
+            10, //stddev_line
             20, //mean_corner_radius
             10, //stddev_radius
             0 * M_PI / 180, //mean_corner_angle
             270 * M_PI / 180, //stddev_angle
             5,   //average_vel
-            0.01, //T
-            0.0001 //U
+            0.1, //T
+            0.00001 //U
         );
-        //tm1.generate_test_model(3, 1, 100, 20, 100, 20, 90, 0.01);
         tm1.print_states("states.txt");
-        tm1.print_bins_gts("gt_points.txt");
-        tm1.show_gt();
+        tm1.print_bins_gts("bins_gt_points.txt");
+        system("del /f /s /q C:\\ProgStaff\\test_generated_images");
+        tm1.print_camera_proections();
+        //tm1.show_gt();
+        //waitKey(0);
+        tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();
         system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");

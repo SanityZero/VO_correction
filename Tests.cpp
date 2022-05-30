@@ -18,6 +18,121 @@ using namespace std;
 #include "Track_part_type.h"
 #include "Tests.h"
 
+Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib) {
+    Point3d delta_pose = point_pose - camera_pose;
+    double length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
+    if ((length < this->cam_range.x) || (length > this->cam_range.y)) return this->frame_size;
+    double point_Pose_ar[4][1] = {
+        {point_pose.x},
+        {point_pose.y},
+        {point_pose.z},
+        {1}
+    };
+
+    Mat point_Pose = Mat(4, 1, CV_64F, point_Pose_ar);
+    Mat cam_point = Ex_calib * point_Pose;
+    Point2i point_int = Point2i(cam_point.at<double>(0, 0), cam_point.at<double>(1, 0));
+
+    if ((point_int.x < this->frame_size.x) && (point_int.x > 0) && (point_int.y < this->frame_size.y) && (point_int.y > 0)) {
+        return point_int;
+    }
+    else {
+        return this->frame_size;
+    };
+};
+
+void Test_model::print_bins_gts(string filename) {
+    ofstream out; // поток для записи
+    out.open(filename); // окрываем файл для записи
+    if (out.is_open())
+    {
+        //Point3d vel;
+        //Point3d accel;
+        //Point3d orient;
+        //Point3d anqular_vel;
+        //Point3d anqular_accel;
+        for (int i = 0; i < this->bins_timestamps.size(); i++) {
+            out << format(
+                "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n",
+                this->bins_timestamps[i],
+                this->bins_gt_points[i].getPose().x, this->bins_gt_points[i].getPose().y, this->bins_gt_points[i].getPose().z,
+                this->bins_gt_points[i].getOrient().x, this->bins_gt_points[i].getOrient().y, this->bins_gt_points[i].getOrient().z,
+                this->bins_gt_points[i].getAccel().x, this->bins_gt_points[i].getAccel().y, this->bins_gt_points[i].getAccel().z,
+                this->bins_gt_points[i].getW().x, this->bins_gt_points[i].getW().y, this->bins_gt_points[i].getW().z
+            );
+        };
+    }
+    out.close();
+};
+
+void Test_model::generate_camera_proections() {
+    for (int i = 0; i < this->bins_timestamps.size() - 1; i++) {
+        vector<Point2i> frame_points;
+        Mat ex_calib_m = generateExCalibM(i);
+        Point3d cam_pose = this->bins_gt_points[i].getPose();
+        for (int i_points = 0; i_points < this->s_points.size() - 1; i_points++) {
+            Point2i tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
+
+            if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) continue;
+            frame_points.push_back(tmp);
+        };
+        this->point_camera_proections.push_back(frame_points);
+    };
+};
+
+Mat Test_model::generateExCalibM(int i) {
+    Point3d angles = this->bins_gt_points[i].getOrient();
+    double a = angles.x, b = angles.y, c = angles.z;
+    double rotMat_ar[3][3] = {
+        {cos(c) * cos(b), -cos(b) * sin(b), sin(b)},
+        {cos(a) * sin(b) + cos(c) * sin(b) * sin(a), cos(c) * cos(a) - sin(a) * sin(b) * sin(b), -cos(b) * sin(a)},
+        {sin(b) * sin(a) - cos(c) * cos(a) * sin(b), cos(a) * sin(b) * sin(b) + cos(c) * sin(a), cos(b) * cos(a)}
+    };
+    Mat R = Mat(3, 3, CV_64F, rotMat_ar);
+
+    Point3d delta = this->bins_gt_points[i].getPose();
+    double transMat_ar[3][1] = {
+    {delta.x},
+    {delta.y},
+    {delta.z}
+    };
+    Mat t = Mat(3, 1, CV_64F, transMat_ar);
+
+    double E_ar[3][4] = {
+    {1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 1, 0}
+    };
+    Mat E = Mat(3, 4, CV_64F, E_ar);
+
+    Mat R_t = R.t();
+
+    Mat tmp = -R_t * t;
+
+    //double M_ar[4][4] = {
+    //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
+    //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
+    //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+    //     {0, 0, 0, 1}
+    //};
+    //double M_ar[4][4] = {
+    //     {R_t.at<double>(0, 0), R_t.at<double>(1, 0), R_t.at<double>(2, 0), tmp.at<double>(0, 0)},
+    //     {R_t.at<double>(0, 1), R_t.at<double>(1, 1), R_t.at<double>(2, 1), tmp.at<double>(1, 0)},
+    //     {R_t.at<double>(0, 2), R_t.at<double>(1, 2), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+    //     {0, 0, 0, 1}
+    //};
+    double M_ar[4][4] = {
+        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
+        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
+        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
+        {0, 0, 0, 1}
+    };
+    Mat M = Mat(4, 4, CV_64F, M_ar);
+
+
+    return this->A * E * M;
+};
+
 void Test_model::generate_bins_gt(double bins_deltatime) {
     double bins_total_time = 0.0;
     this->bins_timestamps.push_back(0.0);
@@ -36,7 +151,7 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
         double interp_multi = 0;
         for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
             if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
-                interp_multi = (bins_time - (this->timestaps[ts_i + 1] - this->timestaps[ts_i])) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
+                interp_multi = (bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
                 lesser_ts_i = ts_i;
             };
         };
@@ -113,7 +228,7 @@ void  Test_model::regenerate_gt_points() {
 
 void Test_model::generate_s_points(
     double border,
-    Point2d z_limits,
+    Point3d z_limits,
     Point3d grid_spacing,
     Point2d displacement
 ) {
@@ -141,7 +256,7 @@ void Test_model::generate_s_points(
     normal_distribution<double> distribution_displacement(mean_displacement, stddev_displacement);
     for (double x_shift = min_x - border; x_shift < max_x + border; x_shift += grid_spacing.x)
         for (double y_shift = min_y - border; y_shift < max_y + border; y_shift += grid_spacing.y)
-            for (double z_shift = min_z - border; z_shift < max_z + border; z_shift += grid_spacing.z)
+            for (double z_shift = min_z; z_shift < max_z; z_shift += grid_spacing.z)
             {
                 Point3d displacement_vec = Point3d(distribution_displacement(generator), distribution_displacement(generator), distribution_displacement(generator));
                 Point3d new_s_point = Point3d(x_shift, y_shift, z_shift) + displacement_vec;
@@ -329,6 +444,18 @@ void Test_model::generate_gt_points(double delta_m, int point_num) {
     pose1_tmp.lon = 0;
     pose1_tmp.alt = 0;
 
+    pose1_tmp.roll = states[0].orient.x;
+    pose1_tmp.pitch = states[0].orient.y;
+    pose1_tmp.yaw = states[0].orient.z;
+
+    pose1_tmp.ax = states[0].accel.x;
+    pose1_tmp.ay = states[0].accel.y;
+    pose1_tmp.az = states[0].accel.z;
+
+    pose1_tmp.wx = states[0].anqular_accel.x;
+    pose1_tmp.wy = states[0].anqular_accel.y;
+    pose1_tmp.wz = states[0].anqular_accel.z;
+
     gt_point.push_back(pose1_tmp);
 
     for (int i = 1; i < point_num; i++) {
@@ -437,73 +564,65 @@ void Test_model::show_gt(string mode, bool pause_enable) {
 };
 
 
-void Test_model::show_gt_measures(bool pause_enable) {
-    static Point2i img_size = Point2i(400, 1000);
+void Test_model::show_bins_gt(bool pause_enable) {
+    static Point2i img_size = Point2i(500, 500);
     Mat img(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     int border = 50;
+    double max_x = this->bins_gt_points[0].lon;
+    double max_y = this->bins_gt_points[0].lat;
+    double min_x = this->bins_gt_points[0].lon;
+    double min_y = this->bins_gt_points[0].lat;
 
-    double max_roll = this->gt_point[0].roll;
-    double max_pitch = this->gt_point[0].pitch;
-    double max_yaw = this->gt_point[0].yaw;
-
-    double min_roll = this->gt_point[0].roll;
-    double min_pitch = this->gt_point[0].pitch;
-    double min_yaw = this->gt_point[0].yaw;
-
-    for (int i = 0; i < this->gt_point.size(); i++)
+    for (int i = 0; i < this->bins_gt_points.size(); i++)
     {
-        max_roll = this->gt_point[i].roll > max_roll ? this->gt_point[i].roll : max_roll;
-        max_pitch = this->gt_point[i].pitch > max_pitch ? this->gt_point[i].pitch : max_pitch;
-        max_yaw = this->gt_point[i].yaw > max_yaw ? this->gt_point[i].yaw : max_yaw;
+        max_x = this->bins_gt_points[i].lon > max_x ? this->bins_gt_points[i].lon : max_x;
+        max_y = this->bins_gt_points[i].lat > max_y ? this->bins_gt_points[i].lat : max_y;
 
-        min_roll = this->gt_point[i].roll < min_roll ? this->gt_point[i].roll : min_roll;
-        min_pitch = this->gt_point[i].pitch < min_pitch ? this->gt_point[i].pitch : min_pitch;
-        min_yaw = this->gt_point[i].yaw < min_yaw ? this->gt_point[i].yaw : min_yaw;
+        min_x = this->bins_gt_points[i].lon < min_x ? this->bins_gt_points[i].lon : min_x;
+        min_y = this->bins_gt_points[i].lat < min_y ? this->bins_gt_points[i].lat : min_y;
     };
 
-    double bottom = min(min_roll, min_pitch, min_yaw);
-    double top = max(max_roll, max_pitch, max_yaw);
-    double offset = (top - bottom) / 2;
+    Point2d scale = Point2d(max_x - min_x, max_y - min_y);
+    double im_scale = scale.x > scale.y ? (img_size.x - 2 * border) / scale.x : (img_size.y - 2 * border) / scale.y;
+    Point2i zero_offset = -Point2i(min_x * im_scale, min_y * im_scale);
 
-    double im_scale_x = (img_size.x - 2 * border) / (top - bottom);
-    double im_scale_y = (img_size.y - border / 2) / double(this->gt_point.size());
-
-    for (int i = 1; i < this->gt_point.size(); i++)
+    for (int i = 1; i < this->bins_gt_points.size(); i++)
     {
-        Point2d next = Point2d(this->gt_point[i].yaw, i);
-        Point2d prev = Point2d(this->gt_point[i - 1].yaw, i);
+        Point2d next = Point2d(this->bins_gt_points[i].lon, this->bins_gt_points[i].lat);
+        Point2d prev = Point2d(this->bins_gt_points[i - 1].lon, this->bins_gt_points[i - 1].lat);
 
-        Point2i beg = Point2i(im_scale_y * prev.y + border / 2, border + im_scale_x * prev.x);
-        Point2i end = Point2i(im_scale_y * next.y + border / 2, border + im_scale_x * next.x);
-        line(img, beg, end, Scalar(128, 0, 0), 3);
+        Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
+        Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
+        line(img, beg, end, Scalar(0, 0, 0), 2);
+        //circle(img, beg, 6, Scalar(0, 0, 0));
+        if (i == 1) circle(img, beg, 6, Scalar(0, 0, 0));
     };
 
-    for (int i = 1; i < this->gt_point.size(); i++)
-    {
-        Point2d next = Point2d(this->gt_point[i].pitch, i);
-        Point2d prev = Point2d(this->gt_point[i - 1].pitch, i);
-
-        Point2i beg = Point2i(im_scale_y * prev.y + border / 2, border + im_scale_x * prev.x);
-        Point2i end = Point2i(im_scale_y * next.y + border / 2, border + im_scale_x * next.x);
-        line(img, beg, end, Scalar(0, 128, 0), 2);
+    for (int i = 0; i < this->s_points.size(); i++) {
+        Point2i cross_size = Point2i(3, 3);
+        Point2i s_point_location = Point2i(border + im_scale * (this->s_points[i].x - min_x), border + im_scale * (this->s_points[i].y - min_y));
+        Point2i cross_points[4] = {
+            s_point_location + Point2i(-cross_size.x / 2, -cross_size.y / 2),
+            s_point_location + Point2i(-cross_size.x / 2, cross_size.y / 2),
+            s_point_location + Point2i(cross_size.x / 2, cross_size.y / 2),
+            s_point_location + Point2i(cross_size.x / 2, -cross_size.y / 2)
+        };
+        line(img, cross_points[0], cross_points[2], Scalar(255, 0, 0), 1);
+        line(img, cross_points[1], cross_points[3], Scalar(255, 0, 0), 1);
     };
 
-    for (int i = 1; i < this->gt_point.size(); i++)
-    {
-        Point2d next = Point2d(-this->gt_point[i].roll, i);
-        Point2d prev = Point2d(-this->gt_point[i - 1].roll, i);
-
-        //Point2i beg = Point2i(border + im_scale_x * (prev.x + bottom/2), im_scale_y * prev.y);
-        //Point2i end = Point2i(border + im_scale_x * (next.x + bottom/2), im_scale_y * next.y);
-        Point2i beg = Point2i(im_scale_y * prev.y + border / 2, border + im_scale_x * prev.x);
-        Point2i end = Point2i(im_scale_y * next.y + border / 2, border + im_scale_x * next.x);
-        line(img, beg, end, Scalar(0, 0, 128), 1);
-    };
-
-    namedWindow("angles");
-    imshow("angles", img);
-    if (pause_enable) waitKey(0);
-};
+    putText(img,
+        "BINS_GT",
+        Point(img.cols - 200, 30),
+        0,
+        0.5,
+        CV_RGB(0, 0, 0),
+        0.5
+    );
+    namedWindow("BINS_GT");
+    imshow("BINS_GT", img);
+    if (pause_enable) waitKey(0);     
+ };
 
 
 void old_angle_Test(double w_std, Point3d vel_0, double sko, double delta, double duration) {

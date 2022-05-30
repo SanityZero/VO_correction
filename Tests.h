@@ -31,47 +31,25 @@ private:
 
     //модель камеры
     vector<Point3d> s_points;
+    Point2i frame_size;
+    Point2d cam_range;
+    Mat A;
+    //Mat EX_calib;
 
-    void generate_s_points(
-        double border = 50,
-        Point2d z_limits = Point2d(0, 40),
-        Point3d grid_spacing = Point3d(10, 10, 10),
-        Point2d displacement = Point2d(0, 3)
-    );
-
+    void generate_s_points(double border, Point3d z_limits, Point3d grid_spacing, Point2d displacement);
+    Mat generateExCalibM(int i);
+    void setCameraModel(Point2i _frame_size, Point2d _cam_range, Mat _A) {
+        this->frame_size = _frame_size;
+        this->cam_range = _cam_range;
+        this->A = _A;
+    };
 
     //модель движения блестящих точек
     vector<vector<Point2i>> point_tracks;
     vector<vector<Point2i>> point_camera_proections;
 
-    Point2i point_proection(Point3d point, Mat Ex_calib, Point2i cam_size) {
-        return Point2i(0, 0);
-    };
-
-    void generate_camera_proections() {
-        //Mat R = 
-        //double E_ar[3][4] = {
-        //{1, 0, 0, 0},
-        //{0, 1, 0, 0},
-        //{0, 0, 1, 0}
-        //};
-        //Mat E = Mat(3, 4, CV_64F, E_ar);
-
-        //Mat R_t = R.t();
-
-        //Mat tmp = -R_t * t;
-
-        //double M_ar[4][4] = {
-        //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
-        //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
-        //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
-        //     {0, 0, 0, 1}
-        //};
-        //Mat M = Mat(4, 4, CV_64F, M_ar);
-
-        //tmp = A * E * M;
-
-    };
+    Point2i point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib);
+    void generate_camera_proections();
 
     //модель БИНС
     vector<Pose_type> bins_gt_points;
@@ -79,8 +57,6 @@ private:
     vector<double> bins_timestamps;
 
     void generate_bins_gt(double bins_deltatime);
-
-    
 
 public:
     void generate_test_model(
@@ -110,40 +86,60 @@ public:
         generate_bins_gt(0.1);
         
         // расставить точки
-        generate_s_points();
+        double grid_step = 10;
+        generate_s_points(
+            50, //border x y
+            Point3d(0, 20, 0), //z_limits min_z max_z 0
+            Point3d(grid_step, grid_step, grid_step), //grid_spacing
+            Point2d(0, 0.0001) //displacement
+        );
 
+
+        Point2i fr_size = Point2i(1242, 373);
+        Point2d cam_limits = Point2d(3, 100000000);
+        double IternalCalib_ar[3][3] = {
+        {3, 0, fr_size.x / 2},
+        {0, 3, fr_size.y / 2},
+        {0, 0, 1}
+        };
+        Mat A = Mat(3, 3, CV_64F, IternalCalib_ar);
+        
+
+        setCameraModel(fr_size, cam_limits, A);
+        generate_camera_proections();
         // сгенерировать изображения в соответствии с точками
 
     };
 
 
     void show_gt(string mode = "screen", bool pause_enable = false);
-    void show_gt_measures(bool pause_enable = false);
+    void show_bins_gt(bool pause_enable = false);
+    void print_camera_proections() {
+        for (int i = 0; i < this->bins_timestamps.size()-1; i++) {
+            Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
+            vector<Point2i> frame_points = this->point_camera_proections[i];
+
+            for (int i_points = 0; i_points < frame_points.size(); i_points++) {
+                if (frame_points.size() == 0) continue;
+                Point2i cross_size = Point2i(3, 3);
+                Point2i s_point_location = Point2i(frame_points[i_points].y, frame_points[i_points].x) + this->frame_size/2;
+                Point2i cross_points[4] = {
+                    s_point_location + Point2i(-cross_size.x / 2, -cross_size.y / 2),
+                    s_point_location + Point2i(-cross_size.x / 2, cross_size.y / 2),
+                    s_point_location + Point2i(cross_size.x / 2, cross_size.y / 2),
+                    s_point_location + Point2i(cross_size.x / 2, -cross_size.y / 2)
+                };
+                line(frame, cross_points[0], cross_points[2], Scalar(0, 0, 255), 1);
+                line(frame, cross_points[1], cross_points[3], Scalar(0, 0, 255), 1);
+                };
+            //сохранить пикчу 
+            string filename = "C:\\ProgStaff\\test_generated_images\\" + to_string(i) + ".jpg";
+            imwrite(filename, frame);
+        };
+    };
 
     void print_states(string filename);
-    void print_bins_gts(string filename) {
-        ofstream out;          // поток для записи
-        out.open(filename); // окрываем файл для записи
-        if (out.is_open())
-        {
-            //Point3d vel;
-            //Point3d accel;
-            //Point3d orient;
-            //Point3d anqular_vel;
-            //Point3d anqular_accel;
-            for (int i = 0; i < this->bins_timestamps.size(); i++) {
-                out << format(
-                    "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n",
-                    this->bins_timestamps[i], 
-                    this->bins_gt_points[i].getPose().x, this->bins_gt_points[i].getPose().y, this->bins_gt_points[i].getPose().z,
-                    this->bins_gt_points[i].getOrient().x, this->bins_gt_points[i].getOrient().y, this->bins_gt_points[i].getOrient().z,
-                    this->bins_gt_points[i].getAccel().x, this->bins_gt_points[i].getAccel().y, this->bins_gt_points[i].getAccel().z,
-                    this->bins_gt_points[i].getW().x, this->bins_gt_points[i].getW().y, this->bins_gt_points[i].getW().z
-                );
-            };
-        }
-        out.close();
-    };
+    void print_bins_gts(string filename);
 };
 
 

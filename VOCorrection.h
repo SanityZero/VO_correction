@@ -276,7 +276,7 @@ vector<Point3d> VOCorrect(
            {0, 0, 1}
     };
     Mat IC = Mat(3, 3, CV_64F, IternalCalib_ar);
-  //  Mat IC = cameraModel(ds.calib_filename);
+    //Mat IC = cameraModel(ds.calib_filename);
 
     //тут надо вытащить из позиций значения поворотов и трансляции
     Mat EC = ExternalCalibMat(IC, rotationMat(angDelta(pose1, pose0)), transMat(poseDelta(pose1, pose0)));
