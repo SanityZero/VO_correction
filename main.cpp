@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     if (TEST_MOTION) {
         Test_model tm1;
         tm1.generate_test_model(
-            1, //max_track_parts
+            2, //max_track_parts
             0.1, //dicret
             30, //mean_line_length
             10, //stddev_line
@@ -58,7 +58,8 @@ int main(int argc, char** argv) {
             270 * M_PI / 180, //stddev_angle
             5,   //average_vel
             0.1, //T
-            0.00001 //U
+            0.001 //U
+            //10 //U
         );
         tm1.print_states("states.txt");
         tm1.print_bins_gts("bins_gt_points.txt");

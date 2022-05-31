@@ -144,6 +144,7 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
 
     //начальное то же самое
     this->bins_gt_points.push_back(Pose_type(this->gt_point[0].getPose(), this->gt_point[0].getOrient(), this->gt_point[0].getAccel(), this->gt_point[0].getW()));
+    vector<double> vec_i;
     for (int i = 1; i < this->bins_timestamps.size(); i++) {
         Pose_type tmp;
         double bins_time = bins_deltatime * i;
@@ -151,22 +152,53 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
         double interp_multi = 0;
         for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
             if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
-                interp_multi = (bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]);
+                interp_multi = abs((bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]));
+                //interp_multi = abs((bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - bins_time));
+                vec_i.push_back(interp_multi);
                 lesser_ts_i = ts_i;
+                break;
             };
         };
         Pose_type prev = this->gt_point[lesser_ts_i];
         Pose_type next = this->gt_point[lesser_ts_i + 1];
 
         //интреполировать на них позиции, ориентации, ускорения, угловые скорости
-        tmp.setPose(prev.getPose() * (1 - interp_multi) + next.getPose());
-        tmp.setOrient(prev.getOrient() * (1 - interp_multi) + next.getOrient());
+        tmp.setPose(prev.getPose() + (next.getPose() - prev.getPose()) * interp_multi);
+        tmp.setOrient(this->states[lesser_ts_i].orient + (this->states[lesser_ts_i+1].orient - this->states[lesser_ts_i].orient) * interp_multi);
+        //tmp.setPose((1 / (1 + interp_multi)) * (prev.getPose() + interp_multi * next.getPose()));
+        //tmp.setOrient((1 / (1 + interp_multi)) * (this->states[lesser_ts_i].orient + interp_multi * this->states[lesser_ts_i+1].orient));
 
         //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
-        Point3d w_curr = this->states[lesser_ts_i].anqular_vel * (1 - interp_multi) + this->states[lesser_ts_i + 1].anqular_vel;
-        Point3d accel_curr = this->states[lesser_ts_i].accel * (1 - interp_multi) + this->states[lesser_ts_i + 1].accel;
+        //Point3d w_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].anqular_vel + interp_multi * this->states[lesser_ts_i + 1].anqular_vel);
+        //Point3d accel_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].accel + interp_multi * this->states[lesser_ts_i + 1].accel);
+        Point3d w_curr = this->states[lesser_ts_i].anqular_vel + (this->states[lesser_ts_i + 1].anqular_vel - this->states[lesser_ts_i].anqular_vel) * interp_multi;
+        Point3d accel_curr = this->states[lesser_ts_i].accel + (this->states[lesser_ts_i + 1].accel - this->states[lesser_ts_i].accel) * interp_multi;
+        //Point3d w_curr = prev.getW() * (1 - interp_multi) + next.getW();
+        //Point3d accel_curr = prev.getAccel() * (1 - interp_multi) + next.getAccel();
+        Point3d ang_vec = tmp.getOrient();
+        Point3d e1 = rotateP3d(Point3d(1, 0, 0), ang_vec);
+        Point3d e2 = rotateP3d(Point3d(0, 1, 0), ang_vec);
+        Point3d e3 = rotateP3d(Point3d(0, 0, 1), ang_vec);
 
-        tmp.setAccel(rotateP3d(accel_curr, -tmp.getOrient()));
+        double newBase_ar[3][3] = {
+        {e1.x, e2.x, e3.x},
+        {e1.y, e2.y, e3.y},
+        {e1.z, e2.z, e3.z}
+        };
+        Mat newBase = Mat(3, 3, CV_64F, newBase_ar);
+
+        double accel_vec_ar[3][1] = {
+            {accel_curr.x},
+            {accel_curr.y},
+            {accel_curr.z}
+        };
+
+        Mat accel_vec = Mat(3, 1, CV_64F, accel_vec_ar);
+
+        Mat accel_pr = newBase.inv() * accel_vec;
+        accel_curr = Point3d(accel_pr.at<double>(0, 0), accel_pr.at<double>(1, 0), accel_pr.at<double>(2, 0));
+
+        tmp.setAccel(accel_curr);
         tmp.setW(w_curr);
         this->bins_gt_points.push_back(tmp);
     };
@@ -294,11 +326,17 @@ void Test_model::smooth_anqular_vel(double T, double U) {
     res_ang_vel_vec.push_back(this->get_state(1).anqular_vel);
     for (int i = 2; i < this->states.size(); i++) {
         Point3d old = this->get_state(i).orient;
+        //Point3d anq_tmp =
+            //-(T / 2) * (this->get_state(i).orient + this->get_state(i - 1).orient) +
+            //(U * T / 2 + 1) * res_orient_vec[i - 1] +
+            //(U * T / 2) * res_orient_vec[i - 2];
         Point3d anq_tmp =
-            -(T / 2) * (this->get_state(i).orient + this->get_state(i - 1).orient) +
-            (U * T / 2 + 1) * res_orient_vec[i - 1] +
-            (U * T / 2) * res_orient_vec[i - 2];
+            - (this->get_state(i).orient + this->get_state(i - 1).orient) +
+            (U  + 1) * res_orient_vec[i - 1] +
+            U * res_orient_vec[i - 2];
+        //Point3d anq_tmp = (1 / 4) * res_orient_vec[i - 1] + (1 / 2) * this->get_state(i).orient + (1 / 4) * this->get_state(i + 1).orient;
         res_orient_vec.push_back(anq_tmp);
+        //res_ang_vel_vec.push_back((res_orient_vec[i] - res_orient_vec[i - 1]) / T);
         res_ang_vel_vec.push_back((res_orient_vec[i] - res_orient_vec[i - 1]) / T);
     };
     for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);

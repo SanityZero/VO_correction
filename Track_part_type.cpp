@@ -176,7 +176,7 @@ Track_part_type::Track_part_type(
     double max_radius = 500;
     double min_length = 5;
     double max_length = 500;
-    double min_angle = 0.1;
+    double min_angle = 30;
 
     double line_len = distribution_line(generator);
     while (line_len < 0 || line_len > max_length) line_len = distribution_line(generator);

@@ -77,19 +77,19 @@ public:
         generate_states(dicret);
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
-        smooth_anqular_vel(T, U);
+        //smooth_anqular_vel(T, U);
         //smooth_vel(T, U/10000);
         regenerate_gt_points();
         
 
         // сгенерировать бинс данные по ограничениям, т.е. набор значений
-        generate_bins_gt(0.1);
+        generate_bins_gt(0.156);
         
         // расставить точки
         double grid_step = 10;
         generate_s_points(
             50, //border x y
-            Point3d(0, 20, 0), //z_limits min_z max_z 0
+            Point3d(0, 30, 0), //z_limits min_z max_z 0
             Point3d(grid_step, grid_step, grid_step), //grid_spacing
             Point2d(0, 0.0001) //displacement
         );
