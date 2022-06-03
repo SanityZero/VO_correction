@@ -239,21 +239,22 @@ void Test_model::generate_track(int max_track_parts, double mean_line_length, do
 
 void  Test_model::regenerate_gt_points() {
     for (int i = 1; i < this->gt_point.size(); i++) {
-        this->gt_point[i].lat = this->gt_point[i - 1].lat + this->states[i].vel.y * (this->timestaps[i] - this->timestaps[i - 1]);
-        this->gt_point[i].lon = this->gt_point[i - 1].lon + this->states[i].vel.x * (this->timestaps[i] - this->timestaps[i - 1]);
-        this->gt_point[i].alt = this->gt_point[i - 1].alt + this->states[i].vel.z * (this->timestaps[i] - this->timestaps[i - 1]);
+        double deltatime = (this->timestaps[i] - this->timestaps[i - 1]);
+        this->gt_point[i].lat = this->gt_point[i - 1].lat + this->states[i].vel.y * deltatime;
+        this->gt_point[i].lon = this->gt_point[i - 1].lon + this->states[i].vel.x * deltatime;
+        this->gt_point[i].alt = this->gt_point[i - 1].alt + this->states[i].vel.z * deltatime;
 
-        this->gt_point[i].roll = states[i].orient.x;
-        this->gt_point[i].pitch = states[i].orient.y;
-        this->gt_point[i].yaw = states[i].orient.z;
+        this->gt_point[i].roll = this->gt_point[i - 1].roll + this->states[i].anqular_vel.x * deltatime;
+        this->gt_point[i].pitch = this->gt_point[i - 1].pitch + this->states[i].anqular_vel.y * deltatime;
+        this->gt_point[i].yaw = this->gt_point[i - 1].yaw + this->states[i].anqular_vel.z * deltatime;
 
         this->gt_point[i].ax = states[i].accel.x;
         this->gt_point[i].ay = states[i].accel.y;
         this->gt_point[i].az = states[i].accel.z;
 
-        this->gt_point[i].wx = states[i].anqular_accel.x;
-        this->gt_point[i].wy = states[i].anqular_accel.y;
-        this->gt_point[i].wz = states[i].anqular_accel.z;
+        this->gt_point[i].wx = states[i].anqular_vel.x;
+        this->gt_point[i].wy = states[i].anqular_vel.y;
+        this->gt_point[i].wz = states[i].anqular_vel.z;
     };
 
 };
@@ -316,31 +317,57 @@ State_type Test_model::get_state(int number) {
         return this->states[number];
 };
 
-void Test_model::smooth_anqular_vel(double T, double U) {
+void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
     vector<Point3d> res_orient_vec;
     vector<Point3d> res_ang_vel_vec;
-
+    
     res_orient_vec.push_back(this->get_state(0).orient);
     res_orient_vec.push_back(this->get_state(1).orient);
+    res_orient_vec.push_back(this->get_state(2).orient);
+    res_orient_vec.push_back(this->get_state(3).orient);
     res_ang_vel_vec.push_back(this->get_state(0).anqular_vel);
     res_ang_vel_vec.push_back(this->get_state(1).anqular_vel);
-    for (int i = 2; i < this->states.size(); i++) {
-        Point3d old = this->get_state(i).orient;
-        //Point3d anq_tmp =
-            //-(T / 2) * (this->get_state(i).orient + this->get_state(i - 1).orient) +
-            //(U * T / 2 + 1) * res_orient_vec[i - 1] +
-            //(U * T / 2) * res_orient_vec[i - 2];
-        Point3d anq_tmp =
-            - (this->get_state(i).orient + this->get_state(i - 1).orient) +
-            (U  + 1) * res_orient_vec[i - 1] +
-            U * res_orient_vec[i - 2];
-        //Point3d anq_tmp = (1 / 4) * res_orient_vec[i - 1] + (1 / 2) * this->get_state(i).orient + (1 / 4) * this->get_state(i + 1).orient;
-        res_orient_vec.push_back(anq_tmp);
-        //res_ang_vel_vec.push_back((res_orient_vec[i] - res_orient_vec[i - 1]) / T);
-        res_ang_vel_vec.push_back((res_orient_vec[i] - res_orient_vec[i - 1]) / T);
+    res_ang_vel_vec.push_back(this->get_state(2).anqular_vel);
+    res_ang_vel_vec.push_back(this->get_state(3).anqular_vel);
+
+    for (int i = 3; i < this->states.size(); i++) {
+        double alpha = -(T / 2);
+        Point3d tmp =
+            alpha * alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
+            - alpha * alpha * (alpha*U2 +  U1) * res_ang_vel_vec[i - 1] - alpha * alpha*(U1 + 2*alpha*U2) * res_ang_vel_vec[i - 2] - U2 * alpha * alpha * alpha * res_ang_vel_vec[i - 3]
+            -  res_orient_vec[i - 1] +  U2 * alpha * alpha * res_orient_vec[i - 2] + U2 * alpha * alpha * res_orient_vec[i - 3];
+ 
+        Point3d tmp2 = 
+            alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
+            - (1 + alpha * U1) * res_ang_vel_vec[i - 1] - U1 * alpha * res_ang_vel_vec[i - 2]
+            - U2 * alpha * res_orient_vec[i - 1] - U2 * alpha * res_orient_vec[i - 2];
+
+        res_orient_vec.push_back(tmp);
+        res_ang_vel_vec.push_back(tmp2);
     };
-    for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);
-    for (int i = 1; i < this->states.size(); i++) this->states[i].change_anqular_vel(res_ang_vel_vec[i]);
+
+    //for (int i = 1; i < this->states.size(); i++) res_ang_vel_vec_reverse.push_back(res_ang_vel_vec[res_ang_vel_vec.size() - i]);
+
+
+    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[0]);
+    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[1]);
+    //for (int i = 2; i < res_ang_vel_vec_reverse.size() - 1; i++) {
+    //    Point3d tmp =
+    //        -(T / 2) * (res_ang_vel_vec_reverse[i] + res_ang_vel_vec_reverse[i - 1]) +
+    //        (U * T / 2 - 1) * res_ang_vel_vec_another[i - 1] +
+    //        (U * T / 2) * res_ang_vel_vec_another[i - 2];
+    //    res_ang_vel_vec_another.push_back(tmp);
+    //};
+
+
+    //for (int i = 1; i < res_ang_vel_vec_another.size(); i++) res_ang_vel_vec_last.push_back(res_ang_vel_vec_another[res_ang_vel_vec_another.size() - i]);
+
+    //for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);
+    for (int i = 1; i < this->states.size(); i++) { 
+        this->states[i].change_orient(res_orient_vec[i]);
+        this->states[i].change_anqular_vel(res_ang_vel_vec[i]);
+    }
+
 };
 
 void Test_model::smooth_vel(double T, double U) {

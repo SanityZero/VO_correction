@@ -11,7 +11,7 @@ private:
     Point2d part(double dist);
     State_type orientation(double dist = 0);
     void generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
-        double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel);
+    double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel);
 
 
     //модель движения
@@ -24,7 +24,7 @@ private:
     void generate_gt_points(double delta_m, int point_num = 0);
     void generate_states(double delta_m, int point_num = 0);
     void generate_timestaps(double delta_m, double vel);
-    void smooth_anqular_vel(double T, double U);
+    void smooth_anqular_vel(double T, double U1, double U2);
     void smooth_vel(double T, double U);
     void regenerate_gt_points();
 
@@ -70,20 +70,21 @@ public:
         double stddev_angle,
         double average_vel,
         double T,
-        double U
+        double U1,
+        double U2
     ) {
         // сгенерировать трак в соответствии с ограничениями
         generate_track(max_track_parts, mean_line_length, stddev_line, mean_corner_radius, stddev_radius, mean_corner_angle, stddev_angle, average_vel);
         generate_states(dicret);
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
-        //smooth_anqular_vel(T, U);
+        smooth_anqular_vel(T, U1, U2);
         //smooth_vel(T, U/10000);
         regenerate_gt_points();
         
 
         // сгенерировать бинс данные по ограничениям, т.е. набор значений
-        generate_bins_gt(0.156);
+        generate_bins_gt(T);
         
         // расставить точки
         double grid_step = 10;
@@ -91,7 +92,7 @@ public:
             50, //border x y
             Point3d(0, 30, 0), //z_limits min_z max_z 0
             Point3d(grid_step, grid_step, grid_step), //grid_spacing
-            Point2d(0, 0.0001) //displacement
+            Point2d(0, 3) //displacement
         );
 
 

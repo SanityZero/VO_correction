@@ -50,25 +50,26 @@ int main(int argc, char** argv) {
         tm1.generate_test_model(
             2, //max_track_parts
             0.1, //dicret
-            30, //mean_line_length
-            10, //stddev_line
+            5, //mean_line_length
+            2, //stddev_line
             20, //mean_corner_radius
             10, //stddev_radius
             0 * M_PI / 180, //mean_corner_angle
             270 * M_PI / 180, //stddev_angle
             5,   //average_vel
-            0.1, //T
-            0.001 //U
-            //10 //U
+            0.156, //T
+            //0.00000156 //U
+            10, //U
+            0.05 //U
         );
         tm1.print_states("states.txt");
         tm1.print_bins_gts("bins_gt_points.txt");
-        system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        tm1.print_camera_proections();
+        //system("del /f /s /q C:\\ProgStaff\\test_generated_images");
+        //tm1.print_camera_proections();
         //tm1.show_gt();
         //waitKey(0);
-        tm1.show_bins_gt();
-        waitKey(0);
+        //tm1.show_bins_gt();
+        //waitKey(0);
         //tm1.show_gt_measures();
         system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");
         
