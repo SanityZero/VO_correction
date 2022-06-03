@@ -79,7 +79,7 @@ public:
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
         smooth_anqular_vel(T, U1, U2);
-        //smooth_vel(T, U/10000);
+        smooth_vel(T, U1/10000);
         regenerate_gt_points();
         
 

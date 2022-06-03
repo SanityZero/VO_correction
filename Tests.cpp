@@ -164,7 +164,7 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
 
         //интреполировать на них позиции, ориентации, ускорения, угловые скорости
         tmp.setPose(prev.getPose() + (next.getPose() - prev.getPose()) * interp_multi);
-        tmp.setOrient(this->states[lesser_ts_i].orient + (this->states[lesser_ts_i+1].orient - this->states[lesser_ts_i].orient) * interp_multi);
+        tmp.setOrient(this->gt_point[lesser_ts_i].getOrient() + (this->gt_point[lesser_ts_i + 1].getOrient() - this->gt_point[lesser_ts_i].getOrient()) * interp_multi);
         //tmp.setPose((1 / (1 + interp_multi)) * (prev.getPose() + interp_multi * next.getPose()));
         //tmp.setOrient((1 / (1 + interp_multi)) * (this->states[lesser_ts_i].orient + interp_multi * this->states[lesser_ts_i+1].orient));
 
@@ -175,7 +175,7 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
         Point3d accel_curr = this->states[lesser_ts_i].accel + (this->states[lesser_ts_i + 1].accel - this->states[lesser_ts_i].accel) * interp_multi;
         //Point3d w_curr = prev.getW() * (1 - interp_multi) + next.getW();
         //Point3d accel_curr = prev.getAccel() * (1 - interp_multi) + next.getAccel();
-        Point3d ang_vec = tmp.getOrient();
+        Point3d ang_vec = -tmp.getOrient();
         Point3d e1 = rotateP3d(Point3d(1, 0, 0), ang_vec);
         Point3d e2 = rotateP3d(Point3d(0, 1, 0), ang_vec);
         Point3d e3 = rotateP3d(Point3d(0, 0, 1), ang_vec);
@@ -321,74 +321,112 @@ void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
     vector<Point3d> res_orient_vec;
     vector<Point3d> res_ang_vel_vec;
     
-    res_orient_vec.push_back(this->get_state(0).orient);
-    res_orient_vec.push_back(this->get_state(1).orient);
-    res_orient_vec.push_back(this->get_state(2).orient);
-    res_orient_vec.push_back(this->get_state(3).orient);
-    res_ang_vel_vec.push_back(this->get_state(0).anqular_vel);
-    res_ang_vel_vec.push_back(this->get_state(1).anqular_vel);
-    res_ang_vel_vec.push_back(this->get_state(2).anqular_vel);
-    res_ang_vel_vec.push_back(this->get_state(3).anqular_vel);
+    for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
+    for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
 
-    for (int i = 3; i < this->states.size(); i++) {
-        double alpha = -(T / 2);
-        Point3d tmp =
-            alpha * alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
-            - alpha * alpha * (alpha*U2 +  U1) * res_ang_vel_vec[i - 1] - alpha * alpha*(U1 + 2*alpha*U2) * res_ang_vel_vec[i - 2] - U2 * alpha * alpha * alpha * res_ang_vel_vec[i - 3]
-            -  res_orient_vec[i - 1] +  U2 * alpha * alpha * res_orient_vec[i - 2] + U2 * alpha * alpha * res_orient_vec[i - 3];
- 
-        Point3d tmp2 = 
-            alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
-            - (1 + alpha * U1) * res_ang_vel_vec[i - 1] - U1 * alpha * res_ang_vel_vec[i - 2]
-            - U2 * alpha * res_orient_vec[i - 1] - U2 * alpha * res_orient_vec[i - 2];
+    int window = 30;
+    int n = res_orient_vec.size() - 1;
+    if (fmod(window, 2) == 0) window++;
+    int hw = (window - 1) / 2;
+    vector<Point3d> res_orient_vec_last;
+    int k1, k2, z;
+    for (int i = 1; i < n; i++) {
+        Point3d tmp = Point3d(0.0, 0.0, 0.0);
+        if (i < hw) {
+            k1 = 0;
+            k2 = 2 * i;
+            z = k2 + 1;
+        }
+        else if ((i + hw) > (n - 1)) {
+            k1 = i - n + i + 1;
+            k2 = n - 1;
+            z = k2 - k1 + 1;
+        }
+        else {
+            k1 = i - hw;
+            k2 = i + hw;
+            z = window;
+        }
 
-        res_orient_vec.push_back(tmp);
-        res_ang_vel_vec.push_back(tmp2);
-    };
-
-    //for (int i = 1; i < this->states.size(); i++) res_ang_vel_vec_reverse.push_back(res_ang_vel_vec[res_ang_vel_vec.size() - i]);
-
-
-    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[0]);
-    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[1]);
-    //for (int i = 2; i < res_ang_vel_vec_reverse.size() - 1; i++) {
-    //    Point3d tmp =
-    //        -(T / 2) * (res_ang_vel_vec_reverse[i] + res_ang_vel_vec_reverse[i - 1]) +
-    //        (U * T / 2 - 1) * res_ang_vel_vec_another[i - 1] +
-    //        (U * T / 2) * res_ang_vel_vec_another[i - 2];
-    //    res_ang_vel_vec_another.push_back(tmp);
-    //};
-
-
-    //for (int i = 1; i < res_ang_vel_vec_another.size(); i++) res_ang_vel_vec_last.push_back(res_ang_vel_vec_another[res_ang_vel_vec_another.size() - i]);
-
-    //for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);
-    for (int i = 1; i < this->states.size(); i++) { 
-        this->states[i].change_orient(res_orient_vec[i]);
-        this->states[i].change_anqular_vel(res_ang_vel_vec[i]);
+        for (int j = k1; j <= k2; j++) {
+            tmp = tmp + res_orient_vec[j];
+        }
+        res_orient_vec_last.push_back(tmp / z);
     }
 
+    int window2 = 100;
+    int n2 = res_ang_vel_vec.size() - 1;
+    int hw2 = (window2 - 1) / 2;
+    vector<Point3d> res_ang_vel_vec_last;
+    int k12, k22, z2;
+    for (int i = 1; i < n2; i++) {
+        Point3d tmp = Point3d(0.0, 0.0, 0.0);
+        if (i < hw2) {
+            k12 = 0;
+            k22 = 2 * i;
+            z2 = k22 + 1;
+        }
+        else if ((i + hw2) > (n2 - 1)) {
+            k12 = i - n2 + i + 1;
+            k22 = n2 - 1;
+            z2 = k22 - k12 + 1;
+        }
+        else {
+            k12 = i - hw2;
+            k22 = i + hw2;
+            z2 = window2;
+        }
+
+        for (int j = k12; j <= k22; j++) {
+            tmp = tmp + res_ang_vel_vec[j];
+        }
+        res_ang_vel_vec_last.push_back(tmp / z2);
+    };
+
+    for (int i = 1; i < res_ang_vel_vec_last.size()-1; i++) this->states[i].change_anqular_vel(res_ang_vel_vec_last[i]);
+    for (int i = 1; i < res_orient_vec_last.size()-1; i++) this->states[i].change_orient(res_orient_vec_last[i]);
 };
 
 void Test_model::smooth_vel(double T, double U) {
     vector<Point3d> res_vel_vec;
-    vector<Point3d> res_accel_vec;
 
-    res_vel_vec.push_back(this->get_state(0).vel);
-    res_vel_vec.push_back(this->get_state(1).vel);
-    res_accel_vec.push_back(this->get_state(0).accel);
-    res_accel_vec.push_back(this->get_state(1).accel);
-    for (int i = 2; i < this->states.size(); i++) {
-        Point3d old = this->get_state(i).vel;
-        Point3d anq_tmp =
-            -(T / 2) * (this->get_state(i).vel + this->get_state(i - 1).vel) +
-            (U * T / 2 + 1) * res_vel_vec[i - 1] +
-            (U * T / 2) * res_vel_vec[i - 2];
-        res_vel_vec.push_back(anq_tmp);
-        res_accel_vec.push_back((res_vel_vec[i] - res_vel_vec[i - 1]) / T);
-    };
-    for (int i = 1; i < this->states.size(); i++) this->states[i].change_vel(res_vel_vec[i]);
-    for (int i = 1; i < this->states.size(); i++) this->states[i].change_accel(res_accel_vec[i]);
+    for (int i = 1; i < this->states.size() - 1; i++) res_vel_vec.push_back(this->get_state(i).vel);
+
+    int window = 30;
+    int n = res_vel_vec.size() - 1;
+    if (fmod(window, 2) == 0) window++;
+    int hw = (window - 1) / 2;
+    vector<Point3d> res_vel_vec_last;
+    int k1, k2, z;
+    for (int i = 1; i < n; i++) {
+        Point3d tmp = Point3d(0.0, 0.0, 0.0);
+        if (i < hw) {
+            k1 = 0;
+            k2 = 2 * i;
+            z = k2 + 1;
+        }
+        else if ((i + hw) > (n - 1)) {
+            k1 = i - n + i + 1;
+            k2 = n - 1;
+            z = k2 - k1 + 1;
+        }
+        else {
+            k1 = i - hw;
+            k2 = i + hw;
+            z = window;
+        }
+
+        for (int j = k1; j <= k2; j++) {
+            tmp = tmp + res_vel_vec[j];
+        }
+        res_vel_vec_last.push_back(tmp / z);
+    }
+
+    
+
+    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_vel(res_vel_vec_last[i]);
+    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_accel(
+        Point3d(0, 0, 9.80665) + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestaps[i] - this->timestaps[i - 1]));
 };
 
 void Test_model::print_states(string filename) {
@@ -895,4 +933,116 @@ void old_motion_Test(double accel_std, double sko, double delta, double duration
         test_3.print_traect(3, "screen save", true);
     };
 };
+
+
+// ЭТО ПАМЯТНИК ЧЕЛОВЕЧСКОЙ ГЛУПОСТИ
+//void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
+//    vector<Point3d> res_orient_vec;
+//    vector<Point3d> res_ang_vel_vec;
+//
+//    for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
+//    for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
+//
+//    //res_orient_vec.push_back(this->get_state(0).orient);
+//    //res_orient_vec.push_back(this->get_state(1).orient);
+//    //res_orient_vec.push_back(this->get_state(2).orient);
+//    //res_orient_vec.push_back(this->get_state(3).orient);
+//    //res_ang_vel_vec.push_back(this->get_state(0).anqular_vel);
+//    //res_ang_vel_vec.push_back(this->get_state(1).anqular_vel);
+//    //res_ang_vel_vec.push_back(this->get_state(2).anqular_vel);
+//    //res_ang_vel_vec.push_back(this->get_state(3).anqular_vel);
+//
+//    //for (int i = 3; i < this->states.size(); i++) {
+//    //    double alpha = -(T / 2);
+//    //    Point3d tmp =
+//    //        alpha * alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
+//    //        - alpha * alpha * (alpha*U2 +  U1) * res_ang_vel_vec[i - 1] - alpha * alpha*(U1 + 2*alpha*U2) * res_ang_vel_vec[i - 2] - U2 * alpha * alpha * alpha * res_ang_vel_vec[i - 3]
+//    //        -  res_orient_vec[i - 1] +  U2 * alpha * alpha * res_orient_vec[i - 2] + U2 * alpha * alpha * res_orient_vec[i - 3];
+//
+//    //    Point3d tmp2 = 
+//    //        alpha * (this->get_state(i).orient + this->get_state(i - 1).orient)
+//    //        - (1 + alpha * U1) * res_ang_vel_vec[i - 1] - U1 * alpha * res_ang_vel_vec[i - 2]
+//    //        - U2 * alpha * res_orient_vec[i - 1] - U2 * alpha * res_orient_vec[i - 2];
+//
+//    //    res_orient_vec.push_back(tmp);
+//    //    res_ang_vel_vec.push_back(tmp2);
+//    //};
+//
+//    int window = 30;
+//    int n = res_orient_vec.size() - 1;
+//    if (fmod(window, 2) == 0) window++;
+//    int hw = (window - 1) / 2;
+//    vector<Point3d> res_orient_vec_last;
+//    int k1, k2, z;
+//    for (int i = 1; i < n; i++) {
+//        Point3d tmp = Point3d(0.0, 0.0, 0.0);
+//        if (i < hw) {
+//            k1 = 0;
+//            k2 = 2 * i;
+//            z = k2 + 1;
+//        }
+//        else if ((i + hw) > (n - 1)) {
+//            k1 = i - n + i + 1;
+//            k2 = n - 1;
+//            z = k2 - k1 + 1;
+//        }
+//        else {
+//            k1 = i - hw;
+//            k2 = i + hw;
+//            z = window;
+//        }
+//
+//        for (int j = k1; j <= k2; j++) {
+//            tmp = tmp + res_orient_vec[j];
+//        }
+//        res_orient_vec_last.push_back(tmp / z);
+//    }
+//
+//    int window2 = 60;
+//    int n2 = res_ang_vel_vec.size() - 1;
+//    int hw2 = (window2 - 1) / 2;
+//    vector<Point3d> res_ang_vel_vec_last;
+//    int k12, k22, z2;
+//    for (int i = 1; i < n2; i++) {
+//        Point3d tmp = Point3d(0.0, 0.0, 0.0);
+//        if (i < hw2) {
+//            k12 = 0;
+//            k22 = 2 * i;
+//            z2 = k22 + 1;
+//        }
+//        else if ((i + hw2) > (n2 - 1)) {
+//            k12 = i - n2 + i + 1;
+//            k22 = n2 - 1;
+//            z2 = k22 - k12 + 1;
+//        }
+//        else {
+//            k12 = i - hw2;
+//            k22 = i + hw2;
+//            z2 = window2;
+//        }
+//
+//        for (int j = k12; j <= k22; j++) {
+//            tmp = tmp + res_ang_vel_vec[j];
+//        }
+//        res_ang_vel_vec_last.push_back(tmp / z2);
+//    }
+//    //for (int i = 1; i < this->states.size(); i++) res_ang_vel_vec_reverse.push_back(res_ang_vel_vec[res_ang_vel_vec.size() - i]);
+//
+//
+//    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[0]);
+//    //res_ang_vel_vec_another.push_back(res_ang_vel_vec_reverse[1]);
+//    //for (int i = 2; i < res_ang_vel_vec_reverse.size() - 1; i++) {
+//    //    Point3d tmp =
+//    //        -(T / 2) * (res_ang_vel_vec_reverse[i] + res_ang_vel_vec_reverse[i - 1]) +
+//    //        (U * T / 2 - 1) * res_ang_vel_vec_another[i - 1] +
+//    //        (U * T / 2) * res_ang_vel_vec_another[i - 2];
+//    //    res_ang_vel_vec_another.push_back(tmp);
+//    //};
+//
+//
+//    //for (int i = 1; i < res_ang_vel_vec_another.size(); i++) res_ang_vel_vec_last.push_back(res_ang_vel_vec_another[res_ang_vel_vec_another.size() - i]);
+//
+//    //for (int i = 1; i < this->states.size(); i++) this->states[i].change_orient(res_orient_vec[i]);
+//    for (int i = 1; i < res_ang_vel_vec_last.size() - 1; i++) this->states[i].change_anqular_vel(res_ang_vel_vec_last[i]);
+//    for (int i = 1; i < res_orient_vec_last.size() - 1; i++) this->states[i].change_orient(res_orient_vec_last[i]);
 ////END FILE
