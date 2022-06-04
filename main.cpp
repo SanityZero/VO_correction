@@ -48,15 +48,16 @@ int main(int argc, char** argv) {
     if (TEST_MOTION) {
         Test_model tm1;
         tm1.generate_test_model(
-            2, //max_track_parts
+            4, //max_track_parts
             0.1, //dicret
-            20, //mean_line_length
-            10, //stddev_line
-            20, //mean_corner_radius
-            10, //stddev_radius
-            0 * M_PI / 180, //mean_corner_angle
-            270 * M_PI / 180, //stddev_angle
-            5,   //average_vel
+            30, //mean_line_length
+            40, //stddev_line
+            30, //mean_corner_radius
+            80, //stddev_radius
+            10 * M_PI / 180, //min_corner_angle
+            200 * M_PI / 180, //max_corner_angle
+            4,   //average_vel
+            5,   //stddev_vel
             0.156, //T
             //0.00000156 //U
             11, //U
@@ -66,8 +67,6 @@ int main(int argc, char** argv) {
         tm1.print_bins_gts("bins_gt_points.txt");
         //system("del /f /s /q C:\\ProgStaff\\test_generated_images");
         //tm1.print_camera_proections();
-        tm1.show_gt();
-        waitKey(0);
         tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();

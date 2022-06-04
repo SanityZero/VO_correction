@@ -204,19 +204,20 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
     };
 };
 
-void Test_model::generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
-    double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel)
+void Test_model::generate_track(int max_track_parts, double min_line_length, double max_line_length, double min_corner_radius,
+    double max_corner_radius, double min_corner_angle, double max_corner_angle, double min_vel, double max_vel)
 {
     track.push_back(Track_part_type(
         Point2d(0, 0),
         Point2d(-1, 0),
-        mean_line_length,
-        stddev_line,
-        mean_corner_radius,
-        stddev_radius,
-        mean_corner_angle,
-        stddev_angle,
-        average_vel
+        min_line_length,
+        max_line_length,
+        min_corner_radius,
+        max_corner_radius,
+        min_corner_angle,
+        max_corner_angle,
+        min_vel,
+        max_vel
     ));
     track_length.push_back(track[0].len());
     this->total_length = track_length[0];
@@ -224,13 +225,14 @@ void Test_model::generate_track(int max_track_parts, double mean_line_length, do
         track.push_back(Track_part_type(
             this->track[i - 1].end,
             this->track[i - 1].exit_vec,
-            mean_line_length,
-            stddev_line,
-            mean_corner_radius,
-            stddev_radius,
-            mean_corner_angle,
-            stddev_angle,
-            average_vel
+            min_line_length,
+            max_line_length,
+            min_corner_radius,
+            max_corner_radius,
+            min_corner_angle,
+            max_corner_angle,
+            min_vel,
+            max_vel
         ));
         track_length.push_back(track[i].len());
         this->total_length += track_length[i];
@@ -321,38 +323,38 @@ void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
     vector<Point3d> res_orient_vec;
     vector<Point3d> res_ang_vel_vec;
     
-    for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
+    //for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
     for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
 
-    int window = 30;
-    int n = res_orient_vec.size() - 1;
-    if (fmod(window, 2) == 0) window++;
-    int hw = (window - 1) / 2;
-    vector<Point3d> res_orient_vec_last;
-    int k1, k2, z;
-    for (int i = 1; i < n; i++) {
-        Point3d tmp = Point3d(0.0, 0.0, 0.0);
-        if (i < hw) {
-            k1 = 0;
-            k2 = 2 * i;
-            z = k2 + 1;
-        }
-        else if ((i + hw) > (n - 1)) {
-            k1 = i - n + i + 1;
-            k2 = n - 1;
-            z = k2 - k1 + 1;
-        }
-        else {
-            k1 = i - hw;
-            k2 = i + hw;
-            z = window;
-        }
+    //int window = 30;
+    //int n = res_orient_vec.size() - 1;
+    //if (fmod(window, 2) == 0) window++;
+    //int hw = (window - 1) / 2;
+    //vector<Point3d> res_orient_vec_last;
+    //int k1, k2, z;
+    //for (int i = 1; i < n; i++) {
+    //    Point3d tmp = Point3d(0.0, 0.0, 0.0);
+    //    if (i < hw) {
+    //        k1 = 0;
+    //        k2 = 2 * i;
+    //        z = k2 + 1;
+    //    }
+    //    else if ((i + hw) > (n - 1)) {
+    //        k1 = i - n + i + 1;
+    //        k2 = n - 1;
+    //        z = k2 - k1 + 1;
+    //    }
+    //    else {
+    //        k1 = i - hw;
+    //        k2 = i + hw;
+    //        z = window;
+    //    }
 
-        for (int j = k1; j <= k2; j++) {
-            tmp = tmp + res_orient_vec[j];
-        }
-        res_orient_vec_last.push_back(tmp / z);
-    }
+    //    for (int j = k1; j <= k2; j++) {
+    //        tmp = tmp + res_orient_vec[j];
+    //    }
+    //    res_orient_vec_last.push_back(tmp / z);
+    //}
 
     int window2 = 100;
     int n2 = res_ang_vel_vec.size() - 1;
@@ -384,7 +386,7 @@ void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
     };
 
     for (int i = 1; i < res_ang_vel_vec_last.size()-1; i++) this->states[i].change_anqular_vel(res_ang_vel_vec_last[i]);
-    for (int i = 1; i < res_orient_vec_last.size()-1; i++) this->states[i].change_orient(res_orient_vec_last[i]);
+    //for (int i = 1; i < res_orient_vec_last.size()-1; i++) this->states[i].change_orient(res_orient_vec_last[i]);
 };
 
 void Test_model::smooth_vel(double T, double U) {
@@ -688,6 +690,17 @@ void Test_model::show_bins_gt(bool pause_enable) {
     Point2d scale = Point2d(max_x - min_x, max_y - min_y);
     double im_scale = scale.x > scale.y ? (img_size.x - 2 * border) / scale.x : (img_size.y - 2 * border) / scale.y;
     Point2i zero_offset = -Point2i(min_x * im_scale, min_y * im_scale);
+
+    for (int i = 1; i < this->old_gt_point.size()-1; i++)
+    {
+        Point2d next = Point2d(this->old_gt_point[i].lon, this->old_gt_point[i].lat);
+        Point2d prev = Point2d(this->old_gt_point[i - 1].lon, this->old_gt_point[i - 1].lat);
+
+        Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
+        Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
+        line(img, beg, end, Scalar(128, 128, 128), 3);
+        //circle(img, beg, 6, Scalar(0, 0, 0));
+    };
 
     for (int i = 1; i < this->bins_gt_points.size(); i++)
     {

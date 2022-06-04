@@ -85,7 +85,8 @@ public:
         double stddev_radius,
         double min_corner_angle,
         double max_corner_angle,
-        double average_vel
+        double average_vel,
+        double stddev_vel
     );
 
     double len();

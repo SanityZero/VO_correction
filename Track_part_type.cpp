@@ -158,19 +158,23 @@ double Track_part_type::len() {
 Track_part_type::Track_part_type(
     cv::Point2d start,
     cv::Point2d start_p_vec,
-    double mean_line_length,
-    double stddev_line,
-    double mean_corner_radius,
-    double stddev_radius,
+    double min_line_length,
+    double max_line_length,
+    double min_corner_radius,
+    double max_corner_radius,
     double min_corner_angle,
     double max_corner_angle,
-    double average_vel
+    double min_vel,
+    double max_vel
 ) {
     std::random_device rd;
     std::default_random_engine generator(rd());
-    std::normal_distribution<double> distribution_line(mean_line_length, stddev_line);
-    std::normal_distribution<double> distribution_radius(mean_corner_radius, stddev_radius);
+    std::uniform_real_distribution<double> distribution_line(min_line_length, max_line_length);
+    std::uniform_real_distribution<double> distribution_radius(min_corner_radius, max_corner_radius);
+    std::uniform_real_distribution<double> distribution_vel(min_vel, max_vel);
+
     std::uniform_real_distribution<double> distribution_angle(min_corner_angle, max_corner_angle);
+   
 
     double min_radius = 10;
     double max_radius = 500;
@@ -178,21 +182,24 @@ Track_part_type::Track_part_type(
     double max_length = 500;
     double min_angle = 30;
 
+    double vel = distribution_vel(generator);
+    //while (vel <= 0) vel = distribution_vel(generator);
+
     double line_len = distribution_line(generator);
-    while (line_len < 0 || line_len > max_length) line_len = distribution_line(generator);
-    double line_time = line_len / average_vel;
+    //while (line_len < 0 || line_len > max_length) line_len = distribution_line(generator);
+    double line_time = line_len / vel;
     this->line = Line_track_type(start, cv::Point2d(start.x + start_p_vec.x * line_len, start.y + start_p_vec.y * line_len), line_time);
 
     double radius = distribution_radius(generator);
-    while (radius < 0) radius = distribution_radius(generator);
+    //while (radius < 0) radius = distribution_radius(generator);
 
     double angle = distribution_angle(generator);
     angle = fmod(angle, 2 * M_PI);
-    angle = abs(angle) > 0 ? angle : min_angle;
+    //angle = abs(angle) > 0 ? angle : min_angle;
     cv::Point2d center = this->line.end + get_norm_vect(this->line.end, this->line.start) * radius;
     cv::Point2d end = center + get_arc_end_point(this->line.end, center, angle);// not sure
 
-    double corner_time = (length(center - this->line.end) * angle) / average_vel;
+    double corner_time = (length(center - this->line.end) * angle) / vel;
     this->turn = Corner_type(this->line.end, end, center, angle, corner_time, start_p_vec);
     this->exit_vec = get_norm_vect(this->turn.end, this->turn.center);
     this->end = this->turn.end;
