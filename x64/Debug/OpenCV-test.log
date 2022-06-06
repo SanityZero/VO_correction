@@ -111,8 +111,8 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\ErEstVO.h(69,42): warning C4244: а�
               _Tp=int
           ]
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\ErEstVO.h(75,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(108,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(109,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(243,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(244,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(34,81): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
           with
           [
@@ -276,17 +276,37 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(711,38): warning C4244: а
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(719,102): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(721,76): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(719,51): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(721,38): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
           with
           [
               _Tp=int
           ]
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(736,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(722,76): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+          with
+          [
+              _Tp=int
+          ]
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(722,38): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+          with
+          [
+              _Tp=int
+          ]
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(730,102): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+          with
+          [
+              _Tp=int
+          ]
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(730,51): warning C4244: аргумент: преобразование "double" в "_Tp", возможна потеря данных
+          with
+          [
+              _Tp=int
+          ]
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(747,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
   main.cpp
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\ErEstVO.h(47,49): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
           with
@@ -483,7 +503,7 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(132,34): warning C424
               _Tp=int
           ]
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(144,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(108,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(109,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(243,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.h(244,26): warning C4838: Преобразование из "int" в "double" требует сужающего преобразования.
   Создание кода...
   OpenCV-test.vcxproj -> C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\Actual_NIRS.exe

@@ -150,9 +150,9 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
         double bins_time = bins_deltatime * i;
         int lesser_ts_i = 0;
         double interp_multi = 0;
-        for (int ts_i = 0; ts_i < this->timestaps.size() - 1; ts_i++) {
-            if ((this->timestaps[ts_i] <= bins_time) && (this->timestaps[ts_i + 1] >= bins_time)) {
-                interp_multi = abs((bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - this->timestaps[ts_i]));
+        for (int ts_i = 0; ts_i < this->timestamps.size() - 1; ts_i++) {
+            if ((this->timestamps[ts_i] <= bins_time) && (this->timestamps[ts_i + 1] >= bins_time)) {
+                interp_multi = abs((bins_time - this->timestamps[ts_i]) / (this->timestamps[ts_i + 1] - this->timestamps[ts_i]));
                 //interp_multi = abs((bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - bins_time));
                 vec_i.push_back(interp_multi);
                 lesser_ts_i = ts_i;
@@ -241,7 +241,7 @@ void Test_model::generate_track(int max_track_parts, double min_line_length, dou
 
 void  Test_model::regenerate_gt_points() {
     for (int i = 1; i < this->gt_point.size(); i++) {
-        double deltatime = (this->timestaps[i] - this->timestaps[i - 1]);
+        double deltatime = (this->timestamps[i] - this->timestamps[i - 1]);
         this->gt_point[i].lat = this->gt_point[i - 1].lat + this->states[i].vel.y * deltatime;
         this->gt_point[i].lon = this->gt_point[i - 1].lon + this->states[i].vel.x * deltatime;
         this->gt_point[i].alt = this->gt_point[i - 1].alt + this->states[i].vel.z * deltatime;
@@ -303,11 +303,11 @@ void Test_model::generate_s_points(
 
 void Test_model::generate_timestaps(double delta_m, double vel) {
     double deltatime = delta_m / vel;
-    this->timestaps.push_back(0.0);
+    this->timestamps.push_back(0.0);
     for (int i = 1; i < this->states.size(); i++) {
-        this->timestaps.push_back(this->timestaps[i - 1] + deltatime);
+        this->timestamps.push_back(this->timestamps[i - 1] + deltatime);
     };
-    this->total_time = this->timestaps[this->states.size()-1];
+    this->total_time = this->timestamps[this->states.size()-1];
 };
 
 State_type Test_model::get_state(int number) {
@@ -428,7 +428,7 @@ void Test_model::smooth_vel(double T, double U) {
 
     for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_vel(res_vel_vec_last[i]);
     for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_accel(
-        Point3d(0, 0, 9.80665) + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestaps[i] - this->timestaps[i - 1]));
+        Point3d(0, 0, 9.80665) + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]));
 };
 
 void Test_model::print_states(string filename) {
@@ -699,6 +699,17 @@ void Test_model::show_bins_gt(bool pause_enable) {
         Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
         Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
         line(img, beg, end, Scalar(128, 128, 128), 3);
+        //circle(img, beg, 6, Scalar(0, 0, 0));
+    };
+
+    for (int i = 1; i < this->eval_old_gt_point.size() - 1; i++)
+    {
+        Point2d next = Point2d(this->eval_old_gt_point[i].lon, this->eval_old_gt_point[i].lat);
+        Point2d prev = Point2d(this->eval_old_gt_point[i - 1].lon, this->eval_old_gt_point[i - 1].lat);
+
+        Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
+        Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
+        line(img, beg, end, Scalar(256, 128, 128), 3);
         //circle(img, beg, 6, Scalar(0, 0, 0));
     };
 
