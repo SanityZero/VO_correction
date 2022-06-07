@@ -33,7 +33,7 @@ Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat
     Mat cam_point = Ex_calib * point_Pose;
     Point2i point_int = Point2i(cam_point.at<double>(0, 0), cam_point.at<double>(1, 0));
 
-    if ((point_int.x < this->frame_size.x) && (point_int.x > 0) && (point_int.y < this->frame_size.y) && (point_int.y > 0)) {
+    if ((point_int.x < this->frame_size.x) && (point_int.x > -frame_size.x) && (point_int.y < this->frame_size.y) && (point_int.y > -frame_size.y)) {
         return point_int;
     }
     else {
@@ -82,7 +82,7 @@ void Test_model::generate_camera_proections() {
 
 Mat Test_model::generateExCalibM(int i) {
     Point3d angles = this->bins_gt_points[i].getOrient();
-    double a = angles.x, b = angles.y, c = angles.z;
+    double a = angles.x, b = angles.y, c = angles.z + M_PI/2;
     double rotMat_ar[3][3] = {
         {cos(c) * cos(b), -cos(b) * sin(b), sin(b)},
         {cos(a) * sin(b) + cos(c) * sin(b) * sin(a), cos(c) * cos(a) - sin(a) * sin(b) * sin(b), -cos(b) * sin(a)},
@@ -109,24 +109,24 @@ Mat Test_model::generateExCalibM(int i) {
 
     Mat tmp = -R_t * t;
 
-    //double M_ar[4][4] = {
-    //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
-    //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
-    //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
-    //     {0, 0, 0, 1}
-    //};
+    double M_ar[4][4] = {
+         {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
+         {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
+         {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+         {0, 0, 0, 1}
+    };
     //double M_ar[4][4] = {
     //     {R_t.at<double>(0, 0), R_t.at<double>(1, 0), R_t.at<double>(2, 0), tmp.at<double>(0, 0)},
     //     {R_t.at<double>(0, 1), R_t.at<double>(1, 1), R_t.at<double>(2, 1), tmp.at<double>(1, 0)},
     //     {R_t.at<double>(0, 2), R_t.at<double>(1, 2), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
     //     {0, 0, 0, 1}
     //};
-    double M_ar[4][4] = {
-        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
-        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
-        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
-        {0, 0, 0, 1}
-    };
+    //double M_ar[4][4] = {
+    //    {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
+    //    {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
+    //    {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
+    //    {0, 0, 0, 1}
+    //};
     Mat M = Mat(4, 4, CV_64F, M_ar);
 
 
@@ -702,16 +702,16 @@ void Test_model::show_bins_gt(bool pause_enable) {
         //circle(img, beg, 6, Scalar(0, 0, 0));
     };
 
-    for (int i = 1; i < this->eval_old_gt_point.size() - 1; i++)
-    {
-        Point2d next = Point2d(this->eval_old_gt_point[i].lon, this->eval_old_gt_point[i].lat);
-        Point2d prev = Point2d(this->eval_old_gt_point[i - 1].lon, this->eval_old_gt_point[i - 1].lat);
+    //for (int i = 1; i < this->eval_old_gt_point.size() - 1; i++)
+    //{
+    //    Point2d next = Point2d(this->eval_old_gt_point[i].lon, this->eval_old_gt_point[i].lat);
+    //    Point2d prev = Point2d(this->eval_old_gt_point[i - 1].lon, this->eval_old_gt_point[i - 1].lat);
 
-        Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
-        Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
-        line(img, beg, end, Scalar(256, 128, 128), 3);
-        //circle(img, beg, 6, Scalar(0, 0, 0));
-    };
+    //    Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
+    //    Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
+    //    line(img, beg, end, Scalar(256, 128, 128), 3);
+    //    //circle(img, beg, 6, Scalar(0, 0, 0));
+    //};
 
     for (int i = 1; i < this->bins_gt_points.size(); i++)
     {

@@ -54,10 +54,10 @@ int main(int argc, char** argv) {
             40, //stddev_line
             30, //mean_corner_radius
             80, //stddev_radius
-            10 * M_PI / 180, //min_corner_angle
+            90 * M_PI / 180, //min_corner_angle
             200 * M_PI / 180, //max_corner_angle
-            4,   //average_vel
-            5,   //stddev_vel
+            2,   //average_vel
+            7,   //stddev_vel
             0.156, //T
             //0.00000156 //U
             11, //U
@@ -65,8 +65,8 @@ int main(int argc, char** argv) {
         );
         tm1.print_states("states.txt");
         tm1.print_bins_gts("bins_gt_points.txt");
-        //system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        //tm1.print_camera_proections();
+        system("del /f /s /q C:\\ProgStaff\\test_generated_images");
+        tm1.print_camera_proections();
         tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();

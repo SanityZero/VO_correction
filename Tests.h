@@ -214,14 +214,7 @@ public:
         generate_gt_points(dicret);
         generate_timestaps(dicret, average_vel);
         
-        // расставить точки
-        double grid_step = 10;
-        generate_s_points(
-            50, //border x y
-            Point3d(0, 30, 0), //z_limits min_z max_z 0
-            Point3d(grid_step, grid_step, grid_step), //grid_spacing
-            Point2d(0, 3) //displacement
-        );
+        
 
         //show_gt();
         //waitKey(0);
@@ -234,6 +227,14 @@ public:
         smooth_vel(T, U1 / 10000);
         regenerate_gt_points();
 
+        // расставить точки
+        double grid_step = 30;
+        generate_s_points(
+            50, //border x y
+            Point3d(0, 30, 0), //z_limits min_z max_z 0
+            Point3d(grid_step, grid_step, grid_step), //grid_spacing
+            Point2d(0, 3) //displacement
+        );
         // сгенерировать бинс данные по ограничениям, т.е. набор значений
         generate_bins_gt(T);
 
