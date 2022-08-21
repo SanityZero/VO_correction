@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     if (TEST_MOTION) {
         Test_model tm1;
         tm1.generate_test_model(
-            4, //max_track_parts
+            1, //max_track_parts
             0.1, //dicret
             30, //mean_line_length
             40, //stddev_line
@@ -58,15 +58,15 @@ int main(int argc, char** argv) {
             200 * M_PI / 180, //max_corner_angle
             2,   //average_vel
             7,   //stddev_vel
-            0.156, //T
+            1, //T
             //0.00000156 //U
             11, //U
-            0.001 //U
+            1 //U
         );
         tm1.print_states("states.txt");
         tm1.print_bins_gts("bins_gt_points.txt");
-        system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        tm1.print_camera_proections();
+        //system("del /f /s /q C:\\ProgStaff\\test_generated_images");
+        //tm1.print_camera_proections();
         tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();

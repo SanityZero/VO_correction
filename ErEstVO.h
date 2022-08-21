@@ -185,35 +185,20 @@ inline Pose_type getGTData(string source_dir, int num) {//rad
         pose_line = pose_line.substr(pose_line.find(' ') + 1, pose_line.length());
     };
 
-    res.lat = 111134.861111 * pose_data[0];
-    res.lon = cos(M_PI * pose_data[0] / 180.0) * 111134.861111 * pose_data[1];
+    res.setPose(Point3d(
+        cos(M_PI * pose_data[0] / 180.0) * 111134.861111 * pose_data[1],
+        111134.861111 * pose_data[0],
+        pose_data[2]
+    ));
+
     //res.lon = cos(M_PI * pose_data[0] / 180.0) * 40075000 / 360;
     //res.lat = (111132.954 - 559.822 * cos(2 * pose_data[0]) + 1.175 * cos(4 * pose_data[0]))* pose_data[0];
     //res.lon = 111132.954 * cos(pose_data[0]);
 
-    res.alt = pose_data[2];
-
-    res.roll = pose_data[3];
-    res.pitch = pose_data[4];
-    res.yaw = M_PI/2 + pose_data[5];
-
-    //res.vn = pose_data[6];
-    //res.ve = pose_data[7];
-    //res.vf = pose_data[8];
-    //res.vl = pose_data[9];
-    //res.vu = pose_data[10];
-    res.ax = pose_data[11];
-    res.ay = -pose_data[12];
-    res.az = pose_data[13];
-    //res.af = pose_data[14];
-    //res.al = pose_data[15];
-    //res.au = pose_data[16];
-    res.wx = pose_data[17];
-    res.wy = pose_data[18];
-    res.wz = pose_data[19];
-    //res.wf = pose_data[20];
-    //res.wl = pose_data[21];
-    //res.wu = pose_data[22];
+    res.setOrient(Point3d(pose_data[3], pose_data[4], M_PI / 2 + pose_data[5]));
+    res.setAccel(Point3d(pose_data[11], -pose_data[12], pose_data[13]));
+    res.setW(Point3d(pose_data[17], pose_data[18], pose_data[19]));
+ 
     in_pos.close();
     return res;
 };
@@ -225,21 +210,11 @@ inline Pose_type calcDisplasment(Pose_type gt, Pose_type pose, Pose_type zero, s
     ofstream out;
     out.open(name + ".txt", ios::app);
 
-    res.lat = pose.lat - gt.lat;
-    res.lon = pose.lon - gt.lon;
-    res.alt = pose.alt - gt.alt;
+    res.setPose(pose.getPose() - gt.getPose());
+    res.setOrient(pose.getOrient() - gt.getOrient());
 
-    res.roll = pose.roll - gt.roll;
-    res.pitch = pose.pitch - gt.pitch;
-    res.yaw = pose.yaw - gt.yaw;
-
-    delta.lat = zero.lat - gt.lat;
-    delta.lon = zero.lon - gt.lon;
-    delta.alt = zero.alt - gt.alt;
-
-    delta.roll = zero.roll - gt.roll;
-    delta.pitch = zero.pitch - gt.pitch;
-    delta.yaw = zero.yaw - gt.yaw;
+    delta.setPose(zero.getPose() - gt.getPose());
+    delta.setOrient(zero.getOrient() - gt.getOrient());
 
     double per_r = 100.0 * sqrt(res.lat * res.lat + res.lon * res.lon + res.alt * res.alt);
     per_r /= sqrt(delta.lat * delta.lat + delta.lon * delta.lon + delta.alt * delta.alt);
@@ -344,16 +319,10 @@ double angle2V(Point3d a, Point3d b) { //значения углов в радианах
 
 /////////////////////////////////////////////////////
 Point3d poseDelta(Pose_type a, Pose_type b) {
-    double x = a.alt - b.alt;
-    double y = a.lon - b.lon;
-    double z = a.lat - b.lat;
-    return(Point3d(x, y, z));
+    return(a.getPose() - b.getPose());
 };
 
 /////////////////////////////////////////////////////ы
 Point3d angDelta(Pose_type a, Pose_type b) {
-    double x = a.roll - b.roll;
-    double y = a.pitch - b.pitch;
-    double z = a.yaw - b.yaw;
-    return(Point3d(x, y, z));
+    return(a.getOrient() - b.getOrient());
 };
