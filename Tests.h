@@ -3,6 +3,40 @@
 
 class Test_model {
 private:
+    string dir_name;
+    string name;
+
+    struct Test_model_restrictions {
+        string filename;
+        int max_track_parts;
+
+        double dicret;
+        double min_line_length;
+        double max_line_length;
+        double mean_corner_radius;
+
+        double stddev_radius;
+        double mean_corner_angle;
+        double stddev_angle;
+        double average_vel;
+
+        double stddev_vel;
+        double T;
+        double U1;
+        double U2;
+
+        Test_model_restrictions() {};
+        void set(string filename, vector<int> int_data, vector<double> float_data);
+        void show();       
+    } gen_restrictions;
+
+    
+    struct Test_model_track {
+
+
+    } track_model;
+
+
     //геометрическая модель
     vector<Track_part_type> track;
     vector<double> track_length;
@@ -64,6 +98,13 @@ private:
     void generate_bins_gt(double bins_deltatime);
 
 public:
+    Test_model(string name, string dir_name) {
+        this->name = name;
+        this->dir_name = dir_name;
+    };
+
+    void read_restriction_file(string filename);
+
     void save_test_model(string filename) {
 
         //vector<Pose_type> gt_point;
@@ -91,21 +132,7 @@ public:
         //vector<double> bins_timestamps;
     };
 
-    void generate_test_model(
-        int max_track_parts,
-        double dicret,
-        double min_line_length,
-        double max_line_length,
-        double mean_corner_radius,
-        double stddev_radius,
-        double mean_corner_angle,
-        double stddev_angle,
-        double average_vel,
-        double stddev_vel,
-        double T,
-        double U1,
-        double U2
-    );
+    void generate_test_model(string gen_restr_filename = "");
 
 
     void show_gt(string mode = "screen", bool pause_enable = false);

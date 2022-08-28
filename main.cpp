@@ -46,31 +46,33 @@ int main(int argc, char** argv) {
     };
 
     if (TEST_MOTION) {
-        Test_model tm1;
-        tm1.generate_test_model(
-            1, //max_track_parts
-            0.1, //dicret
-            30, //mean_line_length
-            40, //stddev_line
-            30, //mean_corner_radius
-            80, //stddev_radius
-            90 * M_PI / 180, //min_corner_angle
-            200 * M_PI / 180, //max_corner_angle
-            2,   //average_vel
-            7,   //stddev_vel
-            1, //T
-            //0.00000156 //U
-            11, //U
-            1 //U
-        );
-        tm1.print_states("states.txt");
-        tm1.print_bins_gts("bins_gt_points.txt");
-        //system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        //tm1.print_camera_proections();
-        tm1.show_bins_gt();
+        Test_model tm1("test1", "C:\\ProgStaff\\NIRS_models\\test1\\");
+
+        //tm1.read_restriction_file();
+        tm1.generate_test_model();
+        //    1, //max_track_parts
+        //    0.1, //dicret
+        //    30, //mean_line_length
+        //    40, //stddev_line
+        //    30, //mean_corner_radius
+        //    80, //stddev_radius
+        //    90 * M_PI / 180, //min_corner_angle
+        //    200 * M_PI / 180, //max_corner_angle
+        //    2,   //average_vel
+        //    7,   //stddev_vel
+        //    1, //T
+        //    //0.00000156 //U
+        //    11, //U
+        //    1 //U
+        //);
+        //tm1.print_states("C:/ProgStaff/NIRS_models/test1/states.txt");
+        //tm1.print_bins_gts("C:/ProgStaff/NIRS_models/test1/bins_gt_points.txt");
+        ////system("del /f /s /q C:\\ProgStaff\\test_generated_images");
+        ////tm1.print_camera_proections();
+        //tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();
-        system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");
+        //system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");
         
     };
 

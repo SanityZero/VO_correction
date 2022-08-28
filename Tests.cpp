@@ -22,26 +22,100 @@ using namespace std;
 //    
 //};
 
-void Test_model::generate_test_model(
-    int max_track_parts,
-    double dicret,
-    double min_line_length,
-    double max_line_length,
-    double mean_corner_radius,
-    double stddev_radius,
-    double mean_corner_angle,
-    double stddev_angle,
-    double average_vel,
-    double stddev_vel,
-    double T,
-    double U1,
-    double U2
-) {
+void Test_model::read_restriction_file(string filename) {
+    vector<int> int_data;
+    vector<double> float_data;
+
+    string separator = ":\t";
+
+    fstream restr_file;
+    restr_file.open(filename, ios::in); //open a file to perform read operation using file object
+    if (restr_file.is_open()) { //checking whether the file is open
+        string tp;
+        while (getline(restr_file, tp)) { //read data from file object and put it into string.
+            //cout << "~)\t" << tp.substr(tp.find(separator) + separator.length()) << endl;
+            tp = tp.substr(tp.find(separator) + separator.length());
+            if (int_data.size() == 0) int_data.push_back(stoi(tp));
+            else
+                float_data.push_back(stod(tp));
+        }
+        restr_file.close(); //close the file object.
+    };
+    //for (int item : int_data) cout << "int)\t" << item << endl;
+    //for (double item : float_data) cout << "double)\t" << item << endl;
+    this->gen_restrictions.set(filename, int_data, float_data);
+    //this->gen_restrictions.show();
+};
+
+void Test_model::Test_model_restrictions::show() {
+    cout << this->filename << endl;
+    cout << "1)" << this->max_track_parts << endl;
+    cout << "2)" << this->dicret << endl;
+    cout << "3)" << this->min_line_length << endl;
+    cout << "4)" << this->max_line_length << endl;
+    cout << "5)" << this->mean_corner_radius << endl;
+    cout << "6)" << this->stddev_radius << endl;
+    cout << "7)" << this->mean_corner_angle << endl;
+    cout << "8)" << this->stddev_angle << endl;
+    cout << "9)" << this->average_vel << endl;
+    cout << "10)" << this->stddev_vel << endl;
+    cout << "11)" << this->T << endl;
+    cout << "12)" << this->U1 << endl;
+    cout << "13)" << this->U2 << endl;
+};
+
+void Test_model::Test_model_restrictions::set(string filename, vector<int> int_data, vector<double> float_data) {
+    this->filename = filename;
+    if ((int_data.size() == 1) and (float_data.size() == 12)) {
+        this->max_track_parts = int_data[0];
+
+        this->dicret = float_data[0];
+        this->min_line_length = float_data[1];
+        this->max_line_length = float_data[2];
+        this->mean_corner_radius = float_data[3];
+        this->stddev_radius = float_data[4];
+        this->mean_corner_angle = float_data[5] * M_PI / 180;
+        this->stddev_angle = float_data[6] * M_PI / 180;
+        this->average_vel = float_data[7];
+        this->stddev_vel = float_data[8];
+        this->T = float_data[9];
+        this->U1 = float_data[10];
+        this->U2 = float_data[11];
+    }
+    else
+        cout << "Test_model_restrictions initial arrays sizes dont match" << endl;
+
+};
+
+void Test_model::generate_test_model(string gen_restr_filename){
+    if (gen_restr_filename != "") { 
+        this->read_restriction_file(gen_restr_filename); 
+    }
+    else
+    {
+        this->read_restriction_file(this->dir_name + "init.txt");
+    }
     // сгенерировать трак в соответствии с ограничениями
-    generate_track(max_track_parts, min_line_length, max_line_length, mean_corner_radius, stddev_radius, mean_corner_angle, stddev_angle, average_vel, stddev_vel);
-    generate_states(dicret);
-    generate_gt_points(dicret);
-    generate_timestaps(dicret, average_vel);
+    generate_track(
+        this->gen_restrictions.max_track_parts, 
+        this->gen_restrictions.min_line_length, 
+        this->gen_restrictions.max_line_length, 
+        this->gen_restrictions.mean_corner_radius, 
+        this->gen_restrictions.stddev_radius, 
+        this->gen_restrictions.mean_corner_angle, 
+        this->gen_restrictions.stddev_angle, 
+        this->gen_restrictions.average_vel, 
+        this->gen_restrictions.stddev_vel);
+    generate_states(
+        this->gen_restrictions.dicret
+    );
+    generate_gt_points(
+        this->gen_restrictions.dicret
+    );
+    generate_timestaps(
+        this->gen_restrictions.dicret, 
+        this->gen_restrictions.average_vel
+    );
 
 
 
@@ -51,9 +125,15 @@ void Test_model::generate_test_model(
     integrate_old_gt();
     print_states("old_states.txt");
 
-    smooth_anqular_vel(T, U1, U2);
+    smooth_anqular_vel(
+        this->gen_restrictions.T, 
+        this->gen_restrictions.U1, 
+        this->gen_restrictions.U2
+    );
 
-    smooth_vel(T, U1 / 10000);
+    smooth_vel(
+        this->gen_restrictions.T, 
+        this->gen_restrictions.U1 / 10000);
     regenerate_gt_points();
 
     // расставить точки
@@ -65,7 +145,9 @@ void Test_model::generate_test_model(
         Point2d(0, 3) //displacement
     );
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
-    generate_bins_gt(T);
+    generate_bins_gt(
+        this->gen_restrictions.T
+    );
 
     Point2i fr_size = Point2i(1242, 373);
     Point2d cam_limits = Point2d(3, 100000000);
