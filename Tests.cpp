@@ -22,7 +22,69 @@ using namespace std;
 //    
 //};
 
-void Test_model::read_restriction_file(string filename) {
+void Test_model::Test_model_track::generate_track(Test_model::Test_model_restrictions restr) {
+
+    this->track.push_back(Track_part_type(
+        Point2d(0, 0),
+        Point2d(-1, 0),
+        restr.min_line_length,
+        restr.max_line_length,
+        restr.mean_corner_radius,
+        restr.stddev_radius,
+        restr.mean_corner_angle,
+        restr.stddev_angle,
+        restr.average_vel,
+        restr.stddev_vel
+    ));
+
+    this->track_length.push_back(this->track[0].len());
+    this->total_length = track_length[0];
+    for (int i = 1; i < restr.max_track_parts; i++) {
+        track.push_back(Track_part_type(
+            this->track[i - 1].end,
+            this->track[i - 1].exit_vec,
+            restr.min_line_length,
+            restr.max_line_length,
+            restr.mean_corner_radius,
+            restr.stddev_radius,
+            restr.mean_corner_angle,
+            restr.stddev_angle,
+            restr.average_vel,
+            restr.stddev_vel
+        ));
+        this->track_length.push_back(this->track[i].len());
+        this->total_length += this->track_length[i];
+    };
+};
+
+State_type Test_model::Test_model_track::orientation(double dist = 0) {
+    int i = 0;
+    while (true) {
+        dist -= this->track[i].len();
+        if (dist == 0) this->track[i].orientation(dist + this->track[i].len());
+        if (dist < 0) {
+            return this->track[i].orientation(dist + this->track[i].len());
+        };
+        i++;
+        if (i == track.size()) return State_type();
+    };
+};
+
+Point2d Test_model::Test_model_track::part(double dist) {
+    int i = 0;
+    while (true) {
+        dist -= this->track[i].len();
+        if (dist == 0) return this->track[i].end;
+        if (dist < 0) {
+            return this->track[i].part(dist + this->track[i].len());
+        };
+        i++;
+        if (i == track.size()) return Point2d(0, 0);
+    };
+};
+
+
+void Test_model::Test_model_restrictions::load_restriction_file(string filename) {
     vector<int> int_data;
     vector<double> float_data;
 
@@ -43,7 +105,7 @@ void Test_model::read_restriction_file(string filename) {
     };
     //for (int item : int_data) cout << "int)\t" << item << endl;
     //for (double item : float_data) cout << "double)\t" << item << endl;
-    this->gen_restrictions.set(filename, int_data, float_data);
+    this->set(filename, int_data, float_data);
     //this->gen_restrictions.show();
 };
 
@@ -89,14 +151,17 @@ void Test_model::Test_model_restrictions::set(string filename, vector<int> int_d
 
 void Test_model::generate_test_model(string gen_restr_filename){
     if (gen_restr_filename != "") { 
-        this->read_restriction_file(gen_restr_filename); 
+        this->gen_restrictions.load_restriction_file(gen_restr_filename);
     }
     else
     {
-        this->read_restriction_file(this->dir_name + "init.txt");
+        this->gen_restrictions.load_restriction_file(this->dir_name + "init.txt");
     }
     // сгенерировать трак в соответствии с ограничениями
-    generate_track(
+
+    this->track_model.generate_track(this->gen_restrictions);
+
+    /*generate_track(
         this->gen_restrictions.max_track_parts, 
         this->gen_restrictions.min_line_length, 
         this->gen_restrictions.max_line_length, 
@@ -105,7 +170,7 @@ void Test_model::generate_test_model(string gen_restr_filename){
         this->gen_restrictions.mean_corner_angle, 
         this->gen_restrictions.stddev_angle, 
         this->gen_restrictions.average_vel, 
-        this->gen_restrictions.stddev_vel);
+        this->gen_restrictions.stddev_vel);*/
     generate_states(
         this->gen_restrictions.dicret
     );
@@ -473,40 +538,40 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
     };
 };
 
-void Test_model::generate_track(int max_track_parts, double min_line_length, double max_line_length, double min_corner_radius,
-    double max_corner_radius, double min_corner_angle, double max_corner_angle, double min_vel, double max_vel)
-{
-    track.push_back(Track_part_type(
-        Point2d(0, 0),
-        Point2d(-1, 0),
-        min_line_length,
-        max_line_length,
-        min_corner_radius,
-        max_corner_radius,
-        min_corner_angle,
-        max_corner_angle,
-        min_vel,
-        max_vel
-    ));
-    track_length.push_back(track[0].len());
-    this->total_length = track_length[0];
-    for (int i = 1; i < max_track_parts; i++) {
-        track.push_back(Track_part_type(
-            this->track[i - 1].end,
-            this->track[i - 1].exit_vec,
-            min_line_length,
-            max_line_length,
-            min_corner_radius,
-            max_corner_radius,
-            min_corner_angle,
-            max_corner_angle,
-            min_vel,
-            max_vel
-        ));
-        track_length.push_back(track[i].len());
-        this->total_length += track_length[i];
-    };
-};
+//void Test_model::generate_track(int max_track_parts, double min_line_length, double max_line_length, double min_corner_radius,
+//    double max_corner_radius, double min_corner_angle, double max_corner_angle, double min_vel, double max_vel)
+//{
+//    track.push_back(Track_part_type(
+//        Point2d(0, 0),
+//        Point2d(-1, 0),
+//        min_line_length,
+//        max_line_length,
+//        min_corner_radius,
+//        max_corner_radius,
+//        min_corner_angle,
+//        max_corner_angle,
+//        min_vel,
+//        max_vel
+//    ));
+//    track_length.push_back(track[0].len());
+//    this->total_length = track_length[0];
+//    for (int i = 1; i < max_track_parts; i++) {
+//        track.push_back(Track_part_type(
+//            this->track[i - 1].end,
+//            this->track[i - 1].exit_vec,
+//            min_line_length,
+//            max_line_length,
+//            min_corner_radius,
+//            max_corner_radius,
+//            min_corner_angle,
+//            max_corner_angle,
+//            min_vel,
+//            max_vel
+//        ));
+//        track_length.push_back(track[i].len());
+//        this->total_length += track_length[i];
+//    };
+//};
 
 void  Test_model::regenerate_gt_points() {
     for (int i = 1; i < this->gt_point.size(); i++) {
@@ -708,32 +773,6 @@ void Test_model::print_states(string filename) {
     out.close();
 };
 
-State_type Test_model::orientation(double dist) {
-    int i = 0;
-    while (true) {
-        dist -= this->track[i].len();
-        if (dist == 0) this->track[i].orientation(dist + this->track[i].len());
-        if (dist < 0) {
-            return this->track[i].orientation(dist + this->track[i].len());
-        };
-        i++;
-        if (i == track.size()) return State_type();
-    };
-};
-
-Point2d Test_model::part(double dist) {
-    int i = 0;
-    while (true) {
-        dist -= this->track[i].len();
-        if (dist == 0) return this->track[i].end;
-        if (dist < 0) {
-            return this->track[i].part(dist + this->track[i].len());
-        };
-        i++;
-        if (i == track.size()) return Point2d(0, 0);
-    };
-};
-
 
 inline DataSeq_model_Type generate_old_model(
     double mean_1,
@@ -782,10 +821,10 @@ inline DataSeq_model_Type generate_old_model(
     Point3d vel_0 = Point3d(0, 0, 0)*/
 
 void Test_model::generate_states(double delta_m, int point_num) {
-    point_num = point_num == 0 ? this->total_length / delta_m : point_num;
+    point_num = point_num == 0 ? this->track_model.total_length / delta_m : point_num;
 
     for (int i = 0; i < point_num; i++) {
-        State_type state = this->orientation(i * delta_m);
+        State_type state = this->track_model.orientation(i * delta_m);
         Point3d v3_orient = normalize(state.orient);
         double z_rot = (acos((v3_orient.y + v3_orient.x)/2) + asin((v3_orient.y - v3_orient.x)/2)) / 2;
         state.change_orient(Point3d(0, 0, z_rot));
@@ -795,7 +834,7 @@ void Test_model::generate_states(double delta_m, int point_num) {
 
 void Test_model::generate_gt_points(double delta_m, int point_num) {
     //нужно расставить точки в соответствии с заданной скоростью
-    point_num = point_num == 0 ? this->total_length / delta_m : point_num;
+    point_num = point_num == 0 ? this->track_model.total_length / delta_m : point_num;
 
     Pose_type pose1_tmp;
     pose1_tmp.setPose(Point3d(0,0,0));
@@ -806,7 +845,7 @@ void Test_model::generate_gt_points(double delta_m, int point_num) {
     gt_point.push_back(pose1_tmp);
 
     for (int i = 1; i < point_num; i++) {
-        Point2d pose_delta = this->part(i * delta_m) - this->part((i - 1) * delta_m);
+        Point2d pose_delta = this->track_model.part(i * delta_m) - this->track_model.part((i - 1) * delta_m);
 
         Pose_type pose_tmp;
         pose_tmp.setPose(gt_point[i - 1].getPose() + Point3d(pose_delta.x, pose_delta.y, 0));
@@ -853,18 +892,18 @@ void Test_model::show_gt(string mode, bool pause_enable) {
         if (i == 1) circle(img, beg, 6, Scalar(0, 0, 0));
     };
 
-    for (int i = 0; i < this->track.size(); i++) {
+    for (int i = 0; i < this->track_model.track.size(); i++) {
         Point2i points_arr[5] = {
-            Point2i(border + im_scale * (this->track[i].line.start.x - min_x),     border + im_scale * (this->track[i].line.start.y - min_y)),
-            Point2i(border + im_scale * (this->track[i].line.end.x - min_x),       border + im_scale * (this->track[i].line.end.y - min_y)),
-            Point2i(border + im_scale * (this->track[i].turn.start.x - min_x),     border + im_scale * (this->track[i].turn.start.y - min_y)),
+            Point2i(border + im_scale * (this->track_model.track[i].line.start.x - min_x),     border + im_scale * (this->track_model.track[i].line.start.y - min_y)),
+            Point2i(border + im_scale * (this->track_model.track[i].line.end.x - min_x),       border + im_scale * (this->track_model.track[i].line.end.y - min_y)),
+            Point2i(border + im_scale * (this->track_model.track[i].turn.start.x - min_x),     border + im_scale * (this->track_model.track[i].turn.start.y - min_y)),
 
-            Point2i(border + im_scale * (this->track[i].turn.end.x - min_x),       border + im_scale * (this->track[i].turn.end.y - min_y)),
+            Point2i(border + im_scale * (this->track_model.track[i].turn.end.x - min_x),       border + im_scale * (this->track_model.track[i].turn.end.y - min_y)),
         };
         for (int p_i = 0; p_i < 4; p_i++) circle(img, points_arr[p_i], 4, Scalar(0, 0, 0));
         circle(
             img,
-            Point2i(border + im_scale * (this->track[i].turn.center.x - min_x), border + im_scale * (this->track[i].turn.center.y - min_y)),
+            Point2i(border + im_scale * (this->track_model.track[i].turn.center.x - min_x), border + im_scale * (this->track_model.track[i].turn.center.y - min_y)),
             4,
             Scalar(255, 0, 0));
     };

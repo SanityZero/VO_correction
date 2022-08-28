@@ -92,6 +92,11 @@ public:
     double len();
     cv::Point2d part(double dist);
     State_type orientation(double dist);
+
+    std::string print_csv_line() {
+        
+    
+    };
 };
 
 //inline Point3d integrator(Point3d x_cur, Point3d x_prev, Point3d y_prev, double T) {

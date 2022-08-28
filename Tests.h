@@ -6,6 +6,7 @@ private:
     string dir_name;
     string name;
 
+    //ограничения генерации
     struct Test_model_restrictions {
         string filename;
         int max_track_parts;
@@ -27,26 +28,28 @@ private:
 
         Test_model_restrictions() {};
         void set(string filename, vector<int> int_data, vector<double> float_data);
+        void load_restriction_file(string filename);
         void show();       
     } gen_restrictions;
 
-    
-    struct Test_model_track {
-
-
-    } track_model;
-
 
     //геометрическая модель
-    vector<Track_part_type> track;
-    vector<double> track_length;
-    double total_length;
+    struct Test_model_track {
+        vector<Track_part_type> track;
+        vector<double> track_length;
+        double total_length;
 
-    Point2d part(double dist);
-    State_type orientation(double dist = 0);
-    void generate_track(int max_track_parts, double mean_line_length, double stddev_line, double mean_corner_radius,
-    double stddev_radius, double mean_corner_angle, double stddev_angle, double average_vel, double stddev_vel);
+        Test_model_track() {};
+        Point2d part(double dist);
+        State_type orientation(double dist);
+        void generate_track(Test_model_restrictions restr);
 
+        void load_track_model_file(string filename);
+        void save_track_model_file(string filename) {
+            
+        
+        };
+    } track_model;
 
     //модель движения
     vector<Pose_type> gt_point;
@@ -103,7 +106,12 @@ public:
         this->dir_name = dir_name;
     };
 
-    void read_restriction_file(string filename);
+    void generate_track_model() {
+        this->track_model.generate_track(this->gen_restrictions);
+        this->track_model.save_track_model_file(this->dir_name + "track");
+    };
+
+    //void read_restriction_file(string filename);
 
     void save_test_model(string filename) {
 
