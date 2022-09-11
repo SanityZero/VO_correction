@@ -34,20 +34,87 @@ private:
 
 
     //геометрическая модель
-    struct Test_model_track {
+    struct Test_track_model {
         vector<Track_part_type> track;
         vector<double> track_length;
         double total_length;
 
-        Test_model_track() {};
+        Test_track_model() {};
         Point2d part(double dist);
         State_type orientation(double dist);
         void generate_track(Test_model_restrictions restr);
 
-        void load_track_model_file(string filename);
-        void save_track_model_file(string filename) {
-            
-        
+        void load_csv(string filename, string sep = ";") {
+            ifstream fin(filename);
+            char buffer[255];
+            fin.getline(buffer, 255);
+
+            size_t pos = 0;
+            std::string token;
+            string line(buffer);
+            while ((pos = line.find(sep)) != std::string::npos) {
+                token = line.substr(0, pos);
+                std::cout << token << std::endl;
+                line.erase(0, pos + sep.length());
+            };
+            cout << token << endl;
+
+        };
+
+        void save_csv(string filename, string sep = ";") {
+            vector<string> csv_data;
+            cout << "save csv" << endl;
+            for (int i = 0; i < track.size(); i++) {
+                csv_data.push_back(track[i].get_csv_data(sep) + sep + to_string(track_length[i]));
+            };
+
+            vector<string> header;
+            header.push_back("Line_sx");
+            header.push_back("Line_sy");
+            header.push_back("Line_ex");
+            header.push_back("Line_ey");
+            header.push_back("Line_time");
+
+            header.push_back("Turn_sx");
+            header.push_back("Turn_sy");
+            header.push_back("Turn_svx");
+            header.push_back("Turn_svy");
+            header.push_back("Turn_ex");
+            header.push_back("Turn_ey");
+            header.push_back("Turn_cx");
+            header.push_back("Turn_cy");
+            header.push_back("Turn_a");
+            header.push_back("Turn_time");
+
+            header.push_back("TP_evx");
+            header.push_back("TP_evy");
+            header.push_back("TP_ex");
+            header.push_back("TP_ey");
+            header.push_back("TP_len");
+
+            header.push_back(to_string(track.size()));
+
+            string header_line = "";
+            for (string item : header)
+                header_line += "\"" + item + "\"" + sep;
+
+
+            ofstream fout(filename);
+            fout << header_line << '\n';
+
+            for (string row : csv_data) {
+                  
+                size_t start_pos = 0;
+                string from = ".";
+                string to = ",";
+                while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+                    row.replace(start_pos, from.length(), to);
+                    start_pos += to.length();
+                }
+                fout << row << '\n';
+            };
+
+            fout.close();
         };
     } track_model;
 
@@ -108,7 +175,7 @@ public:
 
     void generate_track_model() {
         this->track_model.generate_track(this->gen_restrictions);
-        this->track_model.save_track_model_file(this->dir_name + "track");
+        this->track_model.save_csv(this->dir_name + "track.csv");
     };
 
     //void read_restriction_file(string filename);

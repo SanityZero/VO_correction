@@ -287,7 +287,6 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(1000,51): warning C4244: �
               _Tp=int
           ]
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(1017,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
-  Track_part_type.cpp
   main.cpp
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\ErEstVO.h(47,49): warning C4244: аргумент: преобразование "_Tp" в "_Tp", возможна потеря данных
           with
@@ -485,8 +484,4 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(132,34): warning C424
           ]
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\VOCorrection.h(144,9): warning C4244: аргумент: преобразование "double" в "int", возможна потеря данных
   Создание кода...
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(62): warning C4715: Track_part_type::orientation: значение возвращается не при всех путях выполнения
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(219): warning C4715: min: значение возвращается не при всех путях выполнения
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(225): warning C4715: max: значение возвращается не при всех путях выполнения
-C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(51): warning C4715: Track_part_type::part: значение возвращается не при всех путях выполнения
   OpenCV-test.vcxproj -> C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\Actual_NIRS.exe

@@ -1,6 +1,7 @@
 #include <random>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <string>
 
 #include "Track_part_type.h"
 #define GCONST  9.80665

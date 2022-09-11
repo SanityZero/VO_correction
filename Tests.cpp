@@ -22,7 +22,7 @@ using namespace std;
 //    
 //};
 
-void Test_model::Test_model_track::generate_track(Test_model::Test_model_restrictions restr) {
+void Test_model::Test_track_model::generate_track(Test_model::Test_model_restrictions restr) {
 
     this->track.push_back(Track_part_type(
         Point2d(0, 0),
@@ -57,7 +57,7 @@ void Test_model::Test_model_track::generate_track(Test_model::Test_model_restric
     };
 };
 
-State_type Test_model::Test_model_track::orientation(double dist = 0) {
+State_type Test_model::Test_track_model::orientation(double dist = 0) {
     int i = 0;
     while (true) {
         dist -= this->track[i].len();
@@ -70,7 +70,7 @@ State_type Test_model::Test_model_track::orientation(double dist = 0) {
     };
 };
 
-Point2d Test_model::Test_model_track::part(double dist) {
+Point2d Test_model::Test_track_model::part(double dist) {
     int i = 0;
     while (true) {
         dist -= this->track[i].len();
@@ -160,7 +160,7 @@ void Test_model::generate_test_model(string gen_restr_filename){
     // сгенерировать трак в соответствии с ограничениями
 
     this->track_model.generate_track(this->gen_restrictions);
-
+    this->track_model.save_csv(this->dir_name + "track.csv");
     /*generate_track(
         this->gen_restrictions.max_track_parts, 
         this->gen_restrictions.min_line_length, 

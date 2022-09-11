@@ -50,6 +50,13 @@ public:
     double len();
     cv::Point2d part(double dist = 0);
     State_type orientation(double dist);
+
+    std::string get_csv_data(std::string sep = ",") {
+        std::string result = std::to_string(start.x) + sep + std::to_string(start.y) + sep;
+        result += std::to_string(end.x) + sep + std::to_string(end.y) + sep;
+        result += std::to_string(time);
+        return result;
+    };
 };
 
 class Corner_type {
@@ -67,6 +74,15 @@ public:
     double len();
     cv::Point2d part(double dist);
     State_type orientation(double dist);
+
+    std::string get_csv_data(std::string sep = ",") {
+        std::string result = std::to_string(start.x) + sep + std::to_string(start.y) + sep;
+        result += std::to_string(start_vec.x) + sep + std::to_string(start_vec.y) + sep;
+        result += std::to_string(end.x) + sep + std::to_string(end.y) + sep;
+        result += std::to_string(center.x) + sep + std::to_string(center.y) + sep;
+        result += std::to_string(angle) + sep + std::to_string(time);
+        return result;
+    };
 };
 
 class Track_part_type {
@@ -93,9 +109,13 @@ public:
     cv::Point2d part(double dist);
     State_type orientation(double dist);
 
-    std::string print_csv_line() {
-        
-    
+    std::string get_csv_data(std::string sep = ";") {
+        std::string result = "";
+        result += line.get_csv_data(sep) + sep;
+        result += turn.get_csv_data(sep) + sep;
+        result += std::to_string(exit_vec.x) + sep + std::to_string(exit_vec.y) + sep;
+        result += std::to_string(end.x) + sep + std::to_string(end.y);
+        return result;
     };
 };
 
