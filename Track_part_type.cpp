@@ -2,9 +2,48 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <string>
+#include <iostream>
 
 #include "Track_part_type.h"
 #define GCONST  9.80665
+
+std::string State_type::get_csv_data(std::string sep) {
+    std::string result = "";
+    result += std::to_string(vel.x) + sep + std::to_string(vel.y) + sep + std::to_string(vel.z) + sep;
+    result += std::to_string(accel.x) + sep + std::to_string(accel.y) + sep + std::to_string(accel.z) + sep;
+    result += std::to_string(orient.x) + sep + std::to_string(orient.y) + sep + std::to_string(orient.z) + sep;
+    result += std::to_string(anqular_vel.x) + sep + std::to_string(anqular_vel.y) + sep + std::to_string(anqular_vel.z) + sep;
+    result += std::to_string(anqular_accel.x) + sep + std::to_string(anqular_accel.y) + sep + std::to_string(anqular_accel.z);
+    return result;
+};
+
+void State_type::read_csv(std::string line, std::string sep) {
+    size_t pos = 0;
+    std::vector<std::string> values;
+    while ((pos = line.find(sep)) != std::string::npos) {
+        values.push_back(line.substr(0, pos));
+        //std::cout << values << std::endl;
+        line.erase(0, pos + sep.length());
+    };
+    values.push_back(line);
+    std::vector<double> double_buffer;
+    for (std::string item : values) {
+        item.replace(item.find(","), 1, ".");
+        double_buffer.push_back(std::stod(item));
+        //cout << "_" << stod(item) << "_" << endl;
+    }
+
+    if (double_buffer.size() != 15) {
+        std::cout << "State_type csv init wrong size" << std::to_string(double_buffer.size()) << std::endl;
+        return;
+    };
+
+    this->change_vel(cv::Point3d(double_buffer[0], double_buffer[1], double_buffer[2]));
+    this->change_accel(cv::Point3d(double_buffer[3], double_buffer[4], double_buffer[5]));
+    this->change_orient(cv::Point3d(double_buffer[6], double_buffer[7], double_buffer[8]));
+    this->change_anqular_vel(cv::Point3d(double_buffer[9], double_buffer[10], double_buffer[11]));
+    this->change_anqular_accel(cv::Point3d(double_buffer[12], double_buffer[13], double_buffer[14]));
+};
 
 State_type Corner_type::orientation(double dist = 0) {
     State_type res;

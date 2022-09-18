@@ -22,6 +22,103 @@ using namespace std;
 //    
 //};
 
+void Test_model::Test_track_model::load_csv(string filename, string sep) {
+    cout << "---------------" << endl;
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        size_t pos = 0;
+        vector<string> values;
+        string line(buffer);
+        while ((pos = line.find(sep)) != std::string::npos) {
+            values.push_back(line.substr(0, pos));
+            //std::cout << values << std::endl;
+            line.erase(0, pos + sep.length());
+        };
+        values.push_back(line);
+
+        vector<double> double_buffer;
+        for (string item : values) {
+            item.replace(item.find(","), 1, ".");
+            double_buffer.push_back(stod(item));
+            //cout << "_" << stod(item) << "_" << endl;
+        }
+
+        this->track.push_back(Track_part_type(double_buffer));
+    };
+
+    this->total_length = 0.0;
+    for (Track_part_type tp : this->track) {
+        this->track_length.push_back(tp.len());
+        this->total_length += tp.len();
+    };
+
+    fin.close();
+};
+
+void Test_model::Test_track_model::save_csv(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save csv" << endl;
+    for (int i = 0; i < track.size(); i++) {
+        csv_data.push_back(track[i].get_csv_data(sep) + sep + to_string(track_length[i]));
+    };
+
+    vector<string> header;
+    header.push_back("Line_sx");
+    header.push_back("Line_sy");
+    header.push_back("Line_ex");
+    header.push_back("Line_ey");
+    header.push_back("Line_time");
+
+    header.push_back("Turn_sx");
+    header.push_back("Turn_sy");
+    header.push_back("Turn_svx");
+    header.push_back("Turn_svy");
+    header.push_back("Turn_ex");
+    header.push_back("Turn_ey");
+    header.push_back("Turn_cx");
+    header.push_back("Turn_cy");
+    header.push_back("Turn_a");
+    header.push_back("Turn_time");
+
+    header.push_back("TP_evx");
+    header.push_back("TP_evy");
+    header.push_back("TP_ex");
+    header.push_back("TP_ey");
+    header.push_back("TP_len");
+
+    header.push_back(to_string(track.size()));
+
+    string header_line = "";
+    for (string item : header)
+        header_line += "\"" + item + "\"" + sep;
+
+
+    ofstream fout(filename);
+    fout << header_line << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+
 void Test_model::Test_track_model::generate_track(Test_model::Test_model_restrictions restr) {
 
     this->track.push_back(Track_part_type(
@@ -159,8 +256,9 @@ void Test_model::generate_test_model(string gen_restr_filename){
     }
     // сгенерировать трак в соответствии с ограничениями
 
-    this->track_model.generate_track(this->gen_restrictions);
-    this->track_model.save_csv(this->dir_name + "track.csv");
+    //this->track_model.generate_track(this->gen_restrictions);
+    //this->track_model.save_csv(this->dir_name + "track.csv");
+    this->track_model.load_csv(this->dir_name + "track.csv");
     /*generate_track(
         this->gen_restrictions.max_track_parts, 
         this->gen_restrictions.min_line_length, 
@@ -171,35 +269,29 @@ void Test_model::generate_test_model(string gen_restr_filename){
         this->gen_restrictions.stddev_angle, 
         this->gen_restrictions.average_vel, 
         this->gen_restrictions.stddev_vel);*/
-    generate_states(
-        this->gen_restrictions.dicret
-    );
-    generate_gt_points(
-        this->gen_restrictions.dicret
-    );
-    generate_timestaps(
-        this->gen_restrictions.dicret, 
-        this->gen_restrictions.average_vel
-    );
+    this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
+    this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
+    this->motion_model.generate_timestaps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
 
 
 
     //show_gt();
     //waitKey(0);
-    for (int i = 0; i < this->gt_point.size() - 1; i++) this->old_gt_point.push_back(this->gt_point[i]);
-    integrate_old_gt();
+    for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
+        this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
+    this->motion_model.integrate_old_gt();
     print_states("old_states.txt");
 
-    smooth_anqular_vel(
+    this->motion_model.smooth_anqular_vel(
         this->gen_restrictions.T, 
         this->gen_restrictions.U1, 
         this->gen_restrictions.U2
     );
 
-    smooth_vel(
+    this->motion_model.smooth_vel(
         this->gen_restrictions.T, 
         this->gen_restrictions.U1 / 10000);
-    regenerate_gt_points();
+    this->motion_model.regenerate_gt_points();
 
     // расставить точки
     double grid_step = 30;
@@ -228,128 +320,6 @@ void Test_model::generate_test_model(string gen_restr_filename){
     generate_camera_proections();
     // сгенерировать изображения в соответствии с точками
 
-};
-
-void Test_model::integrate_old_gt() {
-    vector<double> deltatime;
-    deltatime.push_back(0.0);
-    deltatime.push_back(this->timestamps[1] - this->timestamps[0]);
-    vector<Point3d> vel;
-    vel.push_back(Point3d(0, 0, 0));
-    vel.push_back(cv::Point3d(
-        this->old_gt_point[1].lat - this->old_gt_point[0].lat,
-        (this->old_gt_point[1].lon - this->old_gt_point[0].lon),
-        this->old_gt_point[1].alt - this->old_gt_point[0].alt
-    ) / deltatime[0]);
-    this->eval_old_gt_point.push_back(this->old_gt_point[0]);
-    this->eval_old_gt_point.push_back(this->old_gt_point[1]);
-
-    for (int i = 2; i < this->old_gt_point.size() - 1; i++) {
-
-        deltatime.push_back(this->timestamps[i] - this->timestamps[i - 1]);
-        Point3d rot_v;
-        Point3d rot_vu = Point3d(0, 0, 0);//rad
-
-        // по направляющим косинусам
-
-
-        cv::Point3d rot_ang;
-        double roll = this->eval_old_gt_point[i - 1].getOrient().x;//rad
-        double yaw = this->eval_old_gt_point[i - 1].getOrient().y;//rad
-        double pitch = this->eval_old_gt_point[i - 1].getOrient().z;//rad
-
-        double wx = this->old_gt_point[i - 1].getW().x;//rad
-        double wy = this->old_gt_point[i - 1].getW().y;//rad
-        double wz = this->old_gt_point[i - 1].getW().z;//rad
-
-        //cv::Point3d rotw_EC;
-        //rotw_EC.x = (sin(pitch) * wx + wy * cos(pitch))/sin(roll);
-
-        Point3d ang_delta(0, 0, 0);
-
-
-        ang_delta.x = wx * sin(roll) - cos(roll) * wz;
-        ang_delta.y = wx * cos(roll) + sin(roll) * wz;
-        ang_delta.z = wy - wz * tan(pitch) * cos(roll) + wx * tan(pitch) * sin(roll);
-
-        roll += ang_delta.x * deltatime.back();
-        pitch += ang_delta.y * deltatime.back();
-        yaw += ang_delta.z * deltatime.back();
-        //double tmp = sin(pitch) * wx + cos(pitch) * wy;
-
-        //rotw_EC.y = tmp / sin(theta);
-        //psi += rotw_EC.y * this->deltatime.back();
-        //rotw_EC.z = tmp * tan(theta);
-        //gamma += rotw_EC.z * this->deltatime.back();
-
-        rot_ang = cv::Point3d(roll, pitch, yaw);
-
-        //Нужно вычесть ускорение свободного падения.
-
-        Pose_type pose_tmp;
-        cv::Point3d pose_delta;
-        cv::Point3d axel = this->old_gt_point[i].getAccel();
-        cv::Point3d tmp_vel(0, 0, 0);
-
-        tmp_vel += vel.back() + axel * deltatime.back();
-        pose_delta = (tmp_vel + vel.back()) * deltatime.back() / 2;
-
-        pose_tmp.setPose(this->eval_old_gt_point[i - 1].getPose() + pose_delta);
-        pose_tmp.setOrient(rot_ang);
-
-
-        vel.push_back(tmp_vel);
-        //cv::Point3d tmp_vel0(0, 0, 0);
-        //cv::Point3d tmp_vel1(0, 0, 0);
-
-        //vector<cv::Point3d> vel0_k;
-
-        //vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i], rot_ang));
-        //vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i] + this->deltatime.back() / 2, rot_ang));
-        //vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i] + this->deltatime.back() / 2, rot_ang));
-        //vel0_k.push_back(this->deltatime.back() * this->interpolatedAxel(this->timestamps[this->this_ds_i] + this->deltatime.back(), rot_ang));
-
-        //tmp_vel0 += this->vel.back() + 1 / 6 * (vel0_k[0] + 2 * vel0_k[1] + 2 * vel0_k[2] + vel0_k[3]);
-
-        //vector<cv::Point3d> vel1_k;
-
-
-        //double tmp_time;
-        //if (this->this_ds_i < this->limit) {
-        //    tmp_time = this->timestamps[this->this_ds_i - 1];
-        //}
-        //else {
-        //    tmp_time = this->timestamps[this->this_ds_i];
-        //};
-        //vel1_k.push_back(this->deltatime.back() * this->interpolatedAxel(tmp_time, rot_ang));
-        //vel1_k.push_back(this->deltatime.back() * this->interpolatedAxel(tmp_time + this->deltatime.back() / 2, rot_ang));
-        //vel1_k.push_back(this->deltatime.back() * this->interpolatedAxel(tmp_time + this->deltatime.back() / 2, rot_ang));
-        //vel1_k.push_back(this->deltatime.back() * this->interpolatedAxel(tmp_time + this->deltatime.back(), rot_ang));
-
-        //tmp_vel1 += tmp_vel0 + 1 / 6 * (vel1_k[0] + 2 * vel1_k[1] + 2 * vel1_k[2] + vel1_k[3]);
-
-        //vector<cv::Point3d> pose_k;
-
-        //pose_k.push_back(this->deltatime.back() * tmp_vel0);
-        //pose_k.push_back(this->deltatime.back() * (tmp_vel0 + tmp_vel1) / 2);
-        //pose_k.push_back(this->deltatime.back() * (tmp_vel0 + tmp_vel1) / 2);
-        //pose_k.push_back(this->deltatime.back() * tmp_vel1);
-
-
-        //pose_delta = 1 / 6 * (pose_k[0] + 2 * pose_k[1] + 2 * pose_k[2] + pose_k[3]);
-        //pose_tmp.lat = pose[this->this_ds_i - 1].lat + pose_delta.x;
-        //pose_tmp.lon = pose[this->this_ds_i - 1].lon + pose_delta.y;
-        //pose_tmp.alt = pose[this->this_ds_i - 1].alt + pose_delta.z;
-
-        //pose_tmp.roll = rot_ang.x;
-        //pose_tmp.pitch = rot_ang.y;
-        //pose_tmp.yaw = rot_ang.z;
-
-        //this->vel.push_back(tmp_vel0);
-
-
-        this->eval_old_gt_point.push_back(pose_tmp);
-    }
 };
 
 Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib) {
@@ -470,43 +440,43 @@ Mat Test_model::generateExCalibM(int i) {
 void Test_model::generate_bins_gt(double bins_deltatime) {
     double bins_total_time = 0.0;
     this->bins_timestamps.push_back(0.0);
-    while (bins_total_time < (this->total_time - bins_deltatime)) {
+    while (bins_total_time < (this->motion_model.total_time - bins_deltatime)) {
         this->bins_timestamps.push_back(this->bins_timestamps[this->bins_timestamps.size() - 1] + bins_deltatime);
         bins_total_time += bins_deltatime;
     };
     //сгенерировать таймстемпы
 
     //начальное то же самое
-    this->bins_gt_points.push_back(Pose_type(this->gt_point[0].getPose(), this->gt_point[0].getOrient(), this->gt_point[0].getAccel(), this->gt_point[0].getW()));
+    this->bins_gt_points.push_back(Pose_type(this->motion_model.gt_point[0].getPose(), this->motion_model.gt_point[0].getOrient(), this->motion_model.gt_point[0].getAccel(), this->motion_model.gt_point[0].getW()));
     vector<double> vec_i;
     for (int i = 1; i < this->bins_timestamps.size(); i++) {
         Pose_type tmp;
         double bins_time = bins_deltatime * i;
         int lesser_ts_i = 0;
         double interp_multi = 0;
-        for (int ts_i = 0; ts_i < this->timestamps.size() - 1; ts_i++) {
-            if ((this->timestamps[ts_i] <= bins_time) && (this->timestamps[ts_i + 1] >= bins_time)) {
-                interp_multi = abs((bins_time - this->timestamps[ts_i]) / (this->timestamps[ts_i + 1] - this->timestamps[ts_i]));
+        for (int ts_i = 0; ts_i < this->motion_model.timestamps.size() - 1; ts_i++) {
+            if ((this->motion_model.timestamps[ts_i] <= bins_time) && (this->motion_model.timestamps[ts_i + 1] >= bins_time)) {
+                interp_multi = abs((bins_time - this->motion_model.timestamps[ts_i]) / (this->motion_model.timestamps[ts_i + 1] - this->motion_model.timestamps[ts_i]));
                 //interp_multi = abs((bins_time - this->timestaps[ts_i]) / (this->timestaps[ts_i + 1] - bins_time));
                 vec_i.push_back(interp_multi);
                 lesser_ts_i = ts_i;
                 break;
             };
         };
-        Pose_type prev = this->gt_point[lesser_ts_i];
-        Pose_type next = this->gt_point[lesser_ts_i + 1];
+        Pose_type prev = this->motion_model.gt_point[lesser_ts_i];
+        Pose_type next = this->motion_model.gt_point[lesser_ts_i + 1];
 
         //интреполировать на них позиции, ориентации, ускорения, угловые скорости
         tmp.setPose(prev.getPose() + (next.getPose() - prev.getPose()) * interp_multi);
-        tmp.setOrient(this->gt_point[lesser_ts_i].getOrient() + (this->gt_point[lesser_ts_i + 1].getOrient() - this->gt_point[lesser_ts_i].getOrient()) * interp_multi);
+        tmp.setOrient(this->motion_model.gt_point[lesser_ts_i].getOrient() + (this->motion_model.gt_point[lesser_ts_i + 1].getOrient() - this->motion_model.gt_point[lesser_ts_i].getOrient()) * interp_multi);
         //tmp.setPose((1 / (1 + interp_multi)) * (prev.getPose() + interp_multi * next.getPose()));
         //tmp.setOrient((1 / (1 + interp_multi)) * (this->states[lesser_ts_i].orient + interp_multi * this->states[lesser_ts_i+1].orient));
 
         //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
         //Point3d w_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].anqular_vel + interp_multi * this->states[lesser_ts_i + 1].anqular_vel);
         //Point3d accel_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].accel + interp_multi * this->states[lesser_ts_i + 1].accel);
-        Point3d w_curr = this->states[lesser_ts_i].anqular_vel + (this->states[lesser_ts_i + 1].anqular_vel - this->states[lesser_ts_i].anqular_vel) * interp_multi;
-        Point3d accel_curr = this->states[lesser_ts_i].accel + (this->states[lesser_ts_i + 1].accel - this->states[lesser_ts_i].accel) * interp_multi;
+        Point3d w_curr = this->motion_model.states[lesser_ts_i].anqular_vel + (this->motion_model.states[lesser_ts_i + 1].anqular_vel - this->motion_model.states[lesser_ts_i].anqular_vel) * interp_multi;
+        Point3d accel_curr = this->motion_model.states[lesser_ts_i].accel + (this->motion_model.states[lesser_ts_i + 1].accel - this->motion_model.states[lesser_ts_i].accel) * interp_multi;
         //Point3d w_curr = prev.getW() * (1 - interp_multi) + next.getW();
         //Point3d accel_curr = prev.getAccel() * (1 - interp_multi) + next.getAccel();
         Point3d ang_vec = -tmp.getOrient();
@@ -573,16 +543,6 @@ void Test_model::generate_bins_gt(double bins_deltatime) {
 //    };
 //};
 
-void  Test_model::regenerate_gt_points() {
-    for (int i = 1; i < this->gt_point.size(); i++) {
-        double deltatime = (this->timestamps[i] - this->timestamps[i - 1]);
-        this->gt_point[i].setPose(this->gt_point[i - 1].getPose() + this->states[i].vel * deltatime);
-        this->gt_point[i].setOrient(this->gt_point[i - 1].getOrient() + this->states[i].anqular_vel * deltatime);
-        this->gt_point[i].setAccel(states[i].accel);
-        this->gt_point[i].setW(states[i].anqular_vel);
-    };
-
-};
 
 void Test_model::generate_s_points(
     double border,
@@ -590,18 +550,18 @@ void Test_model::generate_s_points(
     Point3d grid_spacing,
     Point2d displacement
 ) {
-    double max_x = this->gt_point[0].lon;
-    double max_y = this->gt_point[0].lat;
-    double min_x = this->gt_point[0].lon;
-    double min_y = this->gt_point[0].lat;
+    double max_x = this->motion_model.gt_point[0].lon;
+    double max_y = this->motion_model.gt_point[0].lat;
+    double min_x = this->motion_model.gt_point[0].lon;
+    double min_y = this->motion_model.gt_point[0].lat;
 
-    for (int i = 0; i < this->gt_point.size(); i++)
+    for (int i = 0; i < this->motion_model.gt_point.size(); i++)
     {
-        max_x = this->gt_point[i].lon > max_x ? this->gt_point[i].lon : max_x;
-        max_y = this->gt_point[i].lat > max_y ? this->gt_point[i].lat : max_y;
+        max_x = this->motion_model.gt_point[i].lon > max_x ? this->motion_model.gt_point[i].lon : max_x;
+        max_y = this->motion_model.gt_point[i].lat > max_y ? this->motion_model.gt_point[i].lat : max_y;
 
-        min_x = this->gt_point[i].lon < min_x ? this->gt_point[i].lon : min_x;
-        min_y = this->gt_point[i].lat < min_y ? this->gt_point[i].lat : min_y;
+        min_x = this->motion_model.gt_point[i].lon < min_x ? this->motion_model.gt_point[i].lon : min_x;
+        min_y = this->motion_model.gt_point[i].lat < min_y ? this->motion_model.gt_point[i].lat : min_y;
     };
 
     double min_z = z_limits.x;
@@ -624,149 +584,19 @@ void Test_model::generate_s_points(
 
 };
 
-void Test_model::generate_timestaps(double delta_m, double vel) {
-    double deltatime = delta_m / vel;
-    this->timestamps.push_back(0.0);
-    for (int i = 1; i < this->states.size(); i++) {
-        this->timestamps.push_back(this->timestamps[i - 1] + deltatime);
-    };
-    this->total_time = this->timestamps[this->states.size()-1];
-};
-
-State_type Test_model::get_state(int number) {
-    if (number < 0)
-        return this->states[0];
-    else if (number > this->states.size())
-        return this->states[this->states.size()];
-    else
-        return this->states[number];
-};
-
-void Test_model::smooth_anqular_vel(double T, double U1, double U2) {
-    vector<Point3d> res_orient_vec;
-    vector<Point3d> res_ang_vel_vec;
-    
-    //for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
-    for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
-
-    //int window = 30;
-    //int n = res_orient_vec.size() - 1;
-    //if (fmod(window, 2) == 0) window++;
-    //int hw = (window - 1) / 2;
-    //vector<Point3d> res_orient_vec_last;
-    //int k1, k2, z;
-    //for (int i = 1; i < n; i++) {
-    //    Point3d tmp = Point3d(0.0, 0.0, 0.0);
-    //    if (i < hw) {
-    //        k1 = 0;
-    //        k2 = 2 * i;
-    //        z = k2 + 1;
-    //    }
-    //    else if ((i + hw) > (n - 1)) {
-    //        k1 = i - n + i + 1;
-    //        k2 = n - 1;
-    //        z = k2 - k1 + 1;
-    //    }
-    //    else {
-    //        k1 = i - hw;
-    //        k2 = i + hw;
-    //        z = window;
-    //    }
-
-    //    for (int j = k1; j <= k2; j++) {
-    //        tmp = tmp + res_orient_vec[j];
-    //    }
-    //    res_orient_vec_last.push_back(tmp / z);
-    //}
-
-    int window2 = 100;
-    int n2 = res_ang_vel_vec.size() - 1;
-    int hw2 = (window2 - 1) / 2;
-    vector<Point3d> res_ang_vel_vec_last;
-    int k12, k22, z2;
-    for (int i = 1; i < n2; i++) {
-        Point3d tmp = Point3d(0.0, 0.0, 0.0);
-        if (i < hw2) {
-            k12 = 0;
-            k22 = 2 * i;
-            z2 = k22 + 1;
-        }
-        else if ((i + hw2) > (n2 - 1)) {
-            k12 = i - n2 + i + 1;
-            k22 = n2 - 1;
-            z2 = k22 - k12 + 1;
-        }
-        else {
-            k12 = i - hw2;
-            k22 = i + hw2;
-            z2 = window2;
-        }
-
-        for (int j = k12; j <= k22; j++) {
-            tmp = tmp + res_ang_vel_vec[j];
-        }
-        res_ang_vel_vec_last.push_back(tmp / z2);
-    };
-
-    for (int i = 1; i < res_ang_vel_vec_last.size()-1; i++) this->states[i].change_anqular_vel(res_ang_vel_vec_last[i]);
-    //for (int i = 1; i < res_orient_vec_last.size()-1; i++) this->states[i].change_orient(res_orient_vec_last[i]);
-};
-
-void Test_model::smooth_vel(double T, double U) {
-    vector<Point3d> res_vel_vec;
-
-    for (State_type tmp_state: this->states) res_vel_vec.push_back(tmp_state.vel);
-
-    int window = 30;
-    int n = res_vel_vec.size() - 1;
-    if (fmod(window, 2) == 0) window++;
-    int hw = (window - 1) / 2;
-    vector<Point3d> res_vel_vec_last;
-    int k1, k2, z;
-    for (int i = 1; i < n; i++) {
-        Point3d tmp = Point3d(0.0, 0.0, 0.0);
-        if (i < hw) {
-            k1 = 0;
-            k2 = 2 * i;
-            z = k2 + 1;
-        }
-        else if ((i + hw) > (n - 1)) {
-            k1 = i - n + i + 1;
-            k2 = n - 1;
-            z = k2 - k1 + 1;
-        }
-        else {
-            k1 = i - hw;
-            k2 = i + hw;
-            z = window;
-        }
-
-        for (int j = k1; j <= k2; j++) {
-            tmp = tmp + res_vel_vec[j];
-        }
-        res_vel_vec_last.push_back(tmp / z);
-    }
-
-    
-
-    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_vel(res_vel_vec_last[i]);
-    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_accel(
-        Point3d(0, 0, 9.80665) + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]));
-};
-
 void Test_model::print_states(string filename) {
     ofstream out;          // поток для записи
     out.open(filename); // окрываем файл для записи
     if (out.is_open())
     {
-        for (int i = 0; i < this->states.size(); i++) {
+        for (int i = 0; i < this->motion_model.states.size(); i++) {
             out << format(
                 "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
-                this->states[i].vel.x, this->states[i].vel.y, this->states[i].vel.z,
-                this->states[i].orient.x, this->states[i].orient.y, this->states[i].orient.z,
-                this->states[i].anqular_vel.x, this->states[i].anqular_vel.y, this->states[i].anqular_vel.z,
-                this->states[i].accel.x, this->states[i].accel.y, this->states[i].accel.z,
-                this->states[i].anqular_accel.x, this->states[i].anqular_accel.y, this->states[i].anqular_accel.z
+                this->motion_model.states[i].vel.x, this->motion_model.states[i].vel.y, this->motion_model.states[i].vel.z,
+                this->motion_model.states[i].orient.x, this->motion_model.states[i].orient.y, this->motion_model.states[i].orient.z,
+                this->motion_model.states[i].anqular_vel.x, this->motion_model.states[i].anqular_vel.y, this->motion_model.states[i].anqular_vel.z,
+                this->motion_model.states[i].accel.x, this->motion_model.states[i].accel.y, this->motion_model.states[i].accel.z,
+                this->motion_model.states[i].anqular_accel.x, this->motion_model.states[i].anqular_accel.y, this->motion_model.states[i].anqular_accel.z
             );
         };
     }
@@ -820,70 +650,33 @@ inline DataSeq_model_Type generate_old_model(
     Point3d accel = Point3d(0, 0, 0),
     Point3d vel_0 = Point3d(0, 0, 0)*/
 
-void Test_model::generate_states(double delta_m, int point_num) {
-    point_num = point_num == 0 ? this->track_model.total_length / delta_m : point_num;
-
-    for (int i = 0; i < point_num; i++) {
-        State_type state = this->track_model.orientation(i * delta_m);
-        Point3d v3_orient = normalize(state.orient);
-        double z_rot = (acos((v3_orient.y + v3_orient.x)/2) + asin((v3_orient.y - v3_orient.x)/2)) / 2;
-        state.change_orient(Point3d(0, 0, z_rot));
-        states.push_back(state);
-    };
-};
-
-void Test_model::generate_gt_points(double delta_m, int point_num) {
-    //нужно расставить точки в соответствии с заданной скоростью
-    point_num = point_num == 0 ? this->track_model.total_length / delta_m : point_num;
-
-    Pose_type pose1_tmp;
-    pose1_tmp.setPose(Point3d(0,0,0));
-    pose1_tmp.setOrient(states[0].orient);
-    pose1_tmp.setAccel(states[0].accel);
-    pose1_tmp.setW(states[0].anqular_accel);
-
-    gt_point.push_back(pose1_tmp);
-
-    for (int i = 1; i < point_num; i++) {
-        Point2d pose_delta = this->track_model.part(i * delta_m) - this->track_model.part((i - 1) * delta_m);
-
-        Pose_type pose_tmp;
-        pose_tmp.setPose(gt_point[i - 1].getPose() + Point3d(pose_delta.x, pose_delta.y, 0));
-        pose_tmp.setOrient(states[i].orient);
-        pose_tmp.setAccel(states[i].accel);
-        pose_tmp.setW(states[i].anqular_accel);
-
-        gt_point.push_back(pose_tmp);
-    };
-};
-
 
 void Test_model::show_gt(string mode, bool pause_enable) {
     static Point2i img_size = Point2i(500, 500);
     Mat img(img_size.x, img_size.y, CV_8UC3, Scalar(255, 255, 255));
     int border = 50;
-    double max_x = this->gt_point[0].lon;
-    double max_y = this->gt_point[0].lat;
-    double min_x = this->gt_point[0].lon;
-    double min_y = this->gt_point[0].lat;
+    double max_x = this->motion_model.gt_point[0].lon;
+    double max_y = this->motion_model.gt_point[0].lat;
+    double min_x = this->motion_model.gt_point[0].lon;
+    double min_y = this->motion_model.gt_point[0].lat;
 
-    for (int i = 0; i < this->gt_point.size(); i++)
+    for (int i = 0; i < this->motion_model.gt_point.size(); i++)
     {
-        max_x = this->gt_point[i].lon > max_x ? this->gt_point[i].lon : max_x;
-        max_y = this->gt_point[i].lat > max_y ? this->gt_point[i].lat : max_y;
+        max_x = this->motion_model.gt_point[i].lon > max_x ? this->motion_model.gt_point[i].lon : max_x;
+        max_y = this->motion_model.gt_point[i].lat > max_y ? this->motion_model.gt_point[i].lat : max_y;
 
-        min_x = this->gt_point[i].lon < min_x ? this->gt_point[i].lon : min_x;
-        min_y = this->gt_point[i].lat < min_y ? this->gt_point[i].lat : min_y;
+        min_x = this->motion_model.gt_point[i].lon < min_x ? this->motion_model.gt_point[i].lon : min_x;
+        min_y = this->motion_model.gt_point[i].lat < min_y ? this->motion_model.gt_point[i].lat : min_y;
     };
 
     Point2d scale = Point2d(max_x - min_x, max_y - min_y);
     double im_scale = scale.x > scale.y ? (img_size.x - 2 * border) / scale.x : (img_size.y - 2 * border) / scale.y;
     Point2i zero_offset = -Point2i(min_x * im_scale, min_y * im_scale);
 
-    for (int i = 1; i < this->gt_point.size(); i++)
+    for (int i = 1; i < this->motion_model.gt_point.size(); i++)
     {
-        Point2d next = Point2d(this->gt_point[i].lon, this->gt_point[i].lat);
-        Point2d prev = Point2d(this->gt_point[i - 1].lon, this->gt_point[i - 1].lat);
+        Point2d next = Point2d(this->motion_model.gt_point[i].lon, this->motion_model.gt_point[i].lat);
+        Point2d prev = Point2d(this->motion_model.gt_point[i - 1].lon, this->motion_model.gt_point[i - 1].lat);
 
         Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
         Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));
@@ -961,10 +754,10 @@ void Test_model::show_bins_gt(bool pause_enable) {
     double im_scale = scale.x > scale.y ? (img_size.x - 2 * border) / scale.x : (img_size.y - 2 * border) / scale.y;
     Point2i zero_offset = -Point2i(min_x * im_scale, min_y * im_scale);
 
-    for (int i = 1; i < this->old_gt_point.size()-1; i++)
+    for (int i = 1; i < this->motion_model.old_gt_point.size() - 1; i++)
     {
-        Point2d next = Point2d(this->old_gt_point[i].lon, this->old_gt_point[i].lat);
-        Point2d prev = Point2d(this->old_gt_point[i - 1].lon, this->old_gt_point[i - 1].lat);
+        Point2d next = Point2d(this->motion_model.old_gt_point[i].lon, this->motion_model.old_gt_point[i].lat);
+        Point2d prev = Point2d(this->motion_model.old_gt_point[i - 1].lon, this->motion_model.old_gt_point[i - 1].lat);
 
         Point2i beg = Point2i(border + im_scale * (prev.x - min_x), border + im_scale * (prev.y - min_y));
         Point2i end = Point2i(border + im_scale * (next.x - min_x), border + im_scale * (next.y - min_y));

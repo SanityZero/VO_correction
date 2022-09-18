@@ -152,6 +152,7 @@
     <ClCompile Include="DataSequence.cpp" />
     <ClCompile Include="ErEstVO.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Test_motion_model.cpp" />
     <ClCompile Include="Track_part_type.cpp" />
     <ClCompile Include="Tests.cpp" />
     <ClCompile Include="VOCorrection.cpp" />

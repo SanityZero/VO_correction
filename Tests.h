@@ -44,97 +44,49 @@ private:
         State_type orientation(double dist);
         void generate_track(Test_model_restrictions restr);
 
-        void load_csv(string filename, string sep = ";") {
-            ifstream fin(filename);
-            char buffer[255];
-            fin.getline(buffer, 255);
-
-            size_t pos = 0;
-            std::string token;
-            string line(buffer);
-            while ((pos = line.find(sep)) != std::string::npos) {
-                token = line.substr(0, pos);
-                std::cout << token << std::endl;
-                line.erase(0, pos + sep.length());
-            };
-            cout << token << endl;
-
-        };
-
-        void save_csv(string filename, string sep = ";") {
-            vector<string> csv_data;
-            cout << "save csv" << endl;
-            for (int i = 0; i < track.size(); i++) {
-                csv_data.push_back(track[i].get_csv_data(sep) + sep + to_string(track_length[i]));
-            };
-
-            vector<string> header;
-            header.push_back("Line_sx");
-            header.push_back("Line_sy");
-            header.push_back("Line_ex");
-            header.push_back("Line_ey");
-            header.push_back("Line_time");
-
-            header.push_back("Turn_sx");
-            header.push_back("Turn_sy");
-            header.push_back("Turn_svx");
-            header.push_back("Turn_svy");
-            header.push_back("Turn_ex");
-            header.push_back("Turn_ey");
-            header.push_back("Turn_cx");
-            header.push_back("Turn_cy");
-            header.push_back("Turn_a");
-            header.push_back("Turn_time");
-
-            header.push_back("TP_evx");
-            header.push_back("TP_evy");
-            header.push_back("TP_ex");
-            header.push_back("TP_ey");
-            header.push_back("TP_len");
-
-            header.push_back(to_string(track.size()));
-
-            string header_line = "";
-            for (string item : header)
-                header_line += "\"" + item + "\"" + sep;
-
-
-            ofstream fout(filename);
-            fout << header_line << '\n';
-
-            for (string row : csv_data) {
-                  
-                size_t start_pos = 0;
-                string from = ".";
-                string to = ",";
-                while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
-                    row.replace(start_pos, from.length(), to);
-                    start_pos += to.length();
-                }
-                fout << row << '\n';
-            };
-
-            fout.close();
-        };
+        void load_csv(string filename, string sep = ";");
+        void save_csv(string filename, string sep = ";");
     } track_model;
 
+
     //модель движения
-    vector<Pose_type> gt_point;
-    vector<Pose_type> old_gt_point;
-    vector<Pose_type> eval_old_gt_point;
-    vector<State_type> states;
-    vector<double> timestamps;
-    double total_time;
+    class Test_motion_model {
+    public:
+        vector<Pose_type> gt_point;
+        vector<Pose_type> old_gt_point;
+        vector<Pose_type> eval_old_gt_point;
+        vector<State_type> states;
+        vector<double> timestamps;
+        double total_time;
 
-    State_type get_state(int number);
-    void generate_gt_points(double delta_m, int point_num = 0);
-    void generate_states(double delta_m, int point_num = 0);
-    void generate_timestaps(double delta_m, double vel);
-    void smooth_anqular_vel(double T, double U1, double U2);
-    void smooth_vel(double T, double U);
-    void regenerate_gt_points();
+        void save_csv_gt_point(string filename, string sep = ";") {
+            //vector<string> csv_data;
+            //cout << "save_csv_gt_point" << endl;
+            //for (int i = 0; i < track.size(); i++) {
+            //    csv_data.push_back(track[i].get_csv_data(sep) + sep + to_string(track_length[i]));
+            //};
+        };
+        void save_csv_old_gt_point(string filename, string sep = ";") {};
+        void save_csv_eval_old_gt_pointt(string filename, string sep = ";") {};
+        void save_csv_states(string filename, string sep = ";") {};
+        void save_csv_timestamps(string filename, string sep = ";") {};
 
-    void integrate_old_gt();
+        void load_csv_gt_point(string filename, string sep = ";") {};
+        void load_csv_old_gt_point(string filename, string sep = ";") {};
+        void load_csv_eval_old_gt_pointt(string filename, string sep = ";") {};
+        void load_csv_states(string filename, string sep = ";") {};
+        void load_csv_timestamps(string filename, string sep = ";") {};
+        
+
+        State_type get_state(int number);
+        void generate_gt_points(Test_track_model track_model, double delta_m, int point_num = 0);
+        void generate_states(Test_track_model track_model, double delta_m, int point_num = 0);
+        void generate_timestaps(double delta_m, double vel);
+        void smooth_anqular_vel(double T, double U1, double U2);
+        void smooth_vel(double T, double U);
+        void regenerate_gt_points();
+        void integrate_old_gt();
+    } motion_model;
 
 
     //модель камеры

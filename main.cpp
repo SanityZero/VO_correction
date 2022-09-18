@@ -49,6 +49,9 @@ int main(int argc, char** argv) {
         Test_model tm1("test1", "C:\\ProgStaff\\NIRS_models\\test1\\");
 
         //tm1.read_restriction_file();
+        //cout << string("\"lat\"") + "\"lon\"" + "\"alt\"" + "\"roll\"" + "\"pitch\"" + "\"yaw\"" + "\"ax\"" + "\"ay\"" + "\"az\"" + "\"wx\"" + "\"wy\"" + "\"wz\"" << endl;
+        cout << Pose_type_HEADER(";") << endl;
+        cout << State_type_HEADER(";") << endl;
         tm1.generate_test_model();
         //    1, //max_track_parts
         //    0.1, //dicret
@@ -69,7 +72,7 @@ int main(int argc, char** argv) {
         //tm1.print_bins_gts("C:/ProgStaff/NIRS_models/test1/bins_gt_points.txt");
         ////system("del /f /s /q C:\\ProgStaff\\test_generated_images");
         ////tm1.print_camera_proections();
-        //tm1.show_bins_gt();
+        tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();
         //system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");
