@@ -258,7 +258,9 @@ void Test_model::generate_test_model(string gen_restr_filename){
 
     //this->track_model.generate_track(this->gen_restrictions);
     //this->track_model.save_csv(this->dir_name + "track.csv");
+   
     this->track_model.load_csv(this->dir_name + "track.csv");
+   
     /*generate_track(
         this->gen_restrictions.max_track_parts, 
         this->gen_restrictions.min_line_length, 
@@ -270,8 +272,11 @@ void Test_model::generate_test_model(string gen_restr_filename){
         this->gen_restrictions.average_vel, 
         this->gen_restrictions.stddev_vel);*/
     this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
-    this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
+    //this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
+    this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
     this->motion_model.generate_timestaps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
+
+    //this->motion_model.save_csv_gt_point(this->dir_name + "gt_point.csv");
 
 
 
