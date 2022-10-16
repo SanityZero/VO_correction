@@ -49,10 +49,19 @@ int main(int argc, char** argv) {
         Test_model tm1("test1", "C:\\ProgStaff\\NIRS_models\\test1\\");
 
         //tm1.read_restriction_file();
-        //cout << string("\"lat\"") + "\"lon\"" + "\"alt\"" + "\"roll\"" + "\"pitch\"" + "\"yaw\"" + "\"ax\"" + "\"ay\"" + "\"az\"" + "\"wx\"" + "\"wy\"" + "\"wz\"" << endl;
-        //cout << Pose_type_HEADER(";") << endl;
-        //cout << State_type_HEADER(";") << endl;
-        tm1.generate_test_model();
+
+
+        vector<bool> options;
+
+        // настройки загрузки/сохранения
+        options.push_back(true); // track_model.load_csv
+        options.push_back(false); // load_csv_states
+        options.push_back(false); // load_csv_gt_point
+        options.push_back(false); // load_csv_timestamps
+        options.push_back(false); // load_csv_old_gt_point
+        options.push_back(false); // load_csv_eval_old_gt_point
+
+        tm1.generate_test_model(options);
         //    1, //max_track_parts
         //    0.1, //dicret
         //    30, //mean_line_length

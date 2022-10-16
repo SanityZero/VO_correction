@@ -75,7 +75,7 @@ private:
         State_type get_state(int number);
         void generate_gt_points(Test_track_model track_model, double delta_m, int point_num = 0);
         void generate_states(Test_track_model track_model, double delta_m, int point_num = 0);
-        void generate_timestaps(double delta_m, double vel);
+        void generate_timestamps(double delta_m, double vel);
         void smooth_anqular_vel(double T, double U1, double U2);
         void smooth_vel(double T, double U);
         void regenerate_gt_points();
@@ -153,7 +153,7 @@ public:
         //vector<double> bins_timestamps;
     };
 
-    void generate_test_model(string gen_restr_filename = "");
+    void generate_test_model(vector<bool> options, string gen_restr_filename = "");
 
 
     void show_gt(string mode = "screen", bool pause_enable = false);

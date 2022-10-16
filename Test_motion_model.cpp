@@ -146,6 +146,8 @@ void Test_model::Test_motion_model::load_csv_gt_point(string filename, string se
     char buffer[255];
     fin.getline(buffer, 255);
 
+    cout << "load_csv_gt_point" << endl;
+
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
         line_buffer.push_back(buffer);
@@ -166,6 +168,8 @@ void Test_model::Test_motion_model::load_csv_old_gt_point(string filename, strin
     ifstream fin(filename);
     char buffer[255];
     fin.getline(buffer, 255);
+
+    cout << "load_csv_old_gt_point" << endl;
 
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
@@ -188,6 +192,8 @@ void Test_model::Test_motion_model::load_csv_eval_old_gt_point(string filename, 
     char buffer[255];
     fin.getline(buffer, 255);
 
+    cout << "load_csv_eval_old_gt_point" << endl;
+
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
         line_buffer.push_back(buffer);
@@ -209,6 +215,8 @@ void Test_model::Test_motion_model::load_csv_states(string filename, string sep)
     char buffer[255];
     fin.getline(buffer, 255);
 
+    cout << "load_csv_states" << endl;
+
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
         line_buffer.push_back(buffer);
@@ -229,6 +237,8 @@ void Test_model::Test_motion_model::load_csv_timestamps(string filename, string 
     ifstream fin(filename);
     char buffer[255];
     fin.getline(buffer, 255);
+
+    cout << "load_csv_timestamps" << endl;
 
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
@@ -292,7 +302,7 @@ void Test_model::Test_motion_model::generate_states(Test_track_model track_model
 };
 
 
-void Test_model::Test_motion_model::generate_timestaps(double delta_m, double vel) {
+void Test_model::Test_motion_model::generate_timestamps(double delta_m, double vel) {
     double deltatime = delta_m / vel;
     this->timestamps.push_back(0.0);
     for (int i = 1; i < this->states.size(); i++) {

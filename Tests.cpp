@@ -27,7 +27,7 @@ void Test_model::Test_track_model::load_csv(string filename, string sep) {
     ifstream fin(filename);
     char buffer[255];
     fin.getline(buffer, 255);
-
+    cout << "load_csv_track_model" << endl;
     vector<string> line_buffer;
     while (fin.getline(buffer, 255)) {
         line_buffer.push_back(buffer);
@@ -246,7 +246,7 @@ void Test_model::Test_model_restrictions::set(string filename, vector<int> int_d
 
 };
 
-void Test_model::generate_test_model(string gen_restr_filename){
+void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename){
     if (gen_restr_filename != "") { 
         this->gen_restrictions.load_restriction_file(gen_restr_filename);
     }
@@ -254,29 +254,61 @@ void Test_model::generate_test_model(string gen_restr_filename){
     {
         this->gen_restrictions.load_restriction_file(this->dir_name + "init.txt");
     }
-    // сгенерировать трак в соответствии с ограничениями
 
-    //this->track_model.generate_track(this->gen_restrictions);
-    //this->track_model.save_csv(this->dir_name + "track.csv");
-   
-    this->track_model.load_csv(this->dir_name + "track.csv");
+    // сгенерировать трак в соответствии с ограничениями или загрузить его
+    if (options[0]) {
+        this->track_model.load_csv(this->dir_name + "track.csv");
+    }
+    else {
+        this->track_model.generate_track(this->gen_restrictions);
+        this->track_model.save_csv(this->dir_name + "track.csv");
+    };
    
 
-    //this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
-    this->motion_model.load_csv_states(this->dir_name + "states.csv");
+    // сгенерировать состояний в соответствии с ограничениями или загрузить их
+    if (options[1]) {
+        this->motion_model.load_csv_states(this->dir_name + "states.csv");
+    }
+    else {
+        this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
+        this->motion_model.save_csv_states(this->dir_name + "states.csv");
+    };
+
+    // gt_point
+    if (options[2]) {
+        this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
+    }
+    else {
+        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
+        this->motion_model.save_csv_gt_point(this->dir_name + "gt_point.csv");
+    };
     
-    //this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
-    this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
-    //this->motion_model.generate_timestaps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
+    // timestamps
+    if (options[3]) {
+        this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
+        this->motion_model.update_total_time();
+    }
+    else {
+        this->motion_model.generate_timestamps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
+        this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
+    };
+    
+    // old_gt_point
+    if (options[4]) {
+        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    }
+    else {
+        this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    };
 
-    //this->motion_model.save_csv_gt_point(this->dir_name + "gt_point.csv");
-    //this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
-    //this->motion_model.save_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
-    //this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
-    this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
-    this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    this->motion_model.update_total_time();
+    // eval_old_gt_point
+    if (options[5]) {
+        this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
+    }
+    else {
+        this->motion_model.save_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
+    };
+ 
 
     //show_gt();
     //waitKey(0);
