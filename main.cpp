@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
 
         //tm1.read_restriction_file();
         //cout << string("\"lat\"") + "\"lon\"" + "\"alt\"" + "\"roll\"" + "\"pitch\"" + "\"yaw\"" + "\"ax\"" + "\"ay\"" + "\"az\"" + "\"wx\"" + "\"wy\"" + "\"wz\"" << endl;
-        cout << Pose_type_HEADER(";") << endl;
-        cout << State_type_HEADER(";") << endl;
+        //cout << Pose_type_HEADER(";") << endl;
+        //cout << State_type_HEADER(";") << endl;
         tm1.generate_test_model();
         //    1, //max_track_parts
         //    0.1, //dicret

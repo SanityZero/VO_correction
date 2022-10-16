@@ -29,7 +29,7 @@ public:
         this->setW(W_vec);
     };
 
-    void read_csv(std::string line, std::string sep = ",") {
+    void read_csv(std::string line, std::string sep = ";") {
         size_t pos = 0;
         std::vector<std::string> values;
         while ((pos = line.find(sep)) != std::string::npos) {
@@ -40,13 +40,15 @@ public:
         values.push_back(line);
         std::vector<double> double_buffer;
         for (std::string item : values) {
-            item.replace(item.find(","), 1, ".");
-            double_buffer.push_back(std::stod(item));
+            if (item.find(",") != std::string::npos) {
+                item.replace(item.find(","), 1, ".");
+                double_buffer.push_back(std::stod(item));
+            };
             //cout << "_" << stod(item) << "_" << endl;
         }
 
         if (double_buffer.size() != 12) {
-            std::cout << "Pose_type csv init wrong size" << std::to_string(double_buffer.size()) << std::endl;
+            std::cout << "Pose_type csv init wrong size:\t" << std::to_string(double_buffer.size()) << std::endl;
             return;
         };
 

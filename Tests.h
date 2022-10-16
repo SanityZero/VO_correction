@@ -59,73 +59,18 @@ private:
         vector<double> timestamps;
         double total_time;
 
-        void save_csv_gt_point(string filename, string sep = ";") {
-            vector<string> csv_data;
-            cout << "save_csv_gt_point" << endl;
-            for (int i = 0; i < gt_point.size(); i++) {
-                csv_data.push_back(gt_point[i].get_csv_data(sep));
-            };
+        void save_csv_gt_point(string filename, string sep = ";");
+        void save_csv_old_gt_point(string filename, string sep = ";");
+        void save_csv_eval_old_gt_point(string filename, string sep = ";");
+        void save_csv_states(string filename, string sep = ";");
+        void save_csv_timestamps(string filename, string sep = ";");
 
-            ofstream fout(filename);
-            fout << Pose_type_HEADER(sep) << '\n';
-
-            for (string row : csv_data) {
-
-                size_t start_pos = 0;
-                string from = ".";
-                string to = ",";
-                while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
-                    row.replace(start_pos, from.length(), to);
-                    start_pos += to.length();
-                }
-                fout << row << '\n';
-            };
-
-            fout.close();
-        };
-
-        void save_csv_old_gt_point(string filename, string sep = ";") {};
-        void save_csv_eval_old_gt_pointt(string filename, string sep = ";") {};
-        void save_csv_states(string filename, string sep = ";") {};
-        void save_csv_timestamps(string filename, string sep = ";") {};
-
-        void load_csv_gt_point(string filename, string sep = ";") {
-            ifstream fin(filename);
-            char buffer[255];
-            fin.getline(buffer, 255);
-
-            vector<string> line_buffer;
-            while (fin.getline(buffer, 255)) {
-                line_buffer.push_back(buffer);
-                //cout << "_" << buffer << "_" << endl;
-
-                size_t pos = 0;
-                vector<string> values;
-                string line(buffer);
-                while ((pos = line.find(sep)) != std::string::npos) {
-                    values.push_back(line.substr(0, pos));
-                    //std::cout << values << std::endl;
-                    line.erase(0, pos + sep.length());
-                };
-                values.push_back(line);
-
-                vector<double> double_buffer;
-                for (string item : values) {
-                    item.replace(item.find(","), 1, ".");
-                    Pose_type tmp;
-                    tmp.read_csv(item);
-                    this->gt_point.push_back(tmp);
-                    //cout << "_" << stod(item) << "_" << endl;
-                }
-            };
-            fin.close();
-        };
-
-        void load_csv_old_gt_point(string filename, string sep = ";") {};
-        void load_csv_eval_old_gt_pointt(string filename, string sep = ";") {};
-        void load_csv_states(string filename, string sep = ";") {};
-        void load_csv_timestamps(string filename, string sep = ";") {};
-        
+        void load_csv_gt_point(string filename, string sep = ";");
+        void load_csv_old_gt_point(string filename, string sep = ";");
+        void load_csv_eval_old_gt_point(string filename, string sep = ";");
+        void load_csv_states(string filename, string sep = ";");
+        void load_csv_timestamps(string filename, string sep = ";");
+        void update_total_time();
 
         State_type get_state(int number);
         void generate_gt_points(Test_track_model track_model, double delta_m, int point_num = 0);

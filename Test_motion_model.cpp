@@ -12,6 +12,237 @@ using namespace std;
 #include "Tests.h"
 
 
+void Test_model::Test_motion_model::update_total_time() {
+    this->total_time = this->timestamps[this->timestamps.size() - 1];
+};
+
+void Test_model::Test_motion_model::save_csv_gt_point(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_gt_point" << endl;
+    for (int i = 0; i < this->gt_point.size(); i++) {
+        csv_data.push_back(this->gt_point[i].get_csv_data(sep));
+    };
+
+    ofstream fout(filename);
+    fout << Pose_type_HEADER(sep) << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_motion_model::save_csv_old_gt_point(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_old_gt_point" << endl;
+    for (int i = 0; i < this->old_gt_point.size(); i++) {
+        csv_data.push_back(this->old_gt_point[i].get_csv_data(sep));
+    };
+
+    ofstream fout(filename);
+    fout << Pose_type_HEADER(sep) << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_motion_model::save_csv_eval_old_gt_point(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_eval_old_gt_point" << endl;
+    for (int i = 0; i < this->eval_old_gt_point.size(); i++) {
+        csv_data.push_back(this->eval_old_gt_point[i].get_csv_data(sep));
+    };
+
+    ofstream fout(filename);
+    fout << Pose_type_HEADER(sep) << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_motion_model::save_csv_states(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_states" << endl;
+    for (int i = 0; i < this->states.size(); i++) {
+        csv_data.push_back(this->states[i].get_csv_data(sep));
+    };
+
+    ofstream fout(filename);
+    fout << State_type_HEADER(sep) << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_motion_model::save_csv_timestamps(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_timestamps" << endl;
+    for (int i = 0; i < this->timestamps.size(); i++) {
+        csv_data.push_back(to_string(this->timestamps[i]));
+    };
+
+    ofstream fout(filename);
+    fout << "timest" << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_motion_model::load_csv_gt_point(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        size_t pos = 0;
+        vector<string> values;
+        string line(buffer);
+
+        Pose_type tmp;
+        tmp.read_csv(line);
+        this->gt_point.push_back(tmp);
+    };
+    fin.close();
+};
+
+void Test_model::Test_motion_model::load_csv_old_gt_point(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        size_t pos = 0;
+        vector<string> values;
+        string line(buffer);
+
+        Pose_type tmp;
+        tmp.read_csv(line);
+        this->gt_point.push_back(tmp);
+    };
+    fin.close();
+};
+
+void Test_model::Test_motion_model::load_csv_eval_old_gt_point(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        size_t pos = 0;
+        vector<string> values;
+        string line(buffer);
+
+        Pose_type tmp;
+        tmp.read_csv(line);
+        this->old_gt_point.push_back(tmp);
+    };
+    fin.close();
+};
+
+void Test_model::Test_motion_model::load_csv_states(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        size_t pos = 0;
+        vector<string> values;
+        string line(buffer);
+
+        State_type tmp;
+        tmp.read_csv(line);
+        this->states.push_back(tmp);
+    };
+    fin.close();
+};
+
+void Test_model::Test_motion_model::load_csv_timestamps(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        string line(buffer);
+        line.replace(line.find(","), 1, ".");
+        this->timestamps.push_back(std::stod(line));
+    };
+    fin.close();
+};
+
+
 State_type Test_model::Test_motion_model::get_state(int number) {
     if (number < 0)
         return this->states[0];

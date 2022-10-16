@@ -261,24 +261,22 @@ void Test_model::generate_test_model(string gen_restr_filename){
    
     this->track_model.load_csv(this->dir_name + "track.csv");
    
-    /*generate_track(
-        this->gen_restrictions.max_track_parts, 
-        this->gen_restrictions.min_line_length, 
-        this->gen_restrictions.max_line_length, 
-        this->gen_restrictions.mean_corner_radius, 
-        this->gen_restrictions.stddev_radius, 
-        this->gen_restrictions.mean_corner_angle, 
-        this->gen_restrictions.stddev_angle, 
-        this->gen_restrictions.average_vel, 
-        this->gen_restrictions.stddev_vel);*/
-    this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
+
+    //this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
+    this->motion_model.load_csv_states(this->dir_name + "states.csv");
+    
     //this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
     this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
-    this->motion_model.generate_timestaps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
+    //this->motion_model.generate_timestaps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
 
     //this->motion_model.save_csv_gt_point(this->dir_name + "gt_point.csv");
-
-
+    //this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
+    //this->motion_model.save_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
+    //this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
+    this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
+    this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    this->motion_model.update_total_time();
 
     //show_gt();
     //waitKey(0);

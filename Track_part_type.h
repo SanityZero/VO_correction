@@ -40,8 +40,8 @@ public:
     void change_anqular_vel(cv::Point3d _arg) { this->change(_arg, 3); };
     void change_anqular_accel(cv::Point3d _arg) { this->change(_arg, 4); };
 
-    void read_csv(std::string line, std::string sep = ",");
-    std::string get_csv_data(std::string sep = ",");
+    void read_csv(std::string line, std::string sep = ";");
+    std::string get_csv_data(std::string sep = ";");
 };
 
 class Line_track_type {
