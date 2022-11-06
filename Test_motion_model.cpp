@@ -263,9 +263,9 @@ State_type Test_model::Test_motion_model::get_state(int number) {
 };
 
 
-void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_model, double delta_m, int point_num) {
-    //нужно расставить точки в соответствии с заданной скоростью
-    point_num = point_num == 0 ? track_model.total_length / delta_m : point_num;
+void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_model, double delta_length, int point_num) {
+    //нужно расставить точки в соответствии с заданой дискретизацией по расстоянию
+    point_num = point_num == 0 ? track_model.total_length / delta_length : point_num;
 
     Pose_type pose1_tmp;
     pose1_tmp.setPose(Point3d(0, 0, 0));
@@ -276,10 +276,11 @@ void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_mo
     gt_point.push_back(pose1_tmp);
 
     for (int i = 1; i < point_num; i++) {
-        Point2d pose_delta = track_model.part(i * delta_m) - track_model.part((i - 1) * delta_m);
+        //Point2d pose_delta = track_model.part(i * delta_length) - track_model.part((i - 1) * delta_length);
 
         Pose_type pose_tmp;
-        pose_tmp.setPose(gt_point[i - 1].getPose() + Point3d(pose_delta.x, pose_delta.y, 0));
+        //pose_tmp.setPose(gt_point[i - 1].getPose() + Point3d(pose_delta.x, pose_delta.y, 0));
+        pose_tmp.setPose(track_model.part(i * delta_length));
         pose_tmp.setOrient(states[i].orient);
         pose_tmp.setAccel(states[i].accel);
         pose_tmp.setW(states[i].anqular_accel);
@@ -295,7 +296,10 @@ void Test_model::Test_motion_model::generate_states(Test_track_model track_model
     for (int i = 0; i < point_num; i++) {
         State_type state = track_model.orientation(i * delta_m);
         Point3d v3_orient = normalize(state.orient);
-        double z_rot = (acos((v3_orient.y + v3_orient.x) / 2) + asin((v3_orient.y - v3_orient.x) / 2)) / 2;
+        // double z_rot = (acos((v3_orient.y + v3_orient.x) / 2) + asin((v3_orient.y - v3_orient.x) / 2)) / 2;
+
+        // тут нужно решить проблему того, что при отри
+        double z_rot = atan2(v3_orient.y, v3_orient.x);
         state.change_orient(Point3d(0, 0, z_rot));
         states.push_back(state);
     };
@@ -315,7 +319,7 @@ void Test_model::Test_motion_model::generate_timestamps(double delta_m, double v
 void Test_model::Test_motion_model::smooth_anqular_vel(double T, double U1, double U2) {
     vector<Point3d> res_orient_vec;
     vector<Point3d> res_ang_vel_vec;
-
+    smooth_p2d();
     //for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
     for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
 

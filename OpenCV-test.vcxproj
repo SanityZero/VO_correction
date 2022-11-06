@@ -152,7 +152,10 @@
     <ClCompile Include="DataSequence.cpp" />
     <ClCompile Include="ErEstVO.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Test_bins_model.cpp" />
+    <ClCompile Include="Test_math.cpp" />
     <ClCompile Include="Test_motion_model.cpp" />
+    <ClCompile Include="Test_track_model.cpp" />
     <ClCompile Include="Track_part_type.cpp" />
     <ClCompile Include="Tests.cpp" />
     <ClCompile Include="VOCorrection.cpp" />
@@ -161,6 +164,7 @@
     <ClInclude Include="DataSequence.h" />
     <ClInclude Include="ErEstVO.h" />
     <ClInclude Include="Tests.h" />
+    <ClInclude Include="Test_math.h" />
     <ClInclude Include="Track_part_type.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="VOCorrection.h" />

@@ -5,15 +5,16 @@
 
 #define State_type_HEADER(sep) string("\"velx\"") + sep + "\"vely\"" + sep + "\"velz\"" + sep + "\"accelx\"" + sep + "\"accely\"" + sep + "\"accelz\"" + sep + "\"orientx\"" + sep + "\"orienty\"" + sep + "\"orientz\"" + sep + "\"anqular_velx\"" + sep + "\"anqular_vely\"" + sep + "\"anqular_velz\"" + sep + "\"anqular_accelx\"" + sep + "\"anqular_accely\"" + sep + "\"anqular_accelz\""
 
-double min(double a, double b, double c);
-double max(double a, double b, double c);
-cv::Point2d rotate2d(cv::Point2d vec, double angle);
-double length(cv::Point2d vec);
-cv::Point2d get_point_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
-cv::Point2d get_norm_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
-cv::Point2d get_arc_end_point(cv::Point2d cent, cv::Point2d start, double angle);
-cv::Point3d toAngle3d(cv::Point3d vec);
-cv::Point3d normalize(cv::Point3d vec);
+#include "Test_math.h"
+//double min(double a, double b, double c);
+//double max(double a, double b, double c);
+//cv::Point2d rotate2d(cv::Point2d vec, double angle);
+//double length(cv::Point2d vec);
+//cv::Point2d get_point_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
+//cv::Point2d get_norm_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
+//cv::Point2d get_arc_end_point(cv::Point2d cent, cv::Point2d start, double angle);
+//cv::Point3d toAngle3d(cv::Point3d vec);
+//cv::Point3d normalize(cv::Point3d vec);
 
 class State_type {
 public:

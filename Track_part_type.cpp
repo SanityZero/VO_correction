@@ -5,7 +5,12 @@
 #include <iostream>
 
 #include "Track_part_type.h"
+#include "Test_math.h"
 #define GCONST  9.80665
+
+double Track_part_type::len() {
+    return line.len() + turn.len();
+};
 
 std::string State_type::get_csv_data(std::string sep) {
     std::string result = "";
@@ -61,7 +66,7 @@ State_type Corner_type::orientation(double dist = 0) {
     cv::Point3d n_delta = normalize(cv::Point3d(delta.x, delta.y, 0));
 
     res.change_vel(n_delta * (this->len() / this->time));
-    res.change_orient(toAngle3d(n_delta));
+    res.change_orient(n_delta);
     return res;
 };
 
@@ -72,7 +77,9 @@ State_type Line_track_type::orientation(double dist = 0) {
     cv::Point2d delta = this->end - this->start;
     cv::Point3d n_delta = normalize(cv::Point3d(delta.x, delta.y, 0));
 
-    res.change_orient(toAngle3d(n_delta));
+    res.change_orient(n_delta);
+
+    //res.change_orient(toAngle3d(n_delta));
     res.change_vel(cv::Point3d(delta.x, delta.y, 0) / this->time);
 
 
@@ -190,9 +197,6 @@ State_type::State_type(
     };
 };
 
-double Track_part_type::len() {
-    return line.len() + turn.len();
-};
 
 
 Track_part_type::Track_part_type(
@@ -216,11 +220,11 @@ Track_part_type::Track_part_type(
     std::uniform_real_distribution<double> distribution_angle(min_corner_angle, max_corner_angle);
    
 
-    double min_radius = 10;
-    double max_radius = 500;
-    double min_length = 5;
-    double max_length = 500;
-    double min_angle = 30;
+    //double min_radius = 10;
+    //double max_radius = 500;
+    //double min_length = 5;
+    //double max_length = 500;
+    //double min_angle = 30;
 
     double vel = distribution_vel(generator);
     //while (vel <= 0) vel = distribution_vel(generator);
@@ -234,9 +238,10 @@ Track_part_type::Track_part_type(
     //while (radius < 0) radius = distribution_radius(generator);
 
     double angle = distribution_angle(generator);
-    angle = fmod(angle, 2 * M_PI);
+    //angle = fmod(angle, 2 * M_PI);
     //angle = abs(angle) > 0 ? angle : min_angle;
-    cv::Point2d center = this->line.end + get_norm_vect(this->line.end, this->line.start) * radius;
+    cv::Point2d r_vec = get_norm_vect(this->line.end, this->line.start) * radius;
+    cv::Point2d center = this->line.end + (angle > 0 ? r_vec : -r_vec);
     cv::Point2d end = center + get_arc_end_point(this->line.end, center, angle);// not sure
 
     double corner_time = (length(center - this->line.end) * angle) / vel;
@@ -245,80 +250,3 @@ Track_part_type::Track_part_type(
     this->end = this->turn.end;
 };
 
-inline cv::Point3d normalize(cv::Point3d vec) {
-    double length = sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-    if (length == 0) return vec;
-    return vec / length;
-};
-
-
-double min(double a, double b, double c) {
-    if ((a <= b) && (a <= c)) return a;
-    if ((b <= a) && (b <= c)) return b;
-    if ((c <= b) && (c <= a)) return c;
-};
-
-double max(double a, double b, double c) {
-    if ((a >= b) && (a >= c)) return a;
-    if ((b >= a) && (b >= c)) return b;
-    if ((c >= b) && (c >= a)) return c;
-};
-
-cv::Point2d rotate2d(cv::Point2d vec, double angle) {
-    double rot_arr[2][2] = {
-        {cos(angle), -sin(angle)},
-        {sin(angle), cos(angle)}
-    };
-    cv::Mat rot = cv::Mat(2, 2, CV_64F, rot_arr);
-    double radius_vec_arr[2][1] = {
-        {vec.x},
-        {vec.y}
-    };
-    cv::Mat radius_vec = cv::Mat(2, 1, CV_64F, radius_vec_arr);
-    cv::Mat end_vec = rot * radius_vec;
-    return cv::Point2d(end_vec.at<double>(0, 0), end_vec.at<double>(1, 0));
-};
-
-double length(cv::Point2d vec) {
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
-};
-
-cv::Point2d get_point_vect(cv::Point2d end, cv::Point2d start) {
-    return cv::Point2d((end.x - start.x) / length(end - start), (end.y - start.y) / length(end - start));
-};
-
-cv::Point2d get_norm_vect(cv::Point2d end, cv::Point2d start) {
-    return rotate2d(end - start, M_PI / 2) / length(end - start);
-};
-
-cv::Point2d get_arc_end_point(cv::Point2d cent, cv::Point2d start, double angle) {
-    return rotate2d(cent - start, angle);
-};
-
-cv::Point3d toAngle3d(cv::Point3d vec) {
-    cv::Point3d vec_x = normalize(cv::Point3d(0, vec.y, vec.z));    //проекция на YOZ
-    cv::Point3d vec_y = normalize(cv::Point3d(vec.x, 0, vec.z));   //проекция на XOZ
-    cv::Point3d vec_z = normalize(cv::Point3d(vec.x, vec.y, 0));    //проекция на XOY
-    vec = normalize(vec);
-
-    cv::Point3d res(0, 0, 0);
-    res.x = vec == vec_x ? 0 : acos(vec.dot(vec_x));
-    res.y = vec == vec_y ? 0 : acos(vec.dot(vec_y));
-    res.z = vec == vec_z ? 0 : acos(vec.dot(vec_z));
-
-    return res;
-};
-
-cv::Point3d Angle3dtoPA(cv::Point3d vec) {
-    cv::Point3d vec_x = normalize(cv::Point3d(0, vec.y, vec.z));    //проекция на YOZ
-    cv::Point3d vec_y = normalize(cv::Point3d(vec.x, 0, vec.z));   //проекция на XOZ
-    cv::Point3d vec_z = normalize(cv::Point3d(vec.x, vec.y, 0));    //проекция на XOY
-    vec = normalize(vec);
-
-    cv::Point3d res(0, 0, 0);
-    res.x = acos(vec.dot(vec_x));
-    res.y = acos(vec.dot(vec_y));
-    res.z = acos(vec.dot(vec_z));
-
-    return res;
-};

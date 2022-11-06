@@ -1,10 +1,25 @@
 #pragma once
 #include "Track_part_type.h"
 
+using namespace cv;
+using namespace std;
+
 class Test_model {
 private:
     string dir_name;
     string name;
+
+    //static vector<Point2d> smooth_p2d(vector<Point2d> input_series, double amp_1, double amp_2, Point2d limiter) {
+    static vector<Point2d> smooth_p2d() {
+        vector<Point2d> result;
+
+        //result.push_back(input_series[0]);
+        //result.push_back(input_series[1]);
+        //for (int i = 2; i < input_series.size(); i++) {
+        //    
+        //}
+        return result;
+    };
 
     //ограничения генерации
     struct Test_model_restrictions {
@@ -14,14 +29,16 @@ private:
         double dicret;
         double min_line_length;
         double max_line_length;
-        double mean_corner_radius;
 
+        double mean_corner_radius;
         double stddev_radius;
+
         double mean_corner_angle;
         double stddev_angle;
-        double average_vel;
 
+        double average_vel;
         double stddev_vel;
+
         double T;
         double U1;
         double U2;
@@ -73,11 +90,14 @@ private:
         void update_total_time();
 
         State_type get_state(int number);
+
         void generate_gt_points(Test_track_model track_model, double delta_m, int point_num = 0);
         void generate_states(Test_track_model track_model, double delta_m, int point_num = 0);
         void generate_timestamps(double delta_m, double vel);
+
         void smooth_anqular_vel(double T, double U1, double U2);
         void smooth_vel(double T, double U);
+
         void regenerate_gt_points();
         void integrate_old_gt();
     } motion_model;
@@ -106,12 +126,20 @@ private:
     void generate_camera_proections();
 
     //модель БИНС
-    vector<Pose_type> bins_gt_points;
-    vector<Pose_type> bins_points;
-    vector<Pose_type> bins_eval_points;
-    vector<double> bins_timestamps;
+    class Test_bins_model {
+    public:
+        vector<Pose_type> bins_gt_points;
+        vector<Pose_type> bins_points;
+        vector<Pose_type> bins_eval_points;
+        vector<double> bins_timestamps;
 
-    void generate_bins_gt(double bins_deltatime);
+        void generate_bins_gt(Test_motion_model mothion_model, double bins_deltatime);
+
+        void save_csv_bins_gt_points(string filename, string sep = ";");
+
+        void load_csv_bins_gt_points(string filename, string sep = ";");
+    } bins_model;
+
 
 public:
     Test_model(string name, string dir_name) {
@@ -153,13 +181,14 @@ public:
         //vector<double> bins_timestamps;
     };
 
-    void generate_test_model(vector<bool> options, string gen_restr_filename = "");
+    void generate_test_model(vector<bool> options, string gen_restr_filename = "");// вот эта функция вызывается
 
 
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_bins_gt(bool pause_enable = false);
+
     void print_camera_proections() {
-        for (int i = 0; i < this->bins_timestamps.size()-1; i++) {
+        for (int i = 0; i < this->bins_model.bins_timestamps.size()-1; i++) {
             Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
             vector<Point2i> frame_points = this->point_camera_proections[i];
 
@@ -177,7 +206,7 @@ public:
                 line(frame, cross_points[1], cross_points[3], Scalar(0, 0, 255), 1);
                 };
             //сохранить пикчу 
-            string filename = "C:\\ProgStaff\\test_generated_images\\" + to_string(i) + ".jpg";
+            string filename = "C:\\ProgStaff\\NIRS_models\\test1\\frames\\" + to_string(i) + ".jpg";
             imwrite(filename, frame);
         };
     };

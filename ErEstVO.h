@@ -1,5 +1,6 @@
 #pragma once
 using namespace cv;
+#include "Test_math.h"
 /////////////////////////////////////////////////////
 //Считывание данных
 Pose_type getGTData(string, int);
@@ -9,21 +10,6 @@ Mat loadCameraModel(string, int);
 //Расчёт ошибки
 inline Pose_type calcDisplasment(Pose_type, Pose_type, Pose_type, string, int);
 inline Point3d calcDisplasment_ang(Point3d, Point3d, int);
-
-
-/////////////////////////////////////////////////////
-//Матричные операции
-inline Point3d rotateP3d(Point3d, Point3d);
-inline Mat mat_multi(Mat, Mat);
-inline Mat mat_add(Mat, Mat, double, double);
-
-inline Point3d SpheToDec(Point2d, double);
-
-inline double absVec(Point3d);
-inline double angle2V(Point3d, Point3d);
-
-inline Point3d poseDelta(Pose_type, Pose_type);
-inline Point3d angDelta(Pose_type, Pose_type);
 
 /////////////////////////////////////////////////////
 inline Mat printOrientation(Pose_type gtrue, Pose_type estimated) {
@@ -251,78 +237,3 @@ inline Point3d calcDisplasment_ang(Point3d gt, Point3d pose, int mode = 0) {
     return Point3d(gt.x - pose.x, gt.y - pose.y, gt.z - pose.z);
 };
 
-/////////////////////////////////////////////////////
-inline Point3d rotateP3d(Point3d point, Point3d ang) {//rad
-    Point3d res;
-    Point3d tmp1;
-    Point3d tmp2;
-    double x = point.x, y = point.y, z = point.z;
-    double a = ang.x, b = ang.y, c = ang.z;
-
-    tmp1.x = x * cos(c) + y * sin(c);
-    tmp1.y = y * cos(c) - x * sin(c);
-    tmp1.z = z;
-
-    x = tmp1.x, y = tmp1.y, z = tmp1.z;
-
-    tmp2.x = x * cos(b) - z * sin(b);
-    tmp2.y = y;
-    tmp2.z = x * sin(b) + z * cos(b);
-
-    x = tmp2.x, y = tmp2.y, z = tmp2.z;
-
-    res.x = x;
-    res.y = y * cos(a) + z * sin(a);
-    res.z = z * cos(a) - y * sin(a);
-
-    return res;
-};
-
-/////////////////////////////////////////////////////
-inline Mat mat_multi(Mat left, Mat rigth) {
-    Mat res = left.clone();
-
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-        {
-            res.at<double>(i, j) = left.at<double>(i, 0) * rigth.at<double>(0, j) + left.at<double>(i, 1) * rigth.at<double>(1, j) + left.at<double>(i, 2) * rigth.at<double>(2, j);
-        };
-    return res;
-};
-
-/////////////////////////////////////////////////////
-inline Mat mat_add(Mat left, Mat rigth, double a = 1.0, double b = 1.0) {
-    Mat res = left.clone();
-
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-        {
-            res.at<double>(i, j) = a * left.at<double>(i, j) + b * rigth.at<double>(i, j);
-        };
-    return res;
-};
-
-/////////////////////////////////////////////////////
-Point3d SpheToDec(Point2d a, double radius = 1.0) {
-    return  Point3d(radius * sin(a.x) * cos(a.y), radius * sin(a.x) * sin(a.y), radius * cos(a.x));
-};
-
-/////////////////////////////////////////////////////
-double absVec(Point3d vec) {
-    return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-};
-
-/////////////////////////////////////////////////////
-double angle2V(Point3d a, Point3d b) { //значения углов в радианах
-    return acos((a.x * b.x + a.y * b.y + a.z * b.z) / (absVec(a) * absVec(b)));
-};
-
-/////////////////////////////////////////////////////
-Point3d poseDelta(Pose_type a, Pose_type b) {
-    return(a.getPose() - b.getPose());
-};
-
-/////////////////////////////////////////////////////ы
-Point3d angDelta(Pose_type a, Pose_type b) {
-    return(a.getOrient() - b.getOrient());
-};

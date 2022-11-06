@@ -58,7 +58,7 @@ public:
         this->setW(cv::Point3d(double_buffer[9], double_buffer[10], double_buffer[11]));
     };
 
-    string get_csv_data(std::string sep = ",") {
+    std::string get_csv_data(std::string sep = ",") {
         std::string result = "";
         result += std::to_string(lat) + sep + std::to_string(lon) + sep + std::to_string(alt) + sep;
         result += std::to_string(roll) + sep + std::to_string(pitch) + sep + std::to_string(yaw) + sep;
@@ -87,6 +87,12 @@ public:
         this->lon = vec.x;
         this->lat = vec.y;
         this->alt = vec.z;
+    };
+
+    void setPose(cv::Point2d vec) {
+        this->lon = vec.x;
+        this->lat = vec.y;
+        this->alt = 0;
     };
 
     void setOrient(cv::Point3d vec) {
@@ -125,9 +131,9 @@ typedef struct {
 } Source_Type;
 
 typedef struct {
-    vector<cv::Point3d> w;
-    vector<double> timestamp;
-    vector<cv::Point3d> angle;
-    vector<cv::Point3d> accel;
-    vector<cv::Point3d> pose;
+    std::vector<cv::Point3d> w;
+    std::vector<double> timestamp;
+    std::vector<cv::Point3d> angle;
+    std::vector<cv::Point3d> accel;
+    std::vector<cv::Point3d> pose;
 } DataSeq_model_Type;

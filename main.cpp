@@ -54,12 +54,13 @@ int main(int argc, char** argv) {
         vector<bool> options;
 
         // настройки загрузки/сохранения
-        options.push_back(true); // track_model.load_csv
+        options.push_back(false); // track_model.load_csv
         options.push_back(false); // load_csv_states
         options.push_back(false); // load_csv_gt_point
         options.push_back(false); // load_csv_timestamps
         options.push_back(false); // load_csv_old_gt_point
         options.push_back(false); // load_csv_eval_old_gt_point
+        options.push_back(false); // load_csv_bins_gt_points
 
         tm1.generate_test_model(options);
         //    1, //max_track_parts
@@ -80,7 +81,7 @@ int main(int argc, char** argv) {
         //tm1.print_states("C:/ProgStaff/NIRS_models/test1/states.txt");
         //tm1.print_bins_gts("C:/ProgStaff/NIRS_models/test1/bins_gt_points.txt");
         ////system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        ////tm1.print_camera_proections();
+        tm1.print_camera_proections();
         tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();
