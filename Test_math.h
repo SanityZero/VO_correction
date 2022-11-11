@@ -5,18 +5,7 @@
 
 using namespace std;
 using namespace cv;
-//
-//inline Point3d rotateP3d(Point3d, Point3d);
-//inline Mat mat_multi(Mat, Mat);
-//inline Mat mat_add(Mat, Mat, double, double);
-//
-//inline Point3d SpheToDec(Point2d, double);
-//
-//inline double absVec(Point3d);
-//inline double angle2V(Point3d, Point3d);
-//
-//inline Point3d poseDelta(Pose_type, Pose_type);
-//inline Point3d angDelta(Pose_type, Pose_type);
+
 
 /////////////////////////////////////////////////////
 inline Point3d rotateP3d(Point3d point, Point3d ang) {//rad
@@ -81,6 +70,7 @@ double min(double a, double b, double c);
 double max(double a, double b, double c);
 cv::Point2d rotate2d(cv::Point2d vec, double angle);
 double length(cv::Point2d vec);
+double length(cv::Point3d vec);
 cv::Point2d get_point_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
 cv::Point2d get_norm_vect(cv::Point2d end, cv::Point2d start = cv::Point2d(0, 0));
 cv::Point2d get_arc_end_point(cv::Point2d cent, cv::Point2d start, double angle);

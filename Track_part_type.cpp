@@ -217,6 +217,8 @@ Track_part_type::Track_part_type(
     std::uniform_real_distribution<double> distribution_radius(min_corner_radius, max_corner_radius);
     std::uniform_real_distribution<double> distribution_vel(min_vel, max_vel);
 
+    std::uniform_int_distribution<int> distribution_direction(0, 1);
+
     std::uniform_real_distribution<double> distribution_angle(min_corner_angle, max_corner_angle);
    
 
@@ -237,7 +239,9 @@ Track_part_type::Track_part_type(
     double radius = distribution_radius(generator);
     //while (radius < 0) radius = distribution_radius(generator);
 
+    //double angle = (distribution_direction(generator) == 1) ? distribution_angle(generator) : -distribution_angle(generator);
     double angle = distribution_angle(generator);
+
     //angle = fmod(angle, 2 * M_PI);
     //angle = abs(angle) > 0 ? angle : min_angle;
     cv::Point2d r_vec = get_norm_vect(this->line.end, this->line.start) * radius;

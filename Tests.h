@@ -1,6 +1,7 @@
 #pragma once
 #include "Track_part_type.h"
 
+
 using namespace cv;
 using namespace std;
 
@@ -87,6 +88,7 @@ private:
         void load_csv_eval_old_gt_point(string filename, string sep = ";");
         void load_csv_states(string filename, string sep = ";");
         void load_csv_timestamps(string filename, string sep = ";");
+
         void update_total_time();
 
         State_type get_state(int number);
@@ -104,6 +106,11 @@ private:
 
 
     //модель камеры
+    class Test_camera_model {
+    
+    
+    };
+
     vector<Point3d> s_points;
     Point2i frame_size;
     Point2d cam_range;
@@ -133,11 +140,14 @@ private:
         vector<Pose_type> bins_eval_points;
         vector<double> bins_timestamps;
 
-        void generate_bins_gt(Test_motion_model mothion_model, double bins_deltatime);
+        void generate_bins_gt_points(Test_motion_model mothion_model, double bins_deltatime);
 
         void save_csv_bins_gt_points(string filename, string sep = ";");
+        void save_csv_bins_timestamps(string filename, string sep = ";");
 
         void load_csv_bins_gt_points(string filename, string sep = ";");
+        void load_csv_bins_timestamps(string filename, string sep = ";");
+        
     } bins_model;
 
 
@@ -188,10 +198,15 @@ public:
     void show_bins_gt(bool pause_enable = false);
 
     void print_camera_proections() {
+
+        string dir_frames = this->dir_name + "frames\\";
+        string cmd_clear_image_dir = "del /f /s /q " + dir_frames;
+        system(cmd_clear_image_dir.c_str());
+
         for (int i = 0; i < this->bins_model.bins_timestamps.size()-1; i++) {
             Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
             vector<Point2i> frame_points = this->point_camera_proections[i];
-
+            
             for (int i_points = 0; i_points < frame_points.size(); i_points++) {
                 if (frame_points.size() == 0) continue;
                 Point2i cross_size = Point2i(3, 3);
@@ -206,9 +221,13 @@ public:
                 line(frame, cross_points[1], cross_points[3], Scalar(0, 0, 255), 1);
                 };
             //сохранить пикчу 
-            string filename = "C:\\ProgStaff\\NIRS_models\\test1\\frames\\" + to_string(i) + ".jpg";
+            string filename = dir_frames + to_string(i) + ".jpg";
             imwrite(filename, frame);
         };
+
+        string cmd_make_vid = "ffmpeg -start_number 0 -i " + dir_frames + "%d.jpg -vcodec mpeg4 "+this->dir_name + this->name +".mp4";
+        system(cmd_make_vid.c_str());
+
     };
 
     void print_states(string filename);

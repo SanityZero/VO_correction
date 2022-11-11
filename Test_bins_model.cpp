@@ -12,7 +12,7 @@ using namespace std;
 #include "Tests.h"
 #include "Test_math.h"
 
-void Test_model::Test_bins_model::generate_bins_gt(Test_motion_model motion_model, double bins_deltatime) {
+void Test_model::Test_bins_model::generate_bins_gt_points(Test_motion_model motion_model, double bins_deltatime) {
 
     double bins_total_time = 0.0;
     this->bins_timestamps.push_back(0.0);
@@ -41,20 +41,18 @@ void Test_model::Test_bins_model::generate_bins_gt(Test_motion_model motion_mode
                 break;
             };
         };
-        Pose_type prev = motion_model.gt_point[lesser_ts_i];
-        Pose_type next = motion_model.gt_point[lesser_ts_i + 1];
+        Pose_type prev_pose = motion_model.gt_point[lesser_ts_i];
+        Pose_type next_pose = motion_model.gt_point[lesser_ts_i + 1];
+
+        State_type prev_state = motion_model.states[lesser_ts_i];
+        State_type next_state = motion_model.states[lesser_ts_i + 1];
 
         //интреполировать на них позиции, ориентации, ускорения, угловые скорости
-        tmp.setPose(prev.getPose() + (next.getPose() - prev.getPose()) * interp_multi);
-        tmp.setOrient(motion_model.gt_point[lesser_ts_i].getOrient() + (motion_model.gt_point[lesser_ts_i + 1].getOrient() - motion_model.gt_point[lesser_ts_i].getOrient()) * interp_multi);
-        //tmp.setPose((1 / (1 + interp_multi)) * (prev.getPose() + interp_multi * next.getPose()));
-        //tmp.setOrient((1 / (1 + interp_multi)) * (this->states[lesser_ts_i].orient + interp_multi * this->states[lesser_ts_i+1].orient));
-
-        //получить проекции в соотв с ориентацией вектора угловых скоростей, вектора ускорений
-        //Point3d w_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].anqular_vel + interp_multi * this->states[lesser_ts_i + 1].anqular_vel);
-        //Point3d accel_curr = (1 / (1 + interp_multi)) * (this->states[lesser_ts_i].accel + interp_multi * this->states[lesser_ts_i + 1].accel);
-        Point3d w_curr = motion_model.states[lesser_ts_i].anqular_vel + (motion_model.states[lesser_ts_i + 1].anqular_vel - motion_model.states[lesser_ts_i].anqular_vel) * interp_multi;
-        Point3d accel_curr = motion_model.states[lesser_ts_i].accel + (motion_model.states[lesser_ts_i + 1].accel - motion_model.states[lesser_ts_i].accel) * interp_multi;
+        tmp.setPose(prev_pose.getPose() + (next_pose.getPose() - prev_pose.getPose()) * interp_multi);
+        tmp.setOrient(prev_pose.getOrient() + (next_pose.getOrient() - prev_pose.getOrient()) * interp_multi);
+    
+        Point3d w_curr = prev_state.anqular_vel + (next_state.anqular_vel - prev_state.anqular_vel) * interp_multi;
+        Point3d accel_curr = prev_state.accel + (next_state.accel - prev_state.accel) * interp_multi;
         //Point3d w_curr = prev.getW() * (1 - interp_multi) + next.getW();
         //Point3d accel_curr = prev.getAccel() * (1 - interp_multi) + next.getAccel();
         Point3d ang_vec = -tmp.getOrient();
@@ -130,6 +128,50 @@ void Test_model::Test_bins_model::load_csv_bins_gt_points(string filename, strin
         Pose_type tmp;
         tmp.read_csv(line);
         this->bins_gt_points.push_back(tmp);
+    };
+    fin.close();
+};
+
+void Test_model::Test_bins_model::save_csv_bins_timestamps(string filename, string sep) {
+    vector<string> csv_data;
+    cout << "save_csv_bins_timestamps" << endl;
+    for (int i = 0; i < this->bins_timestamps.size(); i++) {
+        csv_data.push_back(to_string(this->bins_timestamps[i]));
+    };
+
+    ofstream fout(filename);
+    fout << "timest" << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::Test_bins_model::load_csv_bins_timestamps(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    fin.getline(buffer, 255);
+
+    cout << "load_csv_bins_timestamps" << endl;
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        //cout << "_" << buffer << "_" << endl;
+
+        string line(buffer);
+        line.replace(line.find(","), 1, ".");
+        this->bins_timestamps.push_back(std::stod(line));
     };
     fin.close();
 };

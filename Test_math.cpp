@@ -1,13 +1,6 @@
-#include <iostream>
-#include <locale>
-#include <iomanip> 
-#include <fstream>
-#include <string>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <random>
 #include <cmath>
+#include <iostream>
 
 #include "Types.h" 
 #define M_PI (double)3.14159265358979323846
@@ -64,6 +57,10 @@ cv::Point2d rotate2d(cv::Point2d vec, double angle) {
 
 double length(cv::Point2d vec) {
     return sqrt(vec.x * vec.x + vec.y * vec.y);
+};
+
+double length(cv::Point3d vec) {
+    return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
 };
 
 cv::Point2d get_point_vect(cv::Point2d end, cv::Point2d start) {

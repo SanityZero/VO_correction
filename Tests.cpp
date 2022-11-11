@@ -16,6 +16,7 @@ using namespace std;
 #include "ErEstVO.h"
 #include "DataSequence.h"
 #include "Track_part_type.h"
+#include "Test_math.h"
 #include "Tests.h"
 
 //inline Point3d smooth(Point3d p_0, Point3d p_1, Point3d p_2, double k1 = 1.0, double k2 = 1.0, double dt = 1.0, double limit_1 = -1, double limit_2 = -1) {
@@ -134,13 +135,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
     };
 
-    // old_gt_point
-    if (options[4]) {
-        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    }
-    else {
-        this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    };
+    
 
     // eval_old_gt_point
     if (options[5]) {
@@ -156,7 +151,15 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
         this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
     this->motion_model.integrate_old_gt();
-    print_states("old_states.txt");
+    //print_states("old_states.txt");
+
+    // old_gt_point
+    if (options[4]) {
+        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    }
+    else {
+        this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+    };
 
     //this->motion_model.smooth_anqular_vel(
     //    this->gen_restrictions.T,
@@ -170,23 +173,25 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     //this->motion_model.regenerate_gt_points();
 
     // расставить точки
-    double grid_step = 30;
+    double grid_step = 10;
     generate_s_points(
         50, //border x y
         Point3d(0, 30, 0), //z_limits min_z max_z 0
         Point3d(grid_step, grid_step, grid_step), //grid_spacing
-        Point2d(0, 3) //displacement
+        Point2d(0, 0.1) //displacement
     );
 
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
     if (options[6]) {
         this->bins_model.load_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
+        this->bins_model.load_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
     }
     else {
-        this->bins_model.generate_bins_gt(
+        this->bins_model.generate_bins_gt_points(
             this->motion_model,
             this->gen_restrictions.T
         );
+        this->bins_model.save_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
         this->bins_model.save_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
     };
     
@@ -209,8 +214,8 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
 Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib) {
     Point3d delta_pose = point_pose - camera_pose;
-    double length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
-    if ((length < this->cam_range.x) || (length > this->cam_range.y)) return this->frame_size;
+    //double length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
+    if ((length(delta_pose) < this->cam_range.x) || (length(delta_pose) > this->cam_range.y)) return this->frame_size;
     double point_Pose_ar[4][1] = {
         {point_pose.x},
         {point_pose.y},
@@ -271,7 +276,8 @@ void Test_model::generate_camera_proections() {
 
 Mat Test_model::generateExCalibM(int i) {
     Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
-    double a = angles.x, b = angles.y, c = angles.z + M_PI / 2;
+
+    double a = angles.x, b = angles.y, c = angles.z;
     double rotMat_ar[3][3] = {
         {cos(c) * cos(b), -cos(b) * sin(b), sin(b)},
         {cos(a) * sin(b) + cos(c) * sin(b) * sin(a), cos(c) * cos(a) - sin(a) * sin(b) * sin(b), -cos(b) * sin(a)},
