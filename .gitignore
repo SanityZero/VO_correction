@@ -1,5 +1,4 @@
-*\Debug\*
-*.txt*
-*.txt
-states.txt
+.*\Debug\.*
+.*.txt.*
+.*.txt
 states.txt

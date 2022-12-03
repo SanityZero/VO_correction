@@ -117,7 +117,7 @@ void Test_model::Test_track_model::generate_track(Test_model::Test_model_restric
 
     this->track.push_back(Track_part_type(
         cv::Point2d(0, 0),
-        cv::Point2d(-1, 0),
+        cv::Point2d(1, 0),
         restr.min_line_length,
         restr.max_line_length,
         restr.mean_corner_radius,

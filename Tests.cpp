@@ -50,24 +50,32 @@ void Test_model::Test_model_restrictions::load_restriction_file(string filename)
 
 void Test_model::Test_model_restrictions::show() {
     cout << this->filename << endl;
-    cout << "1)" << this->max_track_parts << endl;
-    cout << "2)" << this->dicret << endl;
-    cout << "3)" << this->min_line_length << endl;
-    cout << "4)" << this->max_line_length << endl;
-    cout << "5)" << this->mean_corner_radius << endl;
-    cout << "6)" << this->stddev_radius << endl;
-    cout << "7)" << this->mean_corner_angle << endl;
-    cout << "8)" << this->stddev_angle << endl;
-    cout << "9)" << this->average_vel << endl;
-    cout << "10)" << this->stddev_vel << endl;
-    cout << "11)" << this->T << endl;
-    cout << "12)" << this->U1 << endl;
-    cout << "13)" << this->U2 << endl;
+    cout << "1)\t" << this->max_track_parts << endl;
+    cout << "2)\t" << this->dicret << endl;
+    cout << "3)\t" << this->min_line_length << endl;
+    cout << "4)\t" << this->max_line_length << endl;
+    cout << "5)\t" << this->mean_corner_radius << endl;
+    cout << "6)\t" << this->stddev_radius << endl;
+    cout << "7)\t" << this->mean_corner_angle << endl;
+    cout << "8)\t" << this->stddev_angle << endl;
+    cout << "9)\t" << this->average_vel << endl;
+    cout << "10\t)" << this->stddev_vel << endl;
+    cout << "11)\t" << this->T << endl;
+    cout << "12)\t" << this->U1 << endl;
+    cout << "13)\t" << this->U2 << endl;
+    cout << "14)\t" << this->f << endl;
+    cout << "15)\t" << this->extra_border << endl;
+    cout << "16)\t" << this->z_lim_min << endl;
+    cout << "17)\t" << this->z_lim_min << endl;
+    cout << "18)\t" << this->grid_step_x << endl;
+    cout << "19)\t" << this->grid_step_y << endl;
+    cout << "20)\t" << this->grid_step_z << endl;
+    cout << "21)\t" << this->grid_disp << endl;
 };
 
 void Test_model::Test_model_restrictions::set(string filename, vector<int> int_data, vector<double> float_data) {
     this->filename = filename;
-    if ((int_data.size() == 1) and (float_data.size() == 12)) {
+    if ((int_data.size() == 1) and (float_data.size() == 20)) {
         this->max_track_parts = int_data[0];
 
         this->dicret = float_data[0];
@@ -82,6 +90,16 @@ void Test_model::Test_model_restrictions::set(string filename, vector<int> int_d
         this->T = float_data[9];
         this->U1 = float_data[10];
         this->U2 = float_data[11];
+
+        this->f = float_data[12];
+
+        this->extra_border = float_data[13];
+        this->z_lim_min = float_data[14];
+        this->z_lim_max = float_data[15];
+        this->grid_step_x = float_data[16];
+        this->grid_step_y = float_data[17];
+        this->grid_step_z = float_data[18];
+        this->grid_disp = float_data[19];
     }
     else
         cout << "Test_model_restrictions initial arrays sizes dont match" << endl;
@@ -173,13 +191,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     //this->motion_model.regenerate_gt_points();
 
     // расставить точки
-    double grid_step = 10;
-    generate_s_points(
-        50, //border x y
-        Point3d(0, 30, 0), //z_limits min_z max_z 0
-        Point3d(grid_step, grid_step, grid_step), //grid_spacing
-        Point2d(0, 0.1) //displacement
-    );
+    generate_s_points();
 
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
     if (options[6]) {
@@ -196,11 +208,12 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     };
     
 
-    Point2i fr_size = Point2i(1242, 373);
-    Point2d cam_limits = Point2d(3, 100000000);
+    Point2i fr_size = Point2i(300, 200);
+    Point2d cam_limits = Point2d(0.1, 100000000);
+    double f = this->gen_restrictions.f;
     double IternalCalib_ar[3][3] = {
-    {3, 0, fr_size.x / 2},
-    {0, 3, fr_size.y / 2},
+    {f, 0, fr_size.x / 2},
+    {0, f, fr_size.y / 2},
     {0, 0, 1}
     };
     Mat A = Mat(3, 3, CV_64F, IternalCalib_ar);
@@ -260,6 +273,7 @@ void Test_model::print_bins_gts(string filename) {
 };
 
 void Test_model::generate_camera_proections() {
+
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
         vector<Point2i> frame_points;
         Mat ex_calib_m = generateExCalibM(i);
@@ -272,16 +286,34 @@ void Test_model::generate_camera_proections() {
         };
         this->point_camera_proections.push_back(frame_points);
     };
+     
+     //for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
+    //    vector<Point2i> frame_points;
+    //    Mat ex_calib_m = generateExCalibM(i);
+    //    Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
+    //    for (int i_points = 0; i_points < this->s_points.size() - 1; i_points++) {
+    //        Point2i tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
+
+    //        if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) continue;
+    //        frame_points.push_back(tmp);
+    //    };
+    //    this->point_camera_proections.push_back(frame_points);
+    //};
 };
 
 Mat Test_model::generateExCalibM(int i) {
     Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
 
-    double a = angles.x, b = angles.y, c = angles.z;
+    double a = angles.x;
+    double b = angles.y;
+    //double c = angles.z + M_PI / 2;
+    double c = angles.z + M_PI / 2;
+
+
     double rotMat_ar[3][3] = {
-        {cos(c) * cos(b), -cos(b) * sin(b), sin(b)},
-        {cos(a) * sin(b) + cos(c) * sin(b) * sin(a), cos(c) * cos(a) - sin(a) * sin(b) * sin(b), -cos(b) * sin(a)},
-        {sin(b) * sin(a) - cos(c) * cos(a) * sin(b), cos(a) * sin(b) * sin(b) + cos(c) * sin(a), cos(b) * cos(a)}
+        {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b)              },
+        {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a)    },
+        {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a)     }
     };
     Mat R = Mat(3, 3, CV_64F, rotMat_ar);
 
@@ -302,29 +334,86 @@ Mat Test_model::generateExCalibM(int i) {
 
     Mat R_t = R.t();
 
-    Mat tmp = -R_t * t;
+    //Mat tmp = -R_t * t;
+    Mat tmp = -R * t;
 
-    double M_ar[4][4] = {
-         {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
-         {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
-         {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
-         {0, 0, 0, 1}
-    };
+    //double M_ar[4][4] = {
+    //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
+    //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
+    //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+    //     {0, 0, 0, 1}
+    //};
     //double M_ar[4][4] = {
     //     {R_t.at<double>(0, 0), R_t.at<double>(1, 0), R_t.at<double>(2, 0), tmp.at<double>(0, 0)},
     //     {R_t.at<double>(0, 1), R_t.at<double>(1, 1), R_t.at<double>(2, 1), tmp.at<double>(1, 0)},
     //     {R_t.at<double>(0, 2), R_t.at<double>(1, 2), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
     //     {0, 0, 0, 1}
     //};
-    //double M_ar[4][4] = {
-    //    {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
-    //    {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
-    //    {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
-    //    {0, 0, 0, 1}
-    //};
+    double M_ar[4][4] = {
+        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
+        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
+        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
+        {0, 0, 0, 1}
+    };
     Mat M = Mat(4, 4, CV_64F, M_ar);
 
 
+    return this->A * E * M;
+};
+
+Mat Test_model::generateTransitionM(int i){
+    Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
+    
+    double a = angles.x, b = angles.y, c = angles.z + M_PI / 2;
+    double rotMat_ar[3][3] = {
+        {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b)},
+        {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a)},
+        {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a)}
+    };
+    Mat R = Mat(3, 3, CV_64F, rotMat_ar);
+    
+    Point3d delta = this->bins_model.bins_gt_points[i].getPose();
+    double transMat_ar[4][14] = {
+    {1, 0, 0, delta.x},
+    {0, 1, 0, delta.y},
+    {0, 0, 1, delta.z},
+    {0, 0, 0, 0     }
+    };
+    Mat t = Mat(3, 1, CV_64F, transMat_ar);
+    
+    double E_ar[3][4] = {
+    {1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 1, 0}
+    };
+    Mat E = Mat(3, 4, CV_64F, E_ar);
+    
+    Mat R_t = R.t();
+    
+    //Mat tmp = -R_t * t;
+    Mat tmp = -R * t;
+    
+    //double M_ar[4][4] = {
+    //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
+    //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
+    //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+    //     {0, 0, 0, 1}
+    //};
+    //double M_ar[4][4] = {
+    //     {R_t.at<double>(0, 0), R_t.at<double>(1, 0), R_t.at<double>(2, 0), tmp.at<double>(0, 0)},
+    //     {R_t.at<double>(0, 1), R_t.at<double>(1, 1), R_t.at<double>(2, 1), tmp.at<double>(1, 0)},
+    //     {R_t.at<double>(0, 2), R_t.at<double>(1, 2), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
+    //     {0, 0, 0, 1}
+    //};
+    double M_ar[4][4] = {
+        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), tmp.at<double>(0, 0)},
+        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), tmp.at<double>(1, 0)},
+        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), tmp.at<double>(2, 0)},
+        {0, 0, 0, 1}
+    };
+    Mat M = Mat(4, 4, CV_64F, M_ar);
+    
+    
     return this->A * E * M;
 };
 
@@ -365,11 +454,24 @@ Mat Test_model::generateExCalibM(int i) {
 
 
 void Test_model::generate_s_points(
-    double border,
-    Point3d z_limits,
-    Point3d grid_spacing,
-    Point2d displacement
+    //double border,
+    //Point3d z_limits,
+    //Point3d grid_spacing,
+    //Point2d displacement
 ) {
+
+
+    //this->gen_restrictions.extra_border, //border x y
+    //    Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0), //z_limits min_z max_z 0
+    //    Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z), //grid_spacing
+    //    Point2d(0, this->gen_restrictions.grid_disp) //displacement
+
+
+    double border = this->gen_restrictions.extra_border;
+    Point3d z_limits = Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0);
+    Point3d grid_spacing = Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z);
+    Point2d displacement = Point2d(0, this->gen_restrictions.grid_disp);
+
     double max_x = this->motion_model.gt_point[0].lon;
     double max_y = this->motion_model.gt_point[0].lat;
     double min_x = this->motion_model.gt_point[0].lon;

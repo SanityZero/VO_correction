@@ -44,6 +44,19 @@ private:
         double U1;
         double U2;
 
+        double f;
+
+        double extra_border;
+
+        double z_lim_min;
+        double z_lim_max;
+
+        double grid_step_x;
+        double grid_step_y;
+        double grid_step_z;
+
+        double grid_disp;
+
         Test_model_restrictions() {};
         void set(string filename, vector<int> int_data, vector<double> float_data);
         void load_restriction_file(string filename);
@@ -117,8 +130,12 @@ private:
     Mat A;
     //Mat EX_calib;
 
-    void generate_s_points(double border, Point3d z_limits, Point3d grid_spacing, Point2d displacement);
+    void generate_s_points(double border, Point3d z_limits, Point3d grid_spacing, Point2d displacement) {};
+
+    void generate_s_points();
+
     Mat generateExCalibM(int i);
+    Mat generateTransitionM(int i);
     void setCameraModel(Point2i _frame_size, Point2d _cam_range, Mat _A) {
         this->frame_size = _frame_size;
         this->cam_range = _cam_range;
@@ -130,6 +147,55 @@ private:
     vector<vector<Point2i>> point_camera_proections;
 
     Point2i point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib);
+
+    Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
+
+        double a = cam_rotation.x;
+        double b = cam_rotation.y;
+        double c = cam_rotation.z;
+
+        double rotMat_ar[4][4] = {
+            {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b),              0},
+            {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a),    0},
+            {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a),     0},
+            {0, 0, 0, 1}
+        };
+        Mat R = Mat(4, 4, CV_64F, rotMat_ar);
+
+        double Translation_ar[4][1] = {
+            {camera_pose.x},
+            {camera_pose.y},
+            {camera_pose.z},
+            {0}
+        };
+
+        Mat Translation = Mat(4, 1, CV_64F, Translation_ar);
+
+        double Camera_ar[4][1] = {
+            {camera_pose.x},
+            {camera_pose.y},
+            {camera_pose.z},
+            {1}
+        };
+
+        Mat Camera = Mat(4, 1, CV_64F, Camera_ar);
+
+        double Point_ar[4][1] = {
+            {point_pose.x},
+            {point_pose.y},
+            {point_pose.z},
+            {1}
+        };
+        
+        Mat Point = Mat(4, 1, CV_64F, Point_ar);
+        Mat Delta = Point - Camera;
+
+        Mat Result = (Point - Camera) * R;
+
+        Point2d aaaaaaa = Point2d(Result.at<double>(0, 0), Result.at<double>(1, 0));
+
+    
+    };
     void generate_camera_proections();
 
     //ìîäåëü ÁÈÍÑ
@@ -225,7 +291,7 @@ public:
             imwrite(filename, frame);
         };
 
-        string cmd_make_vid = "ffmpeg -start_number 0 -i " + dir_frames + "%d.jpg -vcodec mpeg4 "+this->dir_name + this->name +".mp4";
+        string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 "+this->dir_name + this->name +".mp4";
         system(cmd_make_vid.c_str());
 
     };
