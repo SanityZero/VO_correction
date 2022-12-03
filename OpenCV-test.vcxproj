@@ -152,6 +152,7 @@
     <ClCompile Include="DataSequence.cpp" />
     <ClCompile Include="ErEstVO.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Test_model_restrictions.cpp" />
     <ClCompile Include="Test_bins_model.cpp" />
     <ClCompile Include="Test_math.cpp" />
     <ClCompile Include="Test_motion_model.cpp" />

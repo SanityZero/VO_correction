@@ -57,6 +57,17 @@ private:
 
         double grid_disp;
 
+        int camera_matrix_x;
+        int camera_matrix_y;
+        int camera_frame_size_x;
+        int camera_frame_size_y;
+
+        double camera_FOV_xoy;
+        double camera_FOV_zoy;
+
+        int s_points_generation_mode;
+        int camera_proection_mode;
+
         Test_model_restrictions() {};
         void set(string filename, vector<int> int_data, vector<double> float_data);
         void load_restriction_file(string filename);
@@ -132,7 +143,7 @@ private:
 
     void generate_s_points(double border, Point3d z_limits, Point3d grid_spacing, Point2d displacement) {};
 
-    void generate_s_points();
+    void generate_s_points(int mode);
 
     Mat generateExCalibM(int i);
     Mat generateTransitionM(int i);
@@ -149,6 +160,19 @@ private:
     Point2i point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib);
 
     Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
+
+        Point2d FOV_xoy = Point2d(
+            -this->gen_restrictions.camera_FOV_xoy / 2,
+            this->gen_restrictions.camera_FOV_xoy / 2
+        );
+
+        Point2d FOV_zoy = Point2d(
+            -this->gen_restrictions.camera_FOV_zoy / 2,
+            this->gen_restrictions.camera_FOV_zoy / 2
+        );
+
+        int pixels_xoy = this->gen_restrictions.camera_matrix_x;
+        int pixels_zoy = this->gen_restrictions.camera_matrix_x;
 
         double a = cam_rotation.x;
         double b = cam_rotation.y;
@@ -178,7 +202,7 @@ private:
             {1}
         };
 
-        Mat Camera = Mat(4, 1, CV_64F, Camera_ar);
+        Mat mat_camera_pose = Mat(4, 1, CV_64F, Camera_ar);
 
         double Point_ar[4][1] = {
             {point_pose.x},
@@ -187,16 +211,39 @@ private:
             {1}
         };
         
-        Mat Point = Mat(4, 1, CV_64F, Point_ar);
-        Mat Delta = Point - Camera;
+        Mat mat_point_pose = Mat(4, 1, CV_64F, Point_ar);
 
-        Mat Result = (Point - Camera) * R;
+        Mat res_vec = R * (mat_point_pose - mat_camera_pose);
 
-        Point2d aaaaaaa = Point2d(Result.at<double>(0, 0), Result.at<double>(1, 0));
+        double x = res_vec.at<double>(0, 0);
+        double y = res_vec.at<double>(1, 0);
+        double z = res_vec.at<double>(2, 0);
 
-    
+        Point2d sphe_coord = Point2d(
+            atan2(sqrt(x * x + y * y), z), //угол места
+            atan2(y, x) //азимут
+        );
+
+        Point2d scale = Point2d(
+            (FOV_xoy.y - FOV_xoy.x) / pixels_xoy,
+            (FOV_zoy.y - FOV_zoy.x) / pixels_zoy
+        );
+
+        Point2i cam_poection = Point2i(this->frame_size.x, this->frame_size.y);
+        if (
+            (sphe_coord.x >= FOV_zoy.x) and (sphe_coord.x <= FOV_zoy.y)
+            and (sphe_coord.y >= FOV_xoy.x) and (sphe_coord.y <= FOV_xoy.y)
+            )
+        {
+            cam_poection = Point2i(
+                sphe_coord.x * scale.x,
+                sphe_coord.y * scale.y
+                );
+        }
+        return cam_poection;
     };
-    void generate_camera_proections();
+
+    void generate_camera_proections(int mode);
 
     //модель БИНС
     class Test_bins_model {
@@ -257,7 +304,12 @@ public:
         //vector<double> bins_timestamps;
     };
 
-    void generate_test_model(vector<bool> options, string gen_restr_filename = "");// вот эта функция вызывается
+
+    ///////////////////aaaAAAaaAA!1!!!1!!!!!
+    void generate_test_model(
+        vector<bool> options, 
+        string gen_restr_filename = ""
+    );// вот эта функция вызывается
 
 
     void show_gt(string mode = "screen", bool pause_enable = false);

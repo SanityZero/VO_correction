@@ -23,89 +23,6 @@ using namespace std;
 //    
 //};
 
-void Test_model::Test_model_restrictions::load_restriction_file(string filename) {
-    vector<int> int_data;
-    vector<double> float_data;
-
-    string separator = ":\t";
-
-    fstream restr_file;
-    restr_file.open(filename, ios::in); //open a file to perform read operation using file object
-    if (restr_file.is_open()) { //checking whether the file is open
-        string tp;
-        while (getline(restr_file, tp)) { //read data from file object and put it into string.
-            //cout << "~)\t" << tp.substr(tp.find(separator) + separator.length()) << endl;
-            tp = tp.substr(tp.find(separator) + separator.length());
-            if (int_data.size() == 0) int_data.push_back(stoi(tp));
-            else
-                float_data.push_back(stod(tp));
-        }
-        restr_file.close(); //close the file object.
-    };
-    //for (int item : int_data) cout << "int)\t" << item << endl;
-    //for (double item : float_data) cout << "double)\t" << item << endl;
-    this->set(filename, int_data, float_data);
-    //this->gen_restrictions.show();
-};
-
-void Test_model::Test_model_restrictions::show() {
-    cout << this->filename << endl;
-    cout << "1)\t" << this->max_track_parts << endl;
-    cout << "2)\t" << this->dicret << endl;
-    cout << "3)\t" << this->min_line_length << endl;
-    cout << "4)\t" << this->max_line_length << endl;
-    cout << "5)\t" << this->mean_corner_radius << endl;
-    cout << "6)\t" << this->stddev_radius << endl;
-    cout << "7)\t" << this->mean_corner_angle << endl;
-    cout << "8)\t" << this->stddev_angle << endl;
-    cout << "9)\t" << this->average_vel << endl;
-    cout << "10\t)" << this->stddev_vel << endl;
-    cout << "11)\t" << this->T << endl;
-    cout << "12)\t" << this->U1 << endl;
-    cout << "13)\t" << this->U2 << endl;
-    cout << "14)\t" << this->f << endl;
-    cout << "15)\t" << this->extra_border << endl;
-    cout << "16)\t" << this->z_lim_min << endl;
-    cout << "17)\t" << this->z_lim_min << endl;
-    cout << "18)\t" << this->grid_step_x << endl;
-    cout << "19)\t" << this->grid_step_y << endl;
-    cout << "20)\t" << this->grid_step_z << endl;
-    cout << "21)\t" << this->grid_disp << endl;
-};
-
-void Test_model::Test_model_restrictions::set(string filename, vector<int> int_data, vector<double> float_data) {
-    this->filename = filename;
-    if ((int_data.size() == 1) and (float_data.size() == 20)) {
-        this->max_track_parts = int_data[0];
-
-        this->dicret = float_data[0];
-        this->min_line_length = float_data[1];
-        this->max_line_length = float_data[2];
-        this->mean_corner_radius = float_data[3];
-        this->stddev_radius = float_data[4];
-        this->mean_corner_angle = float_data[5] * M_PI / 180;
-        this->stddev_angle = float_data[6] * M_PI / 180;
-        this->average_vel = float_data[7];
-        this->stddev_vel = float_data[8];
-        this->T = float_data[9];
-        this->U1 = float_data[10];
-        this->U2 = float_data[11];
-
-        this->f = float_data[12];
-
-        this->extra_border = float_data[13];
-        this->z_lim_min = float_data[14];
-        this->z_lim_max = float_data[15];
-        this->grid_step_x = float_data[16];
-        this->grid_step_y = float_data[17];
-        this->grid_step_z = float_data[18];
-        this->grid_disp = float_data[19];
-    }
-    else
-        cout << "Test_model_restrictions initial arrays sizes dont match" << endl;
-
-};
-
 void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename) {
     if (gen_restr_filename != "") {
         this->gen_restrictions.load_restriction_file(gen_restr_filename);
@@ -191,7 +108,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     //this->motion_model.regenerate_gt_points();
 
     // расставить точки
-    generate_s_points();
+    generate_s_points(this->gen_restrictions.s_points_generation_mode);
 
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
     if (options[6]) {
@@ -208,7 +125,10 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     };
     
 
-    Point2i fr_size = Point2i(300, 200);
+    Point2i fr_size = Point2i(
+        this->gen_restrictions.camera_frame_size_x, 
+        this->gen_restrictions.camera_frame_size_y
+    );
     Point2d cam_limits = Point2d(0.1, 100000000);
     double f = this->gen_restrictions.f;
     double IternalCalib_ar[3][3] = {
@@ -220,7 +140,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
 
     setCameraModel(fr_size, cam_limits, A);
-    generate_camera_proections();
+    generate_camera_proections(this->gen_restrictions.camera_proection_mode);
     // сгенерировать изображения в соответствии с точками
 
 };
@@ -272,14 +192,24 @@ void Test_model::print_bins_gts(string filename) {
     out.close();
 };
 
-void Test_model::generate_camera_proections() {
+void Test_model::generate_camera_proections(int mode = 1) {
 
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
         vector<Point2i> frame_points;
         Mat ex_calib_m = generateExCalibM(i);
         Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
         for (int i_points = 0; i_points < this->s_points.size() - 1; i_points++) {
-            Point2i tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
+
+            Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
+            switch (mode) {
+            case 0:
+                tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
+                break;
+            case 1:
+                tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
+                break;
+            };
+           
 
             if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) continue;
             frame_points.push_back(tmp);
@@ -305,7 +235,7 @@ Mat Test_model::generateExCalibM(int i) {
     Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
 
     double a = angles.x;
-    double b = angles.y;
+    double b = angles.y + M_PI / 2;
     //double c = angles.z + M_PI / 2;
     double c = angles.z + M_PI / 2;
 
@@ -454,56 +384,61 @@ Mat Test_model::generateTransitionM(int i){
 
 
 void Test_model::generate_s_points(
+    int mode = 1
     //double border,
     //Point3d z_limits,
     //Point3d grid_spacing,
     //Point2d displacement
 ) {
-
-
-    //this->gen_restrictions.extra_border, //border x y
-    //    Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0), //z_limits min_z max_z 0
-    //    Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z), //grid_spacing
-    //    Point2d(0, this->gen_restrictions.grid_disp) //displacement
-
-
-    double border = this->gen_restrictions.extra_border;
-    Point3d z_limits = Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0);
-    Point3d grid_spacing = Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z);
-    Point2d displacement = Point2d(0, this->gen_restrictions.grid_disp);
-
-    double max_x = this->motion_model.gt_point[0].lon;
-    double max_y = this->motion_model.gt_point[0].lat;
-    double min_x = this->motion_model.gt_point[0].lon;
-    double min_y = this->motion_model.gt_point[0].lat;
-
-    for (int i = 0; i < this->motion_model.gt_point.size(); i++)
+    Point3d tmp_point = Point3d(100, 2, 0);
+    switch (mode) {
+    case 0:
     {
-        max_x = this->motion_model.gt_point[i].lon > max_x ? this->motion_model.gt_point[i].lon : max_x;
-        max_y = this->motion_model.gt_point[i].lat > max_y ? this->motion_model.gt_point[i].lat : max_y;
+        tmp_point = Point3d(100, 2, 0);
+        s_points.push_back(tmp_point);
+        };
+        break;
+    case 1:
+    {
+        double border = this->gen_restrictions.extra_border;
+        Point3d z_limits = Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0);
+        Point3d grid_spacing = Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z);
+        Point2d displacement = Point2d(0, this->gen_restrictions.grid_disp);
 
-        min_x = this->motion_model.gt_point[i].lon < min_x ? this->motion_model.gt_point[i].lon : min_x;
-        min_y = this->motion_model.gt_point[i].lat < min_y ? this->motion_model.gt_point[i].lat : min_y;
+        double max_x = this->motion_model.gt_point[0].lon;
+        double max_y = this->motion_model.gt_point[0].lat;
+        double min_x = this->motion_model.gt_point[0].lon;
+        double min_y = this->motion_model.gt_point[0].lat;
+
+        for (int i = 0; i < this->motion_model.gt_point.size(); i++)
+        {
+            max_x = this->motion_model.gt_point[i].lon > max_x ? this->motion_model.gt_point[i].lon : max_x;
+            max_y = this->motion_model.gt_point[i].lat > max_y ? this->motion_model.gt_point[i].lat : max_y;
+
+            min_x = this->motion_model.gt_point[i].lon < min_x ? this->motion_model.gt_point[i].lon : min_x;
+            min_y = this->motion_model.gt_point[i].lat < min_y ? this->motion_model.gt_point[i].lat : min_y;
+        };
+
+        double min_z = z_limits.x;
+        double max_z = z_limits.y;
+
+        random_device rd;
+        default_random_engine generator(rd());
+        double mean_displacement = displacement.x;
+        double stddev_displacement = displacement.y;
+        normal_distribution<double> distribution_displacement(mean_displacement, stddev_displacement);
+        for (double x_shift = min_x - border; x_shift < max_x + border; x_shift += grid_spacing.x)
+            for (double y_shift = min_y - border; y_shift < max_y + border; y_shift += grid_spacing.y)
+                for (double z_shift = min_z; z_shift < max_z; z_shift += grid_spacing.z)
+                {
+                    Point3d displacement_vec = Point3d(distribution_displacement(generator), distribution_displacement(generator), distribution_displacement(generator));
+                    tmp_point = Point3d(x_shift, y_shift, z_shift) + displacement_vec;
+                    s_points.push_back(tmp_point);
+                };
+        //потом можно добавить, чтобы точки совсем рядом с дорогой стирались
     };
-
-    double min_z = z_limits.x;
-    double max_z = z_limits.y;
-
-    random_device rd;
-    default_random_engine generator(rd());
-    double mean_displacement = displacement.x;
-    double stddev_displacement = displacement.y;
-    normal_distribution<double> distribution_displacement(mean_displacement, stddev_displacement);
-    for (double x_shift = min_x - border; x_shift < max_x + border; x_shift += grid_spacing.x)
-        for (double y_shift = min_y - border; y_shift < max_y + border; y_shift += grid_spacing.y)
-            for (double z_shift = min_z; z_shift < max_z; z_shift += grid_spacing.z)
-            {
-                Point3d displacement_vec = Point3d(distribution_displacement(generator), distribution_displacement(generator), distribution_displacement(generator));
-                Point3d new_s_point = Point3d(x_shift, y_shift, z_shift) + displacement_vec;
-                s_points.push_back(new_s_point);
-            };
-    //потом можно добавить, чтобы точки совсем рядом с дорогой стирались
-
+        break;
+    }
 };
 
 void Test_model::print_states(string filename) {
