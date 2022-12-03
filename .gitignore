@@ -1,4 +1,4 @@
-.*\Debug\.*
-.*.txt.*
+Debug/
+/.*.txt.*
 .*.txt
 states.txt
