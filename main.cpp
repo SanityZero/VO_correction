@@ -54,13 +54,21 @@ int main(int argc, char** argv) {
         vector<bool> options;
 
         // настройки загрузки/сохранения
-        options.push_back(false); // track_model.load_csv
-        options.push_back(false); // load_csv_states
-        options.push_back(false); // load_csv_gt_point
+        options.push_back(true); // track_model.load_csv
+        options.push_back(true); // load_csv_states
+        options.push_back(true); // load_csv_gt_point
         options.push_back(false); // load_csv_timestamps
         options.push_back(false); // load_csv_old_gt_point
         options.push_back(false); // load_csv_eval_old_gt_point
         options.push_back(false); // load_csv_bins_gt_points
+
+        //options.push_back(true); // track_model.load_csv
+        //options.push_back(true); // load_csv_states
+        //options.push_back(true); // load_csv_gt_point
+        //options.push_back(true); // load_csv_timestamps
+        //options.push_back(true); // load_csv_old_gt_point
+        //options.push_back(true); // load_csv_eval_old_gt_point
+        //options.push_back(true); // load_csv_bins_gt_points
 
         tm1.generate_test_model(options);
         //    1, //max_track_parts

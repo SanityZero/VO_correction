@@ -65,13 +65,16 @@ void Test_model::Test_model_restrictions::show() {
     cout << "25)\t" << this->camera_frame_size_y << endl;
     cout << "26)\t" << this->camera_FOV_xoy << endl;
     cout << "27)\t" << this->camera_FOV_zoy << endl;
-    cout << "28)\t" << this->s_points_generation_mode << endl;
-    cout << "29)\t" << this->camera_proection_mode << endl;
+    cout << "27)\t" << this->camera_fitting_x << endl;
+    cout << "28)\t" << this->camera_fitting_y << endl;
+    cout << "29)\t" << this->camera_fitting_z << endl;
+    cout << "30)\t" << this->s_points_generation_mode << endl;
+    cout << "31)\t" << this->camera_proection_mode << endl;
 };
 
 void Test_model::Test_model_restrictions::set(string filename, vector<int> int_data, vector<double> float_data) {
     this->filename = filename;
-    if ((int_data.size() == 1) and (float_data.size() == 28)) {
+    if ((int_data.size() == 1) and (float_data.size() == 31)) {
         this->max_track_parts = int_data[0];
 
         this->dicret = float_data[0];
@@ -105,8 +108,12 @@ void Test_model::Test_model_restrictions::set(string filename, vector<int> int_d
         this->camera_FOV_xoy = float_data[24] * M_PI / 180;
         this->camera_FOV_zoy = float_data[25] * M_PI / 180;
 
-        this->s_points_generation_mode = int(float_data[26]);
-        this->camera_proection_mode = int(float_data[27]);
+        this->camera_fitting_x = float_data[26] * M_PI / 180;
+        this->camera_fitting_y = float_data[27] * M_PI / 180;
+        this->camera_fitting_z = float_data[28] * M_PI / 180;
+
+        this->s_points_generation_mode = int(float_data[29]);
+        this->camera_proection_mode = int(float_data[30]);
     }
     else
         cout << "Test_model_restrictions initial arrays sizes dont match" << endl;

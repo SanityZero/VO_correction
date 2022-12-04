@@ -1,0 +1,20 @@
+﻿  DataSequence.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\DataSequence.cpp(4,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  main.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\main.cpp(6,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Test_model_restrictions.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_model_restrictions.cpp(6,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Test_bins_model.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_bins_model.cpp(4,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Test_math.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_math.cpp(1,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Test_motion_model.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_motion_model.cpp(4,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Test_track_model.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_track_model.cpp(6,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Track_part_type.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(2,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  Tests.cpp
+C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(6,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
+  VOCorrection.cpp
+  Создание кода...

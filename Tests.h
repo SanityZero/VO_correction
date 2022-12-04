@@ -65,6 +65,11 @@ private:
         double camera_FOV_xoy;
         double camera_FOV_zoy;
 
+        double camera_fitting_x;
+        double camera_fitting_y;
+        double camera_fitting_z;
+
+
         int s_points_generation_mode;
         int camera_proection_mode;
 
@@ -141,8 +146,6 @@ private:
     Mat A;
     //Mat EX_calib;
 
-    void generate_s_points(double border, Point3d z_limits, Point3d grid_spacing, Point2d displacement) {};
-
     void generate_s_points(int mode);
 
     Mat generateExCalibM(int i);
@@ -159,89 +162,7 @@ private:
 
     Point2i point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib);
 
-    Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
-
-        Point2d FOV_xoy = Point2d(
-            -this->gen_restrictions.camera_FOV_xoy / 2,
-            this->gen_restrictions.camera_FOV_xoy / 2
-        );
-
-        Point2d FOV_zoy = Point2d(
-            -this->gen_restrictions.camera_FOV_zoy / 2,
-            this->gen_restrictions.camera_FOV_zoy / 2
-        );
-
-        int pixels_xoy = this->gen_restrictions.camera_matrix_x;
-        int pixels_zoy = this->gen_restrictions.camera_matrix_x;
-
-        double a = cam_rotation.x;
-        double b = cam_rotation.y;
-        double c = cam_rotation.z;
-
-        double rotMat_ar[4][4] = {
-            {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b),              0},
-            {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a),    0},
-            {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a),     0},
-            {0, 0, 0, 1}
-        };
-        Mat R = Mat(4, 4, CV_64F, rotMat_ar);
-
-        double Translation_ar[4][1] = {
-            {camera_pose.x},
-            {camera_pose.y},
-            {camera_pose.z},
-            {0}
-        };
-
-        Mat Translation = Mat(4, 1, CV_64F, Translation_ar);
-
-        double Camera_ar[4][1] = {
-            {camera_pose.x},
-            {camera_pose.y},
-            {camera_pose.z},
-            {1}
-        };
-
-        Mat mat_camera_pose = Mat(4, 1, CV_64F, Camera_ar);
-
-        double Point_ar[4][1] = {
-            {point_pose.x},
-            {point_pose.y},
-            {point_pose.z},
-            {1}
-        };
-        
-        Mat mat_point_pose = Mat(4, 1, CV_64F, Point_ar);
-
-        Mat res_vec = R * (mat_point_pose - mat_camera_pose);
-
-        double x = res_vec.at<double>(0, 0);
-        double y = res_vec.at<double>(1, 0);
-        double z = res_vec.at<double>(2, 0);
-
-        Point2d sphe_coord = Point2d(
-            atan2(sqrt(x * x + y * y), z), //угол места
-            atan2(y, x) //азимут
-        );
-
-        Point2d scale = Point2d(
-            (FOV_xoy.y - FOV_xoy.x) / pixels_xoy,
-            (FOV_zoy.y - FOV_zoy.x) / pixels_zoy
-        );
-
-        Point2i cam_poection = Point2i(this->frame_size.x, this->frame_size.y);
-        if (
-            (sphe_coord.x >= FOV_zoy.x) and (sphe_coord.x <= FOV_zoy.y)
-            and (sphe_coord.y >= FOV_xoy.x) and (sphe_coord.y <= FOV_xoy.y)
-            )
-        {
-            cam_poection = Point2i(
-                sphe_coord.x * scale.x,
-                sphe_coord.y * scale.y
-                );
-        }
-        return cam_poection;
-    };
+    Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation);
 
     void generate_camera_proections(int mode);
 

@@ -132,8 +132,8 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     Point2d cam_limits = Point2d(0.1, 100000000);
     double f = this->gen_restrictions.f;
     double IternalCalib_ar[3][3] = {
-    {f, 0, fr_size.x / 2},
-    {0, f, fr_size.y / 2},
+    {f, 0, 0},
+    {0, f, 0},
     {0, 0, 1}
     };
     Mat A = Mat(3, 3, CV_64F, IternalCalib_ar);
@@ -166,6 +166,97 @@ Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat
     else {
         return this->frame_size;
     };
+};
+
+Point2i Test_model::point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
+
+    Point2d FOV_xoy = Point2d(
+        -this->gen_restrictions.camera_FOV_xoy / 2,
+        this->gen_restrictions.camera_FOV_xoy / 2
+    );
+
+    Point2d FOV_zoy = Point2d(
+        -this->gen_restrictions.camera_FOV_zoy / 2,
+        this->gen_restrictions.camera_FOV_zoy / 2
+    );
+
+    int pixels_xoy = this->gen_restrictions.camera_matrix_x;
+    int pixels_zoy = this->gen_restrictions.camera_matrix_y;
+
+    double a = cam_rotation.x + this->gen_restrictions.camera_fitting_x;
+    double b = cam_rotation.y + this->gen_restrictions.camera_fitting_y;
+    double c = cam_rotation.z + this->gen_restrictions.camera_fitting_z;
+
+    //double rotMat_ar[4][4] = {
+    //    {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b),              0},
+    //    {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a),    0},
+    //    {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a),     0},
+    //    {0, 0, 0, 1}
+    //};
+
+    double rotMat_ar[4][4] = {
+        {cos(c),    -sin(c),    0,  0},
+        {sin(c),    cos(c),     0,  0},
+        {0,         0,          1,  0},
+        {0,         0,          0,  1}
+    };
+    Mat R = Mat(4, 4, CV_64F, rotMat_ar);
+
+    double Translation_ar[4][1] = {
+        {camera_pose.x},
+        {camera_pose.y},
+        {camera_pose.z},
+        {0}
+    };
+
+    Mat Translation = Mat(4, 1, CV_64F, Translation_ar);
+
+    double Camera_ar[4][1] = {
+        {camera_pose.x},
+        {camera_pose.y},
+        {camera_pose.z},
+        {1}
+    };
+
+    Mat mat_camera_pose = Mat(4, 1, CV_64F, Camera_ar);
+
+    double Point_ar[4][1] = {
+        {point_pose.x},
+        {point_pose.y},
+        {point_pose.z},
+        {1}
+    };
+
+    Mat mat_point_pose = Mat(4, 1, CV_64F, Point_ar);
+
+    Mat res_vec = R * (mat_point_pose - mat_camera_pose);
+
+    double x = res_vec.at<double>(0, 0);
+    double y = res_vec.at<double>(1, 0);
+    double z = res_vec.at<double>(2, 0);
+
+    Point2d sphe_coord = Point2d(
+        atan2(sqrt(x * x + y * y), z), //угол места
+        atan2(y, x) - M_PI//азимут
+    );
+
+    Point2d scale = Point2d(
+        (FOV_xoy.y - FOV_xoy.x) / pixels_xoy,
+        (FOV_zoy.y - FOV_zoy.x) / pixels_zoy
+    );
+
+    Point2i cam_poection = Point2i(this->frame_size.x, this->frame_size.y);
+    if (
+        (sphe_coord.x >= FOV_zoy.x) and (sphe_coord.x <= FOV_zoy.y)
+        and (sphe_coord.y >= FOV_xoy.x) and (sphe_coord.y <= FOV_xoy.y)
+        )
+    {
+        cam_poection = Point2i(
+            sphe_coord.x * scale.x,
+            sphe_coord.y * scale.y
+        );
+    };
+    return cam_poection;
 };
 
 void Test_model::print_bins_gts(string filename) {
@@ -202,10 +293,10 @@ void Test_model::generate_camera_proections(int mode = 1) {
 
             Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
             switch (mode) {
-            case 0:
+            case 1:
                 tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
                 break;
-            case 1:
+            case 0:
                 tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
                 break;
             };
@@ -234,16 +325,15 @@ void Test_model::generate_camera_proections(int mode = 1) {
 Mat Test_model::generateExCalibM(int i) {
     Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
 
-    double a = angles.x;
-    double b = angles.y + M_PI / 2;
-    //double c = angles.z + M_PI / 2;
-    double c = angles.z + M_PI / 2;
+    double a = angles.x + this->gen_restrictions.camera_fitting_x;
+    double b = angles.y + this->gen_restrictions.camera_fitting_y;
+    double c = angles.z + this->gen_restrictions.camera_fitting_z;
 
 
     double rotMat_ar[3][3] = {
-        {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b)              },
-        {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a)    },
-        {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a)     }
+        {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b)},
+        {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a)},
+        {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a)}
     };
     Mat R = Mat(3, 3, CV_64F, rotMat_ar);
 
@@ -280,9 +370,9 @@ Mat Test_model::generateExCalibM(int i) {
     //     {0, 0, 0, 1}
     //};
     double M_ar[4][4] = {
-        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0)},
-        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0)},
-        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)},
+        {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), tmp.at<double>(0, 0)},
+        {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), tmp.at<double>(1, 0)},
+        {R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), tmp.at<double>(2, 0)},
         {0, 0, 0, 1}
     };
     Mat M = Mat(4, 4, CV_64F, M_ar);
@@ -321,7 +411,7 @@ Mat Test_model::generateTransitionM(int i){
     Mat R_t = R.t();
     
     //Mat tmp = -R_t * t;
-    Mat tmp = -R * t;
+    Mat tmp = -R_t * t;
     
     //double M_ar[4][4] = {
     //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
@@ -347,41 +437,24 @@ Mat Test_model::generateTransitionM(int i){
     return this->A * E * M;
 };
 
-//void Test_model::generate_track(int max_track_parts, double min_line_length, double max_line_length, double min_corner_radius,
-//    double max_corner_radius, double min_corner_angle, double max_corner_angle, double min_vel, double max_vel)
-//{
-//    track.push_back(Track_part_type(
-//        Point2d(0, 0),
-//        Point2d(-1, 0),
-//        min_line_length,
-//        max_line_length,
-//        min_corner_radius,
-//        max_corner_radius,
-//        min_corner_angle,
-//        max_corner_angle,
-//        min_vel,
-//        max_vel
-//    ));
-//    track_length.push_back(track[0].len());
-//    this->total_length = track_length[0];
-//    for (int i = 1; i < max_track_parts; i++) {
-//        track.push_back(Track_part_type(
-//            this->track[i - 1].end,
-//            this->track[i - 1].exit_vec,
-//            min_line_length,
-//            max_line_length,
-//            min_corner_radius,
-//            max_corner_radius,
-//            min_corner_angle,
-//            max_corner_angle,
-//            min_vel,
-//            max_vel
-//        ));
-//        track_length.push_back(track[i].len());
-//        this->total_length += track_length[i];
-//    };
-//};
 
+vector<Point3d> generate_cross(
+    double height,
+    double wight,
+    double dot_density,
+    Point3d cross_orient,
+    Point3d pole_orient,
+    Point3d center
+) {
+    vector<Point3d> res;
+    for (double v_shift = -height / 2; v_shift < height / 2; v_shift += dot_density) {
+        res.push_back(pole_orient * v_shift + center);
+    };
+    for (double h_shift = -wight / 2; h_shift < wight / 2; h_shift += dot_density) {
+        res.push_back(cross_orient * h_shift + center + pole_orient * (height / 6));
+    };
+    return res;
+};
 
 void Test_model::generate_s_points(
     int mode = 1
@@ -394,8 +467,17 @@ void Test_model::generate_s_points(
     switch (mode) {
     case 0:
     {
-        tmp_point = Point3d(100, 2, 0);
-        s_points.push_back(tmp_point);
+        for (Point3d cross_point: generate_cross(
+            100, 
+            50, 
+            0.01, 
+            Point3d(1, 0, 0), 
+            Point3d(0, 0, 1), 
+            Point3d(0, 100, 0)
+        ))
+            s_points.push_back(cross_point);
+        //tmp_point = Point3d(0, 100, 0);
+        //s_points.push_back(tmp_point);
         };
         break;
     case 1:
