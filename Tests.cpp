@@ -23,6 +23,67 @@ using namespace std;
 //    
 //};
 
+void Test_model::save_csv_point_trails(string dirname, string sep) {
+    cout << "save_csv_point_trails start" << endl;
+    for (vector<Point2i> trail : this->point_trails) {
+        vector<string> csv_data;
+        for (int i = 1; i < trail.size(); i++) {
+            csv_data.push_back(to_string(trail[i].x) + sep + to_string(trail[i].y));
+        };
+
+        string filename = dirname + "trails\\" + to_string(trail[0].x) + ".csv";
+        //cout << filename << endl;
+        ofstream fout(filename);
+        fout << "x" + sep + "y" << '\n';
+
+        for (string row : csv_data) {
+            size_t start_pos = 0;
+            string from = ".";
+            string to = ",";
+            while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+                row.replace(start_pos, from.length(), to);
+                start_pos += to.length();
+            }
+            fout << row << '\n';
+        };
+
+        fout.close();
+    };
+    cout << "save_csv_point_trails end" << endl;
+
+};
+
+void Test_model::generate_point_trails(int mode) {
+
+    for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
+
+        vector<Point2i> s_point_trail;
+        s_point_trail.push_back(Point2i(i_points, 0));
+
+        for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
+            //Mat ex_calib_m = cameraCSMat(this->bins_model.bins_gt_points[i].getOrient(), );
+            Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
+            Point3d cam_orient = this->bins_model.bins_gt_points[i].getOrient();
+
+            Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
+            switch (mode) {
+            case 1:
+                tmp = point_proection(this->s_points[i_points], cam_pose, cam_orient);
+                break;
+            case 0:
+                tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
+                break;
+            };
+
+            if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2i(-999, -999);
+            s_point_trail.push_back(tmp);
+        };
+
+        this->point_trails.push_back(s_point_trail);
+        s_point_trail.clear();
+    };
+};
+
 void Test_model::print_camera_proections() {
 
     string dir_frames = this->dir_name + "frames\\";
@@ -220,7 +281,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
 };
 
-Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, int track_point) {
+Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Point3d camera_orient) {
 
     Point3d delta_pose = point_pose - camera_pose;
     double delta_pose_length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
@@ -248,17 +309,18 @@ Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, int
     //    {A.at<double>(2, 0), A.at<double>(2, 1), A.at<double>(2, 2)}
     //};
 
-    Mat Ex_calib = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose);
+    //Mat Ex_calib = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose);
 
-    double Ex_calib_ar2[4][4] = {
-        {Ex_calib.at<double>(0, 0), Ex_calib.at<double>(0, 1), Ex_calib.at<double>(0, 2), Ex_calib.at<double>(0, 3)},
-        {Ex_calib.at<double>(1, 0), Ex_calib.at<double>(1, 1), Ex_calib.at<double>(1, 2), Ex_calib.at<double>(1, 3)},
-        {Ex_calib.at<double>(2, 0), Ex_calib.at<double>(2, 1), Ex_calib.at<double>(2, 2), Ex_calib.at<double>(2, 3)},
-        {Ex_calib.at<double>(3, 0), Ex_calib.at<double>(3, 1), Ex_calib.at<double>(3, 2), Ex_calib.at<double>(3, 3)}
-    };
+    //double Ex_calib_ar2[4][4] = {
+    //    {Ex_calib.at<double>(0, 0), Ex_calib.at<double>(0, 1), Ex_calib.at<double>(0, 2), Ex_calib.at<double>(0, 3)},
+    //    {Ex_calib.at<double>(1, 0), Ex_calib.at<double>(1, 1), Ex_calib.at<double>(1, 2), Ex_calib.at<double>(1, 3)},
+    //    {Ex_calib.at<double>(2, 0), Ex_calib.at<double>(2, 1), Ex_calib.at<double>(2, 2), Ex_calib.at<double>(2, 3)},
+    //    {Ex_calib.at<double>(3, 0), Ex_calib.at<double>(3, 1), Ex_calib.at<double>(3, 2), Ex_calib.at<double>(3, 3)}
+    //};
 
     Mat point_Pose = Mat(4, 1, CV_64F, point_Pose_ar);
-    Mat point_camera_coord = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose) * point_Pose;
+    //Mat point_camera_coord = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose) * point_Pose;
+    Mat point_camera_coord = cameraCSMat(camera_orient, camera_pose) * point_Pose;
 
     Point3d local_point_pose = Point3d(point_camera_coord.at<double>(0, 0), point_camera_coord.at<double>(1, 0), point_camera_coord.at<double>(2, 0));
     double w = local_point_pose.x / this->gen_restrictions.focus;
@@ -420,12 +482,14 @@ void Test_model::generate_camera_proections(int mode = 1) {
         //};
 
         Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
+        Point3d cam_orient = this->bins_model.bins_gt_points[i].getOrient();
+
         for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
             Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
             switch (mode) {
             case 1:
-                tmp = point_proection(this->s_points[i_points], cam_pose, i);
+                tmp = point_proection(this->s_points[i_points], cam_pose, cam_orient);
                 break;
             case 0:
                 tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());

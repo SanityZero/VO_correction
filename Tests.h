@@ -13,12 +13,6 @@ private:
     //static vector<Point2d> smooth_p2d(vector<Point2d> input_series, double amp_1, double amp_2, Point2d limiter) {
     static vector<Point2d> smooth_p2d() {
         vector<Point2d> result;
-
-        //result.push_back(input_series[0]);
-        //result.push_back(input_series[1]);
-        //for (int i = 2; i < input_series.size(); i++) {
-        //    
-        //}
         return result;
     };
 
@@ -146,8 +140,8 @@ private:
     Mat A;
     //Mat EX_calib;
 
-    string get_csv_data_point3d(Point3d point, string sep = ";") {
-        string result = to_string(point.x) + sep + to_string(point.y) + sep + to_string(point.z);
+    string get_csv_data_point3d(Point3d _point, string _sep = ";") {
+        string result = to_string(_point.x) + _sep + to_string(_point.y) + _sep + to_string(_point.z);
         return result;
     };
 
@@ -167,71 +161,12 @@ private:
     vector<vector<Point2i>> point_trails;
     vector<vector<Point2i>> point_camera_proections;
 
-    Point2i point_proection(Point3d point_pose, Point3d camera_pose, int track_point);
-
+    Point2i point_proection(Point3d point_pose, Point3d camera_pose, Point3d camera_orient);
     Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation);
 
     void generate_camera_proections(int mode);
-
-    void generate_point_trails(int mode) {
-
-        for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
-
-            vector<Point2i> s_point_trail;
-            s_point_trail.push_back(Point2i(i_points, 0));
-
-            for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
-                //Mat ex_calib_m = cameraCSMat(this->bins_model.bins_gt_points[i].getOrient(), );
-                Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
-
-                Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
-                switch (mode) {
-                    case 1:
-                        tmp = point_proection(this->s_points[i_points], cam_pose, i);
-                        break;
-                    case 0:
-                        tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
-                        break;
-                };
-
-                if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2i(-999, -999);
-                s_point_trail.push_back(tmp);
-            };
-
-            this->point_trails.push_back(s_point_trail);
-            s_point_trail.clear();
-        };
-    };
-
-    void save_csv_point_trails(string dirname, string sep = ";") {
-
-        for (vector<Point2i> trail : this->point_trails) {
-            vector<string> csv_data;
-            cout << "save_csv_point_trails" << endl;
-            for (int i = 1; i < trail.size(); i++) {
-                csv_data.push_back(to_string(trail[i].x) + sep + to_string(trail[i].y));
-            };
-
-            string filename = dirname + "trails\\" + to_string(trail[0].x) + ".csv";
-            //cout << filename << endl;
-            ofstream fout(filename);
-            fout << "x" + sep + "y" << '\n';
-
-            for (string row : csv_data) {
-                size_t start_pos = 0;
-                string from = ".";
-                string to = ",";
-                while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
-                    row.replace(start_pos, from.length(), to);
-                    start_pos += to.length();
-                }
-                fout << row << '\n';
-            };
-
-            fout.close();
-        };
-       
-    };
+    void generate_point_trails(int mode);
+    void save_csv_point_trails(string dirname, string sep = ";");
 
     //модель БИНС
     class Test_bins_model {
@@ -251,6 +186,30 @@ private:
 
     } bins_model;
 
+    //обработка 
+    Mat senseMat(Point2i _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient) {
+        Point3d delta_point_pose = Point3d(0.001, 0.001, 0.001);
+        Point3d delta_camera_pose = Point3d(0.001, 0.001, 0.001);
+        Point3d delta_camera_orient = Point3d(0.001, 0.001, 0.001);
+
+        vector<Point2d> point_pose;
+        point_pose.push_back(
+            ((this->point_proection(_point_pose - Point3d(delta_point_pose.x, 0, 0), _camera_pose, _camera_orient) - _P)
+            + (this->point_proection(_point_pose + Point3d(delta_point_pose.x, 0, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.x * 2)
+        );
+
+        point_pose.push_back(
+            ((this->point_proection(_point_pose - Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)
+                + (this->point_proection(_point_pose + Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.y * 2)
+        );
+
+        point_pose.push_back(
+            ((this->point_proection(_point_pose - Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)
+                + (this->point_proection(_point_pose + Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.y * 2)
+        );
+
+    
+    };
 
 public:
     Test_model(string name, string dir_name) {
