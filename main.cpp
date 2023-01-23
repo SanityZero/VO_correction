@@ -54,13 +54,13 @@ int main(int argc, char** argv) {
         vector<bool> options;
 
         // настройки загрузки/сохранения
-        options.push_back(true); // track_model.load_csv
+        options.push_back(false); // track_model.load_csv
         options.push_back(true); // load_csv_states
         options.push_back(true); // load_csv_gt_point
-        options.push_back(false); // load_csv_timestamps
-        options.push_back(false); // load_csv_old_gt_point
-        options.push_back(false); // load_csv_eval_old_gt_point
-        options.push_back(false); // load_csv_bins_gt_points
+        options.push_back(true); // load_csv_timestamps
+        options.push_back(true); // load_csv_old_gt_point
+        options.push_back(true); // load_csv_eval_old_gt_point
+        options.push_back(true); // load_csv_bins_gt_points
 
         //options.push_back(true); // track_model.load_csv
         //options.push_back(true); // load_csv_states
@@ -71,21 +71,6 @@ int main(int argc, char** argv) {
         //options.push_back(true); // load_csv_bins_gt_points
 
         tm1.generate_test_model(options);
-        //    1, //max_track_parts
-        //    0.1, //dicret
-        //    30, //mean_line_length
-        //    40, //stddev_line
-        //    30, //mean_corner_radius
-        //    80, //stddev_radius
-        //    90 * M_PI / 180, //min_corner_angle
-        //    200 * M_PI / 180, //max_corner_angle
-        //    2,   //average_vel
-        //    7,   //stddev_vel
-        //    1, //T
-        //    //0.00000156 //U
-        //    11, //U
-        //    1 //U
-        //);
         //tm1.print_states("C:/ProgStaff/NIRS_models/test1/states.txt");
         //tm1.print_bins_gts("C:/ProgStaff/NIRS_models/test1/bins_gt_points.txt");
         ////system("del /f /s /q C:\\ProgStaff\\test_generated_images");

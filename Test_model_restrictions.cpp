@@ -51,7 +51,7 @@ void Test_model::Test_model_restrictions::show() {
     cout << "11)\t" << this->T << endl;
     cout << "12)\t" << this->U1 << endl;
     cout << "13)\t" << this->U2 << endl;
-    cout << "14)\t" << this->f << endl;
+    cout << "14)\t" << this->focus << endl;
     cout << "15)\t" << this->extra_border << endl;
     cout << "16)\t" << this->z_lim_min << endl;
     cout << "17)\t" << this->z_lim_min << endl;
@@ -90,7 +90,7 @@ void Test_model::Test_model_restrictions::set(string filename, vector<int> int_d
         this->U1 = float_data[10];
         this->U2 = float_data[11];
 
-        this->f = float_data[12];
+        this->focus = float_data[12];
 
         this->extra_border = float_data[13];
         this->z_lim_min = float_data[14];

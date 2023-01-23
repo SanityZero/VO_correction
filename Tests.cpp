@@ -23,6 +23,66 @@ using namespace std;
 //    
 //};
 
+void Test_model::print_camera_proections() {
+
+    string dir_frames = this->dir_name + "frames\\";
+    string cmd_clear_image_dir = "del /f /s /q " + dir_frames;
+    system(cmd_clear_image_dir.c_str());
+
+    for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
+        Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
+        vector<Point2i> frame_points = this->point_camera_proections[i];
+
+        for (int i_points = 0; i_points < frame_points.size(); i_points++) {
+            if (frame_points.size() == 0) continue;
+            Point2i cross_size = Point2i(3, 3);
+            Point2i s_point_location = Point2i(frame_points[i_points].y, frame_points[i_points].x) + this->frame_size / 2;
+            Point2i cross_points[4] = {
+                s_point_location + Point2i(-cross_size.x / 2, -cross_size.y / 2),
+                s_point_location + Point2i(-cross_size.x / 2, cross_size.y / 2),
+                s_point_location + Point2i(cross_size.x / 2, cross_size.y / 2),
+                s_point_location + Point2i(cross_size.x / 2, -cross_size.y / 2)
+            };
+            line(frame, cross_points[0], cross_points[2], Scalar(0, 0, 255), 1);
+            line(frame, cross_points[1], cross_points[3], Scalar(0, 0, 255), 1);
+        };
+        //сохранить пикчу 
+        string filename = dir_frames + to_string(i) + ".jpg";
+        imwrite(filename, frame);
+    };
+
+    string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 " + this->dir_name + this->name + ".mp4";
+    
+    system(cmd_make_vid.c_str());
+    cout << "---<<< video generation ended >>>---" << endl;
+};
+
+void Test_model::save_csv_s_points(string filename, string sep) {
+
+    vector<string> csv_data;
+    cout << "save_csv_gt_point" << endl;
+    for (int i = 0; i < this->s_points.size(); i++) {
+        csv_data.push_back(this->get_csv_data_point3d(this->s_points[i]));
+    };
+
+    ofstream fout(filename);
+    fout << Point3d_HEADER(sep) << '\n';
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
 void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename) {
     if (gen_restr_filename != "") {
         this->gen_restrictions.load_restriction_file(gen_restr_filename);
@@ -109,6 +169,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
     // расставить точки
     generate_s_points(this->gen_restrictions.s_points_generation_mode);
+    save_csv_s_points(this->dir_name + "s_points.csv");
 
     // сгенерировать бинс данные по ограничени€м, т.е. набор значений
     if (options[6]) {
@@ -130,25 +191,42 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         this->gen_restrictions.camera_frame_size_y
     );
     Point2d cam_limits = Point2d(0.1, 100000000);
-    double f = this->gen_restrictions.f;
-    double IternalCalib_ar[3][3] = {
-    {f, 0, 0},
-    {0, f, 0},
-    {0, 0, 1}
+    double focus = this->gen_restrictions.focus;
+
+    double yScale = cos(this->gen_restrictions.camera_FOV_zoy) / sin(this->gen_restrictions.camera_FOV_zoy);
+    double xScale = cos(this->gen_restrictions.camera_FOV_xoy) / sin(this->gen_restrictions.camera_FOV_xoy);
+
+    double IternalCalib_ar[4][4] = {
+    {xScale,    0,      0,  0},
+    {0,         yScale, 0,  0},
+    {0,         0,      1,  1/ focus},
+    {0,         0,      0,  0}
     };
-    Mat A = Mat(3, 3, CV_64F, IternalCalib_ar);
+
+//    double IternalCalib_ar[3][3] = {
+//{xScale,    0,  0},
+//{0, yScale, 0},
+//{0, 0,  1 / focus}
+//    };
+    Mat A = Mat(4, 4, CV_64F, IternalCalib_ar);
 
 
     setCameraModel(fr_size, cam_limits, A);
     generate_camera_proections(this->gen_restrictions.camera_proection_mode);
+
+    generate_point_trails(this->gen_restrictions.camera_proection_mode);
+    save_csv_point_trails(this->dir_name);
     // сгенерировать изображени€ в соответствии с точками
 
 };
 
-Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib) {
+Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, int track_point) {
+
     Point3d delta_pose = point_pose - camera_pose;
-    //double length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
+    double delta_pose_length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);
     if ((length(delta_pose) < this->cam_range.x) || (length(delta_pose) > this->cam_range.y)) return this->frame_size;
+
+    //double w = point_pose.x / this->gen_restrictions.focus;
     double point_Pose_ar[4][1] = {
         {point_pose.x},
         {point_pose.y},
@@ -156,9 +234,77 @@ Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat
         {1}
     };
 
+    double E_ar[3][4] = {
+    {1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 1, 0}
+    };
+    Mat E = Mat(3, 4, CV_64F, E_ar);
+
+    //Mat A = this->A;
+    //double A_ar[3][3] = {
+    //    {A.at<double>(0, 0), A.at<double>(0, 1), A.at<double>(0, 2)},
+    //    {A.at<double>(1, 0), A.at<double>(1, 1), A.at<double>(1, 2)},
+    //    {A.at<double>(2, 0), A.at<double>(2, 1), A.at<double>(2, 2)}
+    //};
+
+    Mat Ex_calib = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose);
+
+    double Ex_calib_ar2[4][4] = {
+        {Ex_calib.at<double>(0, 0), Ex_calib.at<double>(0, 1), Ex_calib.at<double>(0, 2), Ex_calib.at<double>(0, 3)},
+        {Ex_calib.at<double>(1, 0), Ex_calib.at<double>(1, 1), Ex_calib.at<double>(1, 2), Ex_calib.at<double>(1, 3)},
+        {Ex_calib.at<double>(2, 0), Ex_calib.at<double>(2, 1), Ex_calib.at<double>(2, 2), Ex_calib.at<double>(2, 3)},
+        {Ex_calib.at<double>(3, 0), Ex_calib.at<double>(3, 1), Ex_calib.at<double>(3, 2), Ex_calib.at<double>(3, 3)}
+    };
+
     Mat point_Pose = Mat(4, 1, CV_64F, point_Pose_ar);
-    Mat cam_point = Ex_calib * point_Pose;
-    Point2i point_int = Point2i(cam_point.at<double>(0, 0), cam_point.at<double>(1, 0));
+    Mat point_camera_coord = cameraCSMat(this->bins_model.bins_gt_points[track_point].getOrient(), camera_pose) * point_Pose;
+
+    Point3d local_point_pose = Point3d(point_camera_coord.at<double>(0, 0), point_camera_coord.at<double>(1, 0), point_camera_coord.at<double>(2, 0));
+    double w = local_point_pose.x / this->gen_restrictions.focus;
+    //double Ex_calib_ar[4][4] = {
+    //    {Ex_calib.at<double>(0, 0), Ex_calib.at<double>(0, 1), Ex_calib.at<double>(0, 2), Ex_calib.at<double>(0, 3)},
+    //    {Ex_calib.at<double>(1, 0), Ex_calib.at<double>(1, 1), Ex_calib.at<double>(1, 2), Ex_calib.at<double>(1, 3)},
+    //    {Ex_calib.at<double>(2, 0), Ex_calib.at<double>(2, 1), Ex_calib.at<double>(2, 2), Ex_calib.at<double>(2, 3)},
+    //    {Ex_calib.at<double>(3, 0), Ex_calib.at<double>(3, 1), Ex_calib.at<double>(3, 2), Ex_calib.at<double>(3, 3)}
+    //};
+    //double E_ar[3][4] = {
+    //{1, 0, 0, 0},
+    //{0, 1, 0, 0},
+    //{0, 0, 1, 0}
+    //};
+
+    double point_camera_coord_ar2[4][1] = {
+        {local_point_pose.z},
+        {local_point_pose.y},
+        {local_point_pose.x},
+        {w}
+    };
+
+    
+    point_camera_coord = Mat(4, 1, CV_64F, point_camera_coord_ar2);
+
+    Point2i point_int = Point2i(
+        point_camera_coord.at<double>(0, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0)),
+        point_camera_coord.at<double>(1, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0))
+    );
+
+    if (point_camera_coord.at<double>(2, 0) < 0.0) point_int = this->frame_size;
+
+    Mat cam_point = this->A * point_camera_coord;
+
+    double point_camera_coord_ar[3][1] = {
+    {cam_point.at<double>(0, 0)},
+    {cam_point.at<double>(1, 0)},
+    {cam_point.at<double>(2, 0)}
+    };
+    //Mat cam_point = this->A * E * point_camera_coord / point_camera_coord.at<double>(2, 0);
+    //Point2i point_int = Point2i(
+    //    cam_point.at<double>(0, 0) / cam_point.at<double>(2, 0), 
+    //    cam_point.at<double>(1, 0) / cam_point.at<double>(2, 0)
+    //);
+
+    
 
     if ((point_int.x < this->frame_size.x) && (point_int.x > -frame_size.x) && (point_int.y < this->frame_size.y) && (point_int.y > -frame_size.y)) {
         return point_int;
@@ -169,6 +315,7 @@ Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Mat
 };
 
 Point2i Test_model::point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
+    //говнина, не работает
 
     Point2d FOV_xoy = Point2d(
         -this->gen_restrictions.camera_FOV_xoy / 2,
@@ -259,42 +406,26 @@ Point2i Test_model::point_proection_linear(Point3d point_pose, Point3d camera_po
     return cam_poection;
 };
 
-void Test_model::print_bins_gts(string filename) {
-    ofstream out; // поток дл€ записи
-    out.open(filename); // окрываем файл дл€ записи
-    if (out.is_open())
-    {
-        //Point3d vel;
-        //Point3d accel;
-        //Point3d orient;
-        //Point3d anqular_vel;
-        //Point3d anqular_accel;
-        for (int i = 0; i < this->bins_model.bins_timestamps.size(); i++) {
-            out << format(
-                "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n",
-                this->bins_model.bins_timestamps[i],
-                this->bins_model.bins_gt_points[i].getPose().x, this->bins_model.bins_gt_points[i].getPose().y, this->bins_model.bins_gt_points[i].getPose().z,
-                this->bins_model.bins_gt_points[i].getOrient().x, this->bins_model.bins_gt_points[i].getOrient().y, this->bins_model.bins_gt_points[i].getOrient().z,
-                this->bins_model.bins_gt_points[i].getAccel().x, this->bins_model.bins_gt_points[i].getAccel().y, this->bins_model.bins_gt_points[i].getAccel().z,
-                this->bins_model.bins_gt_points[i].getW().x, this->bins_model.bins_gt_points[i].getW().y, this->bins_model.bins_gt_points[i].getW().z
-            );
-        };
-    }
-    out.close();
-};
-
 void Test_model::generate_camera_proections(int mode = 1) {
 
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
         vector<Point2i> frame_points;
-        Mat ex_calib_m = generateExCalibM(i);
+        //Mat ex_calib_m = generateExCalibM(i);
+
+        //double Ex_calib_ar[4][4] = {
+        //{ex_calib_m.at<double>(0, 0), ex_calib_m.at<double>(0, 1), ex_calib_m.at<double>(0, 2), ex_calib_m.at<double>(0, 3)},
+        //{ex_calib_m.at<double>(1, 0), ex_calib_m.at<double>(1, 1), ex_calib_m.at<double>(1, 2), ex_calib_m.at<double>(1, 3)},
+        //{ex_calib_m.at<double>(2, 0), ex_calib_m.at<double>(2, 1), ex_calib_m.at<double>(2, 2), ex_calib_m.at<double>(2, 3)},
+        //{ex_calib_m.at<double>(3, 0), ex_calib_m.at<double>(3, 1), ex_calib_m.at<double>(3, 2), ex_calib_m.at<double>(3, 3)}
+        //};
+
         Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
-        for (int i_points = 0; i_points < this->s_points.size() - 1; i_points++) {
+        for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
             Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
             switch (mode) {
             case 1:
-                tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
+                tmp = point_proection(this->s_points[i_points], cam_pose, i);
                 break;
             case 0:
                 tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
@@ -306,24 +437,12 @@ void Test_model::generate_camera_proections(int mode = 1) {
             frame_points.push_back(tmp);
         };
         this->point_camera_proections.push_back(frame_points);
+        frame_points.clear();
     };
-     
-     //for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
-    //    vector<Point2i> frame_points;
-    //    Mat ex_calib_m = generateExCalibM(i);
-    //    Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
-    //    for (int i_points = 0; i_points < this->s_points.size() - 1; i_points++) {
-    //        Point2i tmp = point_proection(this->s_points[i_points], cam_pose, ex_calib_m);
-
-    //        if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) continue;
-    //        frame_points.push_back(tmp);
-    //    };
-    //    this->point_camera_proections.push_back(frame_points);
-    //};
 };
 
-Mat Test_model::generateExCalibM(int i) {
-    Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
+Mat Test_model::cameraCSMat(Point3d angles, Point3d _cam_pose) {
+    //Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
 
     double a = angles.x + this->gen_restrictions.camera_fitting_x;
     double b = angles.y + this->gen_restrictions.camera_fitting_y;
@@ -337,38 +456,20 @@ Mat Test_model::generateExCalibM(int i) {
     };
     Mat R = Mat(3, 3, CV_64F, rotMat_ar);
 
-    Point3d delta = this->bins_model.bins_gt_points[i].getPose();
+    //Point3d delta = this->bins_model.bins_gt_points[i].getPose();
     double transMat_ar[3][1] = {
-    {delta.x},
-    {delta.y},
-    {delta.z}
+    {_cam_pose.x},
+    {_cam_pose.y},
+    {_cam_pose.z}
     };
     Mat t = Mat(3, 1, CV_64F, transMat_ar);
-
-    double E_ar[3][4] = {
-    {1, 0, 0, 0},
-    {0, 1, 0, 0},
-    {0, 0, 1, 0}
-    };
-    Mat E = Mat(3, 4, CV_64F, E_ar);
 
     Mat R_t = R.t();
 
     //Mat tmp = -R_t * t;
     Mat tmp = -R * t;
 
-    //double M_ar[4][4] = {
-    //     {R_t.at<double>(0, 0), R_t.at<double>(0, 1), R_t.at<double>(0, 2), tmp.at<double>(0, 0)},
-    //     {R_t.at<double>(1, 0), R_t.at<double>(1, 1), R_t.at<double>(1, 2), tmp.at<double>(1, 0)},
-    //     {R_t.at<double>(2, 0), R_t.at<double>(2, 1), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
-    //     {0, 0, 0, 1}
-    //};
-    //double M_ar[4][4] = {
-    //     {R_t.at<double>(0, 0), R_t.at<double>(1, 0), R_t.at<double>(2, 0), tmp.at<double>(0, 0)},
-    //     {R_t.at<double>(0, 1), R_t.at<double>(1, 1), R_t.at<double>(2, 1), tmp.at<double>(1, 0)},
-    //     {R_t.at<double>(0, 2), R_t.at<double>(1, 2), R_t.at<double>(2, 2), tmp.at<double>(2, 0)},
-    //     {0, 0, 0, 1}
-    //};
+
     double M_ar[4][4] = {
         {R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), tmp.at<double>(0, 0)},
         {R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), tmp.at<double>(1, 0)},
@@ -378,7 +479,7 @@ Mat Test_model::generateExCalibM(int i) {
     Mat M = Mat(4, 4, CV_64F, M_ar);
 
 
-    return this->A * E * M;
+    return M.clone();
 };
 
 Mat Test_model::generateTransitionM(int i){
@@ -465,16 +566,26 @@ void Test_model::generate_s_points(
 ) {
     Point3d tmp_point = Point3d(100, 2, 0);
     switch (mode) {
+    case 3:
+    {
+        Point3d point = Point3d(100, 10, 0);
+        Point3d point1 = Point3d(100, 0, 0);
+        Point3d point2 = Point3d(100, -10, 0);
+        s_points.push_back(point);
+        s_points.push_back(point1);
+        s_points.push_back(point2);
+    };
+        break;
     case 0:
     {
         for (Point3d cross_point: generate_cross(
             100, 
             50, 
             0.01, 
-            Point3d(1, 0, 0), 
+            Point3d(0, 1, 0), 
             Point3d(0, 0, 1), 
-            Point3d(0, 100, 0)
-        ))
+            Point3d(100, 0, 0)
+            ))
             s_points.push_back(cross_point);
         //tmp_point = Point3d(0, 100, 0);
         //s_points.push_back(tmp_point);
@@ -522,26 +633,6 @@ void Test_model::generate_s_points(
         break;
     }
 };
-
-void Test_model::print_states(string filename) {
-    ofstream out;          // поток дл€ записи
-    out.open(filename); // окрываем файл дл€ записи
-    if (out.is_open())
-    {
-        for (int i = 0; i < this->motion_model.states.size(); i++) {
-            out << format(
-                "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
-                this->motion_model.states[i].vel.x, this->motion_model.states[i].vel.y, this->motion_model.states[i].vel.z,
-                this->motion_model.states[i].orient.x, this->motion_model.states[i].orient.y, this->motion_model.states[i].orient.z,
-                this->motion_model.states[i].anqular_vel.x, this->motion_model.states[i].anqular_vel.y, this->motion_model.states[i].anqular_vel.z,
-                this->motion_model.states[i].accel.x, this->motion_model.states[i].accel.y, this->motion_model.states[i].accel.z,
-                this->motion_model.states[i].anqular_accel.x, this->motion_model.states[i].anqular_accel.y, this->motion_model.states[i].anqular_accel.z
-            );
-        };
-    }
-    out.close();
-};
-
 
 inline DataSeq_model_Type generate_old_model(
     double mean_1,
@@ -872,7 +963,7 @@ void old_motion_Test(double accel_std, double sko, double delta, double duration
             av_pose_err.lat += abs(pose_err_vec[i].lat) / pose_err_vec.size();
             av_pose_err.lon += abs(pose_err_vec[i].lon) / pose_err_vec.size();
             av_pose_err.alt += abs(pose_err_vec[i].alt) / pose_err_vec.size();
-        }
+        };
         //ds.print_traect(num_sources);
 
         cout << "Disp_test1" << "\ttime: " << test_1.timestamps[test_1.limit - 1] - test_1.timestamps[0] << "sec" << endl;

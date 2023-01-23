@@ -16,5 +16,4 @@ C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Test_track_model.cpp(6,10): fatal er
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Track_part_type.cpp(2,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
   Tests.cpp
 C:\ProgStaff\VSproj\OpenCV-test\OpenCV-test\Tests.cpp(6,10): fatal error C1083: Не удается открыть файл включение: opencv2/core.hpp: No such file or directory,
-  VOCorrection.cpp
   Создание кода...

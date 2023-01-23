@@ -2,3 +2,9 @@ x64/Debug/
 /.*.txt.*
 .*.txt
 states.txt
+.vs/OpenCV-test/v16/.suo
+*.db
+*.tlog
+*.log
+*.pdb
+*.obj

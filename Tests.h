@@ -44,7 +44,7 @@ private:
         double U1;
         double U2;
 
-        double f;
+        double focus;
 
         double extra_border;
 
@@ -76,7 +76,7 @@ private:
         Test_model_restrictions() {};
         void set(string filename, vector<int> int_data, vector<double> float_data);
         void load_restriction_file(string filename);
-        void show();       
+        void show();
     } gen_restrictions;
 
 
@@ -136,8 +136,8 @@ private:
 
     //модель камеры
     class Test_camera_model {
-    
-    
+
+
     };
 
     vector<Point3d> s_points;
@@ -146,9 +146,16 @@ private:
     Mat A;
     //Mat EX_calib;
 
+    string get_csv_data_point3d(Point3d point, string sep = ";") {
+        string result = to_string(point.x) + sep + to_string(point.y) + sep + to_string(point.z);
+        return result;
+    };
+
+    void save_csv_s_points(string filename, string sep = ";");
+
     void generate_s_points(int mode);
 
-    Mat generateExCalibM(int i);
+    Mat cameraCSMat(Point3d angles, Point3d _cam_pose);
     Mat generateTransitionM(int i);
     void setCameraModel(Point2i _frame_size, Point2d _cam_range, Mat _A) {
         this->frame_size = _frame_size;
@@ -157,14 +164,74 @@ private:
     };
 
     //модель движения блестящих точек
-    vector<vector<Point2i>> point_tracks;
+    vector<vector<Point2i>> point_trails;
     vector<vector<Point2i>> point_camera_proections;
 
-    Point2i point_proection(Point3d point_pose, Point3d camera_pose, Mat Ex_calib);
+    Point2i point_proection(Point3d point_pose, Point3d camera_pose, int track_point);
 
     Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation);
 
     void generate_camera_proections(int mode);
+
+    void generate_point_trails(int mode) {
+
+        for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
+
+            vector<Point2i> s_point_trail;
+            s_point_trail.push_back(Point2i(i_points, 0));
+
+            for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
+                //Mat ex_calib_m = cameraCSMat(this->bins_model.bins_gt_points[i].getOrient(), );
+                Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
+
+                Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
+                switch (mode) {
+                    case 1:
+                        tmp = point_proection(this->s_points[i_points], cam_pose, i);
+                        break;
+                    case 0:
+                        tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
+                        break;
+                };
+
+                if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2i(-999, -999);
+                s_point_trail.push_back(tmp);
+            };
+
+            this->point_trails.push_back(s_point_trail);
+            s_point_trail.clear();
+        };
+    };
+
+    void save_csv_point_trails(string dirname, string sep = ";") {
+
+        for (vector<Point2i> trail : this->point_trails) {
+            vector<string> csv_data;
+            cout << "save_csv_point_trails" << endl;
+            for (int i = 1; i < trail.size(); i++) {
+                csv_data.push_back(to_string(trail[i].x) + sep + to_string(trail[i].y));
+            };
+
+            string filename = dirname + "trails\\" + to_string(trail[0].x) + ".csv";
+            //cout << filename << endl;
+            ofstream fout(filename);
+            fout << "x" + sep + "y" << '\n';
+
+            for (string row : csv_data) {
+                size_t start_pos = 0;
+                string from = ".";
+                string to = ",";
+                while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+                    row.replace(start_pos, from.length(), to);
+                    start_pos += to.length();
+                }
+                fout << row << '\n';
+            };
+
+            fout.close();
+        };
+       
+    };
 
     //модель БИНС
     class Test_bins_model {
@@ -181,7 +248,7 @@ private:
 
         void load_csv_bins_gt_points(string filename, string sep = ";");
         void load_csv_bins_timestamps(string filename, string sep = ";");
-        
+
     } bins_model;
 
 
@@ -199,36 +266,12 @@ public:
     //void read_restriction_file(string filename);
 
     void save_test_model(string filename) {
-
-        //vector<Pose_type> gt_point;
-
-        //  cv::Point3d vel;
-        //  cv::Point3d accel;
-        //  cv::Point3d orient;
-        //  cv::Point3d anqular_vel;
-        //  cv::Point3d anqular_accel;
-        //vector<double> timestamps;
-        //double total_time;
-
-        //vector<Point3d> s_points;
-        //Point2i frame_size;
-        //Point2d cam_range;
-        //Mat A;
-
-        //модель движения блестящих точек
-        //vector<vector<Point2i>> point_tracks;
-        //vector<vector<Point2i>> point_camera_proections;
-
-        //модель БИНС
-        //vector<Pose_type> bins_gt_points;
-        //vector<Pose_type> bins_points;
-        //vector<double> bins_timestamps;
     };
 
 
     ///////////////////aaaAAAaaAA!1!!!1!!!!!
     void generate_test_model(
-        vector<bool> options, 
+        vector<bool> options,
         string gen_restr_filename = ""
     );// вот эта функция вызывается
 
@@ -236,43 +279,8 @@ public:
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_bins_gt(bool pause_enable = false);
 
-    void print_camera_proections() {
-
-        string dir_frames = this->dir_name + "frames\\";
-        string cmd_clear_image_dir = "del /f /s /q " + dir_frames;
-        system(cmd_clear_image_dir.c_str());
-
-        for (int i = 0; i < this->bins_model.bins_timestamps.size()-1; i++) {
-            Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
-            vector<Point2i> frame_points = this->point_camera_proections[i];
-            
-            for (int i_points = 0; i_points < frame_points.size(); i_points++) {
-                if (frame_points.size() == 0) continue;
-                Point2i cross_size = Point2i(3, 3);
-                Point2i s_point_location = Point2i(frame_points[i_points].y, frame_points[i_points].x) + this->frame_size/2;
-                Point2i cross_points[4] = {
-                    s_point_location + Point2i(-cross_size.x / 2, -cross_size.y / 2),
-                    s_point_location + Point2i(-cross_size.x / 2, cross_size.y / 2),
-                    s_point_location + Point2i(cross_size.x / 2, cross_size.y / 2),
-                    s_point_location + Point2i(cross_size.x / 2, -cross_size.y / 2)
-                };
-                line(frame, cross_points[0], cross_points[2], Scalar(0, 0, 255), 1);
-                line(frame, cross_points[1], cross_points[3], Scalar(0, 0, 255), 1);
-                };
-            //сохранить пикчу 
-            string filename = dir_frames + to_string(i) + ".jpg";
-            imwrite(filename, frame);
-        };
-
-        string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 "+this->dir_name + this->name +".mp4";
-        system(cmd_make_vid.c_str());
-
-    };
-
-    void print_states(string filename);
-    void print_bins_gts(string filename);
+    void print_camera_proections();
 };
-
 
 DataSeq_model_Type generate_old_model(
     double mean_1,

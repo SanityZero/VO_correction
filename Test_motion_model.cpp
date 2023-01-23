@@ -298,7 +298,7 @@ void Test_model::Test_motion_model::generate_states(Test_track_model track_model
         Point3d v3_orient = normalize(state.orient);
         // double z_rot = (acos((v3_orient.y + v3_orient.x) / 2) + asin((v3_orient.y - v3_orient.x) / 2)) / 2;
 
-        double z_rot = atan2(v3_orient.x, v3_orient.y);
+        double z_rot = atan2(v3_orient.y, v3_orient.x);
         state.change_orient(Point3d(0, 0, z_rot));
         states.push_back(state);
     };

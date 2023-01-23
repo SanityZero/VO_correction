@@ -2,6 +2,7 @@
 #define M_PI (double)3.14159265358979323846
 #define MASS (double)2000
 #define Pose_type_HEADER(sep) string("\"lat\"") + sep + "\"lon\"" + sep + "\"alt\"" + sep + "\"roll\"" + sep + "\"pitch\"" + sep + "\"yaw\"" + sep + "\"ax\"" + sep + "\"ay\"" + sep + "\"az\"" + sep + "\"wx\"" + sep + "\"wy\"" + sep + "\"wz\""
+#define Point3d_HEADER(sep) string("\"x\"") + sep + "\"y\"" + sep + "\"z\""
 
 class Pose_type{
 public:
