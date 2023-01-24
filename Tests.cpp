@@ -57,25 +57,25 @@ void Test_model::generate_point_trails(int mode) {
 
     for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
-        vector<Point2i> s_point_trail;
-        s_point_trail.push_back(Point2i(i_points, 0));
+        vector<Point2d> s_point_trail;
+        s_point_trail.push_back(Point2d(i_points, 0));
 
         for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
             //Mat ex_calib_m = cameraCSMat(this->bins_model.bins_gt_points[i].getOrient(), );
             Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
             Point3d cam_orient = this->bins_model.bins_gt_points[i].getOrient();
 
-            Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
+            Point2d tmp = Point2d(this->frame_size.x, this->frame_size.y);
             switch (mode) {
             case 1:
-                tmp = point_proection(this->s_points[i_points], cam_pose, cam_orient);
+                tmp = point_proection_D(this->s_points[i_points], cam_pose, cam_orient);
                 break;
             case 0:
-                tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
+                //tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
                 break;
             };
 
-            if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2i(-999, -999);
+            if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2d(-999.0, -999.0);
             s_point_trail.push_back(tmp);
         };
 
@@ -281,7 +281,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
 };
 
-Point2i Test_model::point_proection(Point3d point_pose, Point3d camera_pose, Point3d camera_orient) {
+Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, Point3d camera_orient) {
 
     Point3d delta_pose = point_pose - camera_pose;
     double delta_pose_length = sqrt(delta_pose.x * delta_pose.x + delta_pose.y * delta_pose.y + delta_pose.z * delta_pose.z);

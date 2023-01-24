@@ -1,5 +1,6 @@
 #pragma once
 #include "Track_part_type.h"
+#include "Test_model_sequence.h"
 
 
 using namespace cv;
@@ -158,10 +159,16 @@ private:
     };
 
     //модель движения блестящих точек
-    vector<vector<Point2i>> point_trails;
+    vector<vector<Point2d>> point_trails;
     vector<vector<Point2i>> point_camera_proections;
 
-    Point2i point_proection(Point3d point_pose, Point3d camera_pose, Point3d camera_orient);
+    Point2d point_proection_D(Point3d point_pose, Point3d camera_pose, Point3d camera_orient);
+
+    Point2i point_proection(Point3d point_pose, Point3d camera_pose, Point3d camera_orient) {
+        Point2d point_d = this->point_proection_D(point_pose, camera_pose, camera_orient);
+        return Point2i(point_d.x, point_d.y);
+    };
+
     Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation);
 
     void generate_camera_proections(int mode);
@@ -187,29 +194,62 @@ private:
     } bins_model;
 
     //обработка 
-    Mat senseMat(Point2i _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient) {
-        Point3d delta_point_pose = Point3d(0.001, 0.001, 0.001);
-        Point3d delta_camera_pose = Point3d(0.001, 0.001, 0.001);
-        Point3d delta_camera_orient = Point3d(0.001, 0.001, 0.001);
+    Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta) {
+        Point2d res = (
+                this->point_proection_D(_point_pose + _delta, _camera_pose, _camera_orient)
+                - this->point_proection_D(_point_pose - _delta, _camera_pose, _camera_orient)
+            ) 
+            / (length(_delta) * 2);
+        return res;
+    };
+
+    Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient) {
+        //delta _point_pose
+        Point3d delta_pp_x = Point3d(0.001, 0, 0);
+        Point3d delta_pp_y = Point3d(0, 0.001, 0);
+        Point3d delta_pp_z = Point3d(0, 0, 0.001);
+
+        //delta _camera_pose
+        Point3d delta_cp_x = Point3d(0.001, 0, 0);
+        Point3d delta_cp_y = Point3d(0, 0.001, 0);
+        Point3d delta_cp_z = Point3d(0, 0, 0.001);
+
+        //delta _camera_orient
+        Point3d delta_co_x = Point3d(0.001, 0, 0);
+        Point3d delta_co_y = Point3d(0, 0.001, 0);
+        Point3d delta_co_z = Point3d(0, 0, 0.001);
 
         vector<Point2d> point_pose;
-        point_pose.push_back(
-            ((this->point_proection(_point_pose - Point3d(delta_point_pose.x, 0, 0), _camera_pose, _camera_orient) - _P)
-            + (this->point_proection(_point_pose + Point3d(delta_point_pose.x, 0, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.x * 2)
-        );
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_x));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_y));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_z));
 
-        point_pose.push_back(
-            ((this->point_proection(_point_pose - Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)
-                + (this->point_proection(_point_pose + Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.y * 2)
-        );
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_x));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_y));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_z));
 
-        point_pose.push_back(
-            ((this->point_proection(_point_pose - Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)
-                + (this->point_proection(_point_pose + Point3d(0, delta_point_pose.y, 0), _camera_pose, _camera_orient) - _P)) / (delta_point_pose.y * 2)
-        );
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_x));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_y));
+        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_z));
 
-    
+        double senseMat_ar[9][2] = {
+            {point_pose[0].x, point_pose[1].y},
+            {point_pose[1].x, point_pose[2].y},
+            {point_pose[2].x, point_pose[3].y},
+
+            {point_pose[3].x, point_pose[4].y},
+            {point_pose[4].x, point_pose[5].y},
+            {point_pose[5].x, point_pose[6].y},
+
+            {point_pose[6].x, point_pose[7].y},
+            {point_pose[7].x, point_pose[8].y},
+            {point_pose[8].x, point_pose[9].y}
+        };
+
+        return  Mat(9, 2, CV_64F, senseMat_ar).clone();
     };
+
+    vector<Point2d> s_sequence;
 
 public:
     Test_model(string name, string dir_name) {
