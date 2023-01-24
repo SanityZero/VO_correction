@@ -8,3 +8,16 @@ states.txt
 *.log
 *.pdb
 *.obj
+*.tlog
+x64/Debug/Actual_NIRS.tlog/CL.command.1.tlog
+x64/Debug/Actual_NIRS.tlog/CL.read.1.tlog
+x64/Debug/Actual_NIRS.tlog/CL.write.1.tlog
+x64/Debug/Actual_NIRS.tlog/link.read.1.tlog
+x64/Debug/main.obj
+x64/Debug/OpenCV-test.log
+x64/Debug/Test_bins_model.obj
+x64/Debug/Test_motion_model.obj
+x64/Debug/Test_track_model.obj
+x64/Debug/Tests.obj
+x64/Debug/vc142.idb
+x64/Debug/vc142.pdb

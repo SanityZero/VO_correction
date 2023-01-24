@@ -1,5 +1,0 @@
-C:/Kitti/2011_09_26/2011_09_26_drive_0001_sync/	time: 11.0405sec
->>>>Average angle error: roll 1.40056 deg	pitch 1.22299 deg	yaw 10.5248 deg
->>>>Extrime angle error: roll 3.90937 deg	pitch 2.72768 deg	yaw 16.6418 deg
->>>>Average pose  error: lat  6.58313 	lon 48.2638 	 alt 397.48
-
