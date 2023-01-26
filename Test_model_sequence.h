@@ -99,7 +99,7 @@ class Measurement_vector {
 public:
 
 	Point2d proection;
-	// ��� � ���
+
 	Measurement_vector() {};
 	Measurement_vector(Point2d _poect) {
 		this->proection = _poect;
@@ -117,6 +117,10 @@ public:
 		};
 		return res;
 	};
+
+	void set(Point2d _poect) {
+		this->proection = _poect;
+	};
 };
 
 class Trail_sequence {
@@ -124,13 +128,27 @@ public:
 
 	int start;
 	int end;
-	double time_discret;
 
 	vector<double> timestamps;
 	vector<State_vector> model_state_vector;
 	vector<Measurement_vector> model_measurement_vector;
 
 	Trail_sequence() {};
-	// �������������
-	// ������ ��������, ����� ��� ��������� ������
+
+	Trail_sequence(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec): start(_start), end(_start - 1) {
+		this->push_back(_timestamp, _state_vec, _mes_vec);
+	};
+
+	void set_start(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec) {
+		this->push_back(_timestamp, _state_vec, _mes_vec);
+		this->start = _start;
+		this->end = _start;
+	};
+
+	void push_back(double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec) {
+		this->timestamps.push_back(_timestamp);
+		this->model_state_vector.push_back(_state_vec);
+		this->model_measurement_vector.push_back(_mes_vec);
+		this->end++;
+	};
 };

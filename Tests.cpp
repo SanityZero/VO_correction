@@ -25,13 +25,13 @@ using namespace std;
 
 void Test_model::save_csv_point_trails(string dirname, string sep) {
     cout << "save_csv_point_trails start" << endl;
-    for (vector<Point2i> trail : this->point_trails) {
+    for (vector<Point2d> trail : this->point_trails) {
         vector<string> csv_data;
         for (int i = 1; i < trail.size(); i++) {
             csv_data.push_back(to_string(trail[i].x) + sep + to_string(trail[i].y));
         };
 
-        string filename = dirname + "trails\\" + to_string(trail[0].x) + ".csv";
+        string filename = dirname + "trails\\" + to_string(int(trail[0].x)) + ".csv";
         //cout << filename << endl;
         ofstream fout(filename);
         fout << "x" + sep + "y" << '\n';
@@ -276,6 +276,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     generate_camera_proections(this->gen_restrictions.camera_proection_mode);
 
     generate_point_trails(this->gen_restrictions.camera_proection_mode);
+    generate_trail_sequences();
     save_csv_point_trails(this->dir_name);
     // сгенерировать изображения в соответствии с точками
 

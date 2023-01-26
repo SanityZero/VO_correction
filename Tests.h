@@ -251,6 +251,79 @@ private:
 
     vector<Point2d> s_sequence;
 
+
+    vector<Trail_sequence> trail_sequences;
+
+    void generate_trail_sequences() {
+
+        for (vector<Point2d> trail : this->point_trails) {
+            
+            Point3d s_point = this->s_points[int(trail[0].x)];
+
+            int i = 1;
+            bool seq_valid = false;
+            bool seq_broken = false;
+            Trail_sequence tmp_seq;
+
+            while (i < trail.size()) {
+                Point2d trail_point = trail[i];
+                if (trail_point.x == -999.0 || trail_point.y == -999.0) seq_broken = true;
+
+                if (seq_valid && seq_broken) {
+                    //сохранить
+                    this->trail_sequences.push_back(tmp_seq);
+                    tmp_seq = Trail_sequence();
+                    //очистить tmp_seq
+                    seq_valid = false;
+                    seq_broken = false;
+                }
+                else if (seq_valid && !seq_broken) {
+                    //продолжить записывать tmp_seq
+                    State_vector st_vec;
+                    st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
+                    st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
+                    st_vec.set_cam_vel(Point3d(0, 0, 0));// јјјјјјјјјјјаајјјјјјјјј тут нужно будет в бинсовом разбиении оставить стейты, как € буду тут пользоватьс€ скоростью???7????
+                    st_vec.set_s_pose(s_point);
+
+                    Measurement_vector ms_vec(trail[i]);
+
+                    double timestamp = this->bins_model.bins_timestamps[i];
+                    tmp_seq.push_back(timestamp, st_vec, ms_vec);
+                }
+                else if (!seq_valid && !seq_broken) {
+                    //начать записывать новый tmp_seq
+                    int start = i - 1;
+                    State_vector st_vec;
+                    st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
+                    st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
+                    st_vec.set_cam_vel(Point3d(0, 0, 0));// јјјјјјјјјјјаајјјјјјјјј тут нужно будет в бинсовом разбиении оставить стейты, как € буду тут пользоватьс€ скоростью???7????
+                    st_vec.set_s_pose(s_point);
+
+                    Measurement_vector ms_vec(trail[i]);
+
+                    double timestamp = this->bins_model.bins_timestamps[i];
+                    tmp_seq = Trail_sequence(start, timestamp, st_vec, ms_vec);
+                    seq_valid = true;
+                    seq_broken = false;
+                };
+
+                i++;
+            }; // while (i < trail.size())
+            
+            //если путь был до самого конца
+            if (seq_valid && seq_broken) {
+                //сохранить
+                this->trail_sequences.push_back(tmp_seq);
+                tmp_seq = Trail_sequence();
+                //очистить tmp_seq
+                seq_valid = false;
+                seq_broken = false;
+            }
+           
+        };
+        //for 
+    };
+
 public:
     Test_model(string name, string dir_name) {
         this->name = name;
