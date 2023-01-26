@@ -99,8 +99,24 @@ class Measurement_vector {
 public:
 
 	Point2d proection;
-	// сет и гет
+	// пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ
 	Measurement_vector() {};
+	Measurement_vector(Point2d _poect) {
+		this->proection = _poect;
+	};
+
+	double get(int _number) {
+		double res;
+		switch(_number){
+			case 0:
+				res = this->proection.x; 
+				break;
+			case 1:
+				res = this->proection.y;
+				break;
+		};
+		return res;
+	};
 };
 
 class Trail_sequence {
@@ -115,6 +131,6 @@ public:
 	vector<Measurement_vector> model_measurement_vector;
 
 	Trail_sequence() {};
-	// инициализация
-	// дальше работать, чтобы оно создавало трейлы
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 };
