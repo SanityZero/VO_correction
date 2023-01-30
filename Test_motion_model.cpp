@@ -182,7 +182,7 @@ void Test_model::Test_motion_model::load_csv_old_gt_point(string filename, strin
 
         Pose_type tmp;
         tmp.read_csv(line);
-        this->gt_point.push_back(tmp);
+        this->old_gt_point.push_back(tmp);
     };
     fin.close();
 };

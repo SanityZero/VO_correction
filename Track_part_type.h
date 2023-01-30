@@ -41,6 +41,26 @@ public:
     void change_anqular_vel(cv::Point3d _arg) { this->change(_arg, 3); };
     void change_anqular_accel(cv::Point3d _arg) { this->change(_arg, 4); };
 
+    cv::Point3d get(int _arg_num) {
+        switch (_arg_num) {
+        case 0:
+            return Point3d(this->vel);
+        case 1:
+            return Point3d(this->accel);
+        case 2:
+            return Point3d(this->orient);
+        case 3:
+            return Point3d(this->anqular_vel);
+        case 4:
+            return Point3d(this->anqular_accel);
+        };
+    };
+    cv::Point3d get_vel() { return cv::Point3d(this->get(0)); };
+    cv::Point3d get_accel() { return cv::Point3d(this->get(1)); };
+    cv::Point3d get_orient() { return cv::Point3d(this->get(2)); };
+    cv::Point3d get_anqular_vel() { return cv::Point3d(this->get(3)); };
+    cv::Point3d get_anqular_accel() { return cv::Point3d(this->get(4)); };
+
     void read_csv(std::string line, std::string sep = ";");
     std::string get_csv_data(std::string sep = ";");
 };

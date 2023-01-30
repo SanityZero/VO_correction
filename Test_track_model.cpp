@@ -16,8 +16,8 @@
 #include "Track_part_type.h"
 #include "Tests.h"
 
-void Test_model::Test_track_model::load_csv(std::string filename, std::string sep) {
-    std::cout << "---------------" << std::endl;
+void Test_model::Test_track_model::load_csv_track(std::string filename, std::string sep) {
+    std::cout << "load_csv_track" << std::endl;
     std::ifstream fin(filename);
     char buffer[255];
     fin.getline(buffer, 255);
@@ -56,9 +56,9 @@ void Test_model::Test_track_model::load_csv(std::string filename, std::string se
     fin.close();
 };
 
-void Test_model::Test_track_model::save_csv(std::string filename, std::string sep) {
+void Test_model::Test_track_model::save_csv_track(std::string filename, std::string sep) {
     std::vector<std::string> csv_data;
-    std::cout << "save csv" << std::endl;
+    std::cout << "save_csv_track" << std::endl;
     for (int i = 0; i < track.size(); i++) {
         csv_data.push_back(track[i].get_csv_data(sep) + sep + std::to_string(track_length[i]));
     };

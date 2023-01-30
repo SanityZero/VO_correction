@@ -118,8 +118,48 @@ public:
 		return res;
 	};
 
+	Point2d get_point2d() {
+		return this->proection;
+	};
+
 	void set(Point2d _poect) {
 		this->proection = _poect;
+	};
+};
+
+class Control_vector {
+public:
+
+	Point3d accel;
+	Point3d w;
+
+	Control_vector() {};
+	Control_vector(Point3d _accel, Point3d _w) : accel(_accel), w(_w) {};
+
+	double get(int _number) {
+		switch (_number) {
+		case 0:
+			return this->accel.x;
+		case 1:
+			return this->accel.y;
+		case 2:
+			return this->accel.z;
+
+		case 3:
+			return this->w.x;
+		case 4:
+			return this->w.y;
+		case 5:
+			return this->w.z;
+		};
+	};
+
+	void set_accel(Point3d _accel) {
+		this->accel = _accel;
+	};
+
+	void set_w(Point3d _w) {
+		this->w = _w;
 	};
 };
 
@@ -132,23 +172,25 @@ public:
 	vector<double> timestamps;
 	vector<State_vector> model_state_vector;
 	vector<Measurement_vector> model_measurement_vector;
+	vector<Control_vector> model_control_vector;
 
 	Trail_sequence() {};
 
-	Trail_sequence(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec): start(_start), end(_start - 1) {
-		this->push_back(_timestamp, _state_vec, _mes_vec);
+	Trail_sequence(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec, Control_vector _control_vector): start(_start), end(_start - 1) {
+		this->push_back(_timestamp, _state_vec, _mes_vec, _control_vector);
 	};
 
-	void set_start(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec) {
-		this->push_back(_timestamp, _state_vec, _mes_vec);
+	void set_start(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec, Control_vector _control_vector) {
+		this->push_back(_timestamp, _state_vec, _mes_vec, _control_vector);
 		this->start = _start;
 		this->end = _start;
 	};
 
-	void push_back(double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec) {
+	void push_back(double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec, Control_vector _control_vector) {
 		this->timestamps.push_back(_timestamp);
 		this->model_state_vector.push_back(_state_vec);
 		this->model_measurement_vector.push_back(_mes_vec);
+		this->model_control_vector.push_back(_control_vector);
 		this->end++;
 	};
 };

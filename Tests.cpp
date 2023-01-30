@@ -9,7 +9,7 @@
 #include <random>
 #include <cmath>
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 #include "Types.h"
@@ -19,42 +19,71 @@ using namespace std;
 #include "Test_math.h"
 #include "Tests.h"
 
+typedef cv::Point2d Point2d;
+typedef cv::Point3d Point3d;
+typedef cv::Point2i Point2i;
+
 //inline Point3d smooth(Point3d p_0, Point3d p_1, Point3d p_2, double k1 = 1.0, double k2 = 1.0, double dt = 1.0, double limit_1 = -1, double limit_2 = -1) {
 //    
 //};
 
-void Test_model::save_csv_point_trails(string dirname, string sep) {
-    cout << "save_csv_point_trails start" << endl;
-    for (vector<Point2d> trail : this->point_trails) {
-        vector<string> csv_data;
-        for (int i = 1; i < trail.size(); i++) {
-            csv_data.push_back(to_string(trail[i].x) + sep + to_string(trail[i].y));
-        };
-
-        string filename = dirname + "trails\\" + to_string(int(trail[0].x)) + ".csv";
-        //cout << filename << endl;
-        ofstream fout(filename);
-        fout << "x" + sep + "y" << '\n';
-
-        for (string row : csv_data) {
-            size_t start_pos = 0;
-            string from = ".";
-            string to = ",";
-            while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
-                row.replace(start_pos, from.length(), to);
-                start_pos += to.length();
-            }
-            fout << row << '\n';
-        };
-
-        fout.close();
-    };
-    cout << "save_csv_point_trails end" << endl;
-
+Point2d Test_model::part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta) {
+    Point2d res = (
+        this->point_proection_D(_point_pose + _delta, _camera_pose, _camera_orient)
+        - this->point_proection_D(_point_pose - _delta, _camera_pose, _camera_orient)
+        )
+        / (length(_delta) * 2);
+    return res;
 };
 
-void Test_model::generate_point_trails(int mode) {
+Mat Test_model::senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient) {
+    //delta _point_pose
+    Point3d delta_pp_x = Point3d(0.001, 0, 0);
+    Point3d delta_pp_y = Point3d(0, 0.001, 0);
+    Point3d delta_pp_z = Point3d(0, 0, 0.001);
 
+    //delta _camera_pose
+    Point3d delta_cp_x = Point3d(0.001, 0, 0);
+    Point3d delta_cp_y = Point3d(0, 0.001, 0);
+    Point3d delta_cp_z = Point3d(0, 0, 0.001);
+
+    //delta _camera_orient
+    Point3d delta_co_x = Point3d(0.001, 0, 0);
+    Point3d delta_co_y = Point3d(0, 0.001, 0);
+    Point3d delta_co_z = Point3d(0, 0, 0.001);
+
+    vector<Point2d> point_pose;
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_x));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_y));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_z));
+
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_x));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_y));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_z));
+
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_x));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_y));
+    point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_z));
+
+    double senseMat_ar[9][2] = {
+        {point_pose[0].x, point_pose[0].y},
+        {point_pose[1].x, point_pose[1].y},
+        {point_pose[2].x, point_pose[2].y},
+
+        {point_pose[3].x, point_pose[3].y},
+        {point_pose[4].x, point_pose[4].y},
+        {point_pose[5].x, point_pose[5].y},
+
+        {point_pose[6].x, point_pose[6].y},
+        {point_pose[7].x, point_pose[7].y},
+        {point_pose[8].x, point_pose[8].y}
+    };
+
+    return  Mat(9, 2, CV_64F, senseMat_ar).clone();
+};
+
+
+void Test_model::generate_point_trails(int mode) {
     for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
         vector<Point2d> s_point_trail;
@@ -85,12 +114,13 @@ void Test_model::generate_point_trails(int mode) {
 };
 
 void Test_model::print_camera_proections() {
-
+    cout << "print_camera_proections" << endl;
     string dir_frames = this->dir_name + "frames\\";
-    string cmd_clear_image_dir = "del /f /s /q " + dir_frames;
+    string cmd_clear_image_dir = "del /f /q " + dir_frames;
     system(cmd_clear_image_dir.c_str());
-
+    cout << "start";
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
+        cout << ".";
         Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
         vector<Point2i> frame_points = this->point_camera_proections[i];
 
@@ -111,6 +141,7 @@ void Test_model::print_camera_proections() {
         string filename = dir_frames + to_string(i) + ".jpg";
         imwrite(filename, frame);
     };
+    cout << "end"<< endl;
 
     string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 " + this->dir_name + this->name + ".mp4";
     
@@ -121,9 +152,9 @@ void Test_model::print_camera_proections() {
 void Test_model::save_csv_s_points(string filename, string sep) {
 
     vector<string> csv_data;
-    cout << "save_csv_gt_point" << endl;
+    cout << "save_csv_s_points" << endl;
     for (int i = 0; i < this->s_points.size(); i++) {
-        csv_data.push_back(this->get_csv_data_point3d(this->s_points[i]));
+        csv_data.push_back(this->get_csv_Point3d(this->s_points[i]));
     };
 
     ofstream fout(filename);
@@ -142,150 +173,6 @@ void Test_model::save_csv_s_points(string filename, string sep) {
     };
 
     fout.close();
-};
-
-void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename) {
-    std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
-    if (gen_restr_filename != "") {
-        this->gen_restrictions.load_restriction_file(gen_restr_filename);
-    }
-    else
-    {
-        this->gen_restrictions.load_restriction_file(this->dir_name + "init.txt");
-    }
-
-    // сгенерировать трак в соответствии с ограничениями или загрузить его
-    std::cout << "\n----<<<< track_model >>>>----" << std::endl;
-    if (options[0]) {
-        this->track_model.load_csv(this->dir_name + "track.csv");
-    }
-    else {
-        this->track_model.generate_track(this->gen_restrictions);
-        this->track_model.save_csv(this->dir_name + "track.csv");
-    };
-
-
-    // сгенерировать состояний в соответствии с ограничениями или загрузить их
-    std::cout << "\n----<<<< motion_model >>>>----" << std::endl;
-    if (options[1]) {
-        this->motion_model.load_csv_states(this->dir_name + "states.csv");
-    }
-    else {
-        this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
-        this->motion_model.save_csv_states(this->dir_name + "states.csv");
-    };
-
-    // gt_point
-    if (options[2]) {
-        this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
-    }
-    else {
-        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
-        this->motion_model.save_csv_gt_point(this->dir_name + "gt_point.csv");
-    };
-
-    // timestamps
-    if (options[3]) {
-        this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
-        this->motion_model.update_total_time();
-    }
-    else {
-        this->motion_model.generate_timestamps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
-        this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
-    };
-
-    
-
-    // eval_old_gt_point
-    if (options[5]) {
-        this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
-    }
-    else {
-        this->motion_model.save_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
-    };
-
-
-    //show_gt();
-    //waitKey(0);
-    for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
-        this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
-    this->motion_model.integrate_old_gt();
-    //print_states("old_states.txt");
-
-    // old_gt_point
-    if (options[4]) {
-        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    }
-    else {
-        this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    };
-
-    //this->motion_model.smooth_anqular_vel(
-    //    this->gen_restrictions.T,
-    //    this->gen_restrictions.U1,
-    //    this->gen_restrictions.U2
-    //);
-
-    //this->motion_model.smooth_vel(
-    //    this->gen_restrictions.T,
-    //    this->gen_restrictions.U1 / 10000);
-    //this->motion_model.regenerate_gt_points();
-
-    // расставить точки
-    std::cout << "\n----<<<< s_points >>>>----" << std::endl;
-    generate_s_points(this->gen_restrictions.s_points_generation_mode);
-    save_csv_s_points(this->dir_name + "s_points.csv");
-
-    // сгенерировать бинс данные по ограничениям, т.е. набор значений
-    std::cout << "\n----<<<< bins_model >>>>----" << std::endl;
-    if (options[6]) {
-        this->bins_model.load_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
-        this->bins_model.load_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
-    }
-    else {
-        this->bins_model.generate_bins_gt_points(
-            this->motion_model,
-            this->gen_restrictions.T
-        );
-        this->bins_model.save_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
-        this->bins_model.save_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
-    };
-    
-
-    Point2i fr_size = Point2i(
-        this->gen_restrictions.camera_frame_size_x, 
-        this->gen_restrictions.camera_frame_size_y
-    );
-    Point2d cam_limits = Point2d(0.1, 100000000);
-    double focus = this->gen_restrictions.focus;
-
-    double yScale = cos(this->gen_restrictions.camera_FOV_zoy) / sin(this->gen_restrictions.camera_FOV_zoy);
-    double xScale = cos(this->gen_restrictions.camera_FOV_xoy) / sin(this->gen_restrictions.camera_FOV_xoy);
-
-    double IternalCalib_ar[4][4] = {
-    {xScale,    0,      0,  0},
-    {0,         yScale, 0,  0},
-    {0,         0,      1,  1/ focus},
-    {0,         0,      0,  0}
-    };
-
-//    double IternalCalib_ar[3][3] = {
-//{xScale,    0,  0},
-//{0, yScale, 0},
-//{0, 0,  1 / focus}
-//    };
-    Mat A = Mat(4, 4, CV_64F, IternalCalib_ar);
-
-
-    setCameraModel(fr_size, cam_limits, A);
-    generate_camera_proections(this->gen_restrictions.camera_proection_mode);
-
-    std::cout << "\n----<<<< trails >>>>----" << std::endl;
-    generate_point_trails(this->gen_restrictions.camera_proection_mode);
-    generate_trail_sequences();
-    save_csv_point_trails(this->dir_name);
-    // сгенерировать изображения в соответствии с точками
-
 };
 
 Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, Point3d camera_orient) {
@@ -353,12 +240,12 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
     
     point_camera_coord = Mat(4, 1, CV_64F, point_camera_coord_ar2);
 
-    Point2i point_int = Point2i(
+    Point2d point_double = Point2d(
         point_camera_coord.at<double>(0, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0)),
         point_camera_coord.at<double>(1, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0))
     );
 
-    if (point_camera_coord.at<double>(2, 0) < 0.0) point_int = this->frame_size;
+    if (point_camera_coord.at<double>(2, 0) < 0.0) point_double = this->frame_size;
 
     Mat cam_point = this->A * point_camera_coord;
 
@@ -373,10 +260,8 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
     //    cam_point.at<double>(1, 0) / cam_point.at<double>(2, 0)
     //);
 
-    
-
-    if ((point_int.x < this->frame_size.x) && (point_int.x > -frame_size.x) && (point_int.y < this->frame_size.y) && (point_int.y > -frame_size.y)) {
-        return point_int;
+    if ((point_double.x < this->frame_size.x) && (point_double.x > -frame_size.x) && (point_double.y < this->frame_size.y) && (point_double.y > -frame_size.y)) {
+        return point_double;
     }
     else {
         return this->frame_size;

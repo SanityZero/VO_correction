@@ -2,6 +2,41 @@
 #include "Track_part_type.h"
 #include "Test_model_sequence.h"
 
+#define F_ARR(dt) {\
+                { 1,0,0,    0,0,0,  dt,0,0, 0,0,0},\
+                { 0,1,0,    0,0,0,  0,dt,0, 0,0,0 },\
+                { 0,0,1,    0,0,0,  0,0,dt, 0,0,0 },\
+                    \
+                { 0,0,0,    1,0,0,  0,0,0,  0,0,0 },\
+                { 0,0,0,    0,1,0,  0,0,0,  0,0,0 },\
+                { 0,0,0,    0,0,1,  0,0,0,  0,0,0 },\
+                    \
+                { 0,0,0,    0,0,0,  1,0,0,  0,0,0 },\
+                { 0,0,0,    0,0,0,  0,1,0,  0,0,0 },\
+                { 0,0,0,    0,0,0,  0,0,1,  0,0,0 },\
+                    \
+                { 0,0,0,    0,0,0,  dt,0,0, 1,0,0 },\
+                { 0,0,0,    0,0,0,  0,dt,0, 0,1,0 },\
+                { 0,0,0,    0,0,0,  0,0,dt, 0,0,1 }\
+            }
+#define B_ARR(dt) {\
+                { dt * dt / 2,0,0,   0,0,0},\
+                { 0,dt * dt / 2,0,   0,0,0 },\
+                { 0,0,dt * dt / 2,   0,0,0 },\
+\
+                { 0,0,0,  dt,0,0 },\
+                { 0,0,0,  0,dt,0 },\
+                { 0,0,0,  0,0,dt },\
+\
+                { dt,0,0,  0,0,0 },\
+                { 0,dt,0,  0,0,0 },\
+                { 0,0,dt,  0,0,0 },\
+\
+                { -dt * dt / 2,0,0,   0,0,0 },\
+                { 0,-dt * dt / 2,0,   0,0,0 },\
+                { 0,0,-dt * dt / 2,   0,0,0 }\
+}
+
 
 using namespace cv;
 using namespace std;
@@ -16,6 +51,12 @@ private:
         vector<Point2d> result;
         return result;
     };
+
+    string get_csv_Point3d(Point3d _point, string _sep = ";");
+
+    Point3d read_csv_Point3d(string _string, string _sep = ";");
+    Point2d read_csv_Point2d(string _string, string _sep = ";");
+    Mat load_csv_Mat(string filename, Point2i _size, string _sep = ";");
 
     //ограничени€ генерации
     struct Test_model_restrictions {
@@ -86,8 +127,8 @@ private:
         State_type orientation(double dist);
         void generate_track(Test_model_restrictions restr);
 
-        void load_csv(string filename, string sep = ";");
-        void save_csv(string filename, string sep = ";");
+        void load_csv_track(string filename, string sep = ";");
+        void save_csv_track(string filename, string sep = ";");
     } track_model;
 
 
@@ -141,14 +182,9 @@ private:
     Mat A;
     //Mat EX_calib;
 
-    string get_csv_data_point3d(Point3d _point, string _sep = ";") {
-        string result = to_string(_point.x) + _sep + to_string(_point.y) + _sep + to_string(_point.z);
-        return result;
-    };
-
-    void save_csv_s_points(string filename, string sep = ";");
-
     void generate_s_points(int mode);
+    void save_csv_s_points(string filename, string sep = ";");
+    void load_csv_s_points(string filename, string sep = ";");
 
     Mat cameraCSMat(Point3d angles, Point3d _cam_pose);
     Mat generateTransitionM(int i);
@@ -181,149 +217,156 @@ private:
         vector<Pose_type> bins_gt_points;
         vector<Pose_type> bins_points;
         vector<Pose_type> bins_eval_points;
+        vector<State_type> bins_measured_states;
         vector<double> bins_timestamps;
 
         void generate_bins_gt_points(Test_motion_model mothion_model, double bins_deltatime);
+        void generate_bins_measured_states(Test_motion_model motion_model, double bins_deltatime);
 
         void save_csv_bins_gt_points(string filename, string sep = ";");
+        void save_csv_bins_measured_states(string filename, string sep = ";");
         void save_csv_bins_timestamps(string filename, string sep = ";");
 
         void load_csv_bins_gt_points(string filename, string sep = ";");
+        void load_csv_bins_measured_states(string filename, string sep = ";");
         void load_csv_bins_timestamps(string filename, string sep = ";");
 
     } bins_model;
 
     //обработка 
-    Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta) {
-        Point2d res = (
-                this->point_proection_D(_point_pose + _delta, _camera_pose, _camera_orient)
-                - this->point_proection_D(_point_pose - _delta, _camera_pose, _camera_orient)
-            ) 
-            / (length(_delta) * 2);
-        return res;
-    };
-
-    Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient) {
-        //delta _point_pose
-        Point3d delta_pp_x = Point3d(0.001, 0, 0);
-        Point3d delta_pp_y = Point3d(0, 0.001, 0);
-        Point3d delta_pp_z = Point3d(0, 0, 0.001);
-
-        //delta _camera_pose
-        Point3d delta_cp_x = Point3d(0.001, 0, 0);
-        Point3d delta_cp_y = Point3d(0, 0.001, 0);
-        Point3d delta_cp_z = Point3d(0, 0, 0.001);
-
-        //delta _camera_orient
-        Point3d delta_co_x = Point3d(0.001, 0, 0);
-        Point3d delta_co_y = Point3d(0, 0.001, 0);
-        Point3d delta_co_z = Point3d(0, 0, 0.001);
-
-        vector<Point2d> point_pose;
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_x));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_y));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_pp_z));
-
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_x));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_y));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_cp_z));
-
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_x));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_y));
-        point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_z));
-
-        double senseMat_ar[9][2] = {
-            {point_pose[0].x, point_pose[1].y},
-            {point_pose[1].x, point_pose[2].y},
-            {point_pose[2].x, point_pose[3].y},
-
-            {point_pose[3].x, point_pose[4].y},
-            {point_pose[4].x, point_pose[5].y},
-            {point_pose[5].x, point_pose[6].y},
-
-            {point_pose[6].x, point_pose[7].y},
-            {point_pose[7].x, point_pose[8].y},
-            {point_pose[8].x, point_pose[9].y}
-        };
-
-        return  Mat(9, 2, CV_64F, senseMat_ar).clone();
-    };
-
     vector<Point2d> s_sequence;
-
-
     vector<Trail_sequence> trail_sequences;
+    vector<Trail_sequence> trail_sequences_estimated;
 
-    void generate_trail_sequences() {
-        //for (vector<Point2d> trail : this->point_trails)
 
-        for (vector<Point2d> trail : this->point_trails) {
-            //vector<Point2d> trail = this->point_trails[0];
-            Point3d s_point = this->s_points[int(trail[0].x)];
+    Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta);
+    Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient);
 
-            int i = 1;
-            bool seq_valid = false;
-            bool seq_broken = false;
-            Trail_sequence tmp_seq;
+    void generate_trail_sequences();
 
-            while (i < trail.size()) {
-                Point2d trail_point = trail[i];
-                seq_broken = (trail_point.x == -999.0 || trail_point.y == -999.0) ? true : false;
-
-                if (seq_valid && seq_broken) {
-                    //сохранить
-                    this->trail_sequences.push_back(tmp_seq);
-                    tmp_seq = Trail_sequence();
-                    //очистить tmp_seq
-                    seq_valid = false;
-                    seq_broken = false;
-                }
-                else if (seq_valid && !seq_broken) {
-                    //продолжить записывать tmp_seq
-                    State_vector st_vec;
-                    st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
-                    st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
-                    st_vec.set_cam_vel(Point3d(0, 0, 0));// јјјјјјјјјјјаајјјјјјјјј тут нужно будет в бинсовом разбиении оставить стейты, как € буду тут пользоватьс€ скоростью???7????
-                    st_vec.set_s_pose(s_point);
-
-                    Measurement_vector ms_vec(trail[i]);
-
-                    double timestamp = this->bins_model.bins_timestamps[i];
-                    tmp_seq.push_back(timestamp, st_vec, ms_vec);
-                }
-                else if (!seq_valid && !seq_broken) {
-                    //начать записывать новый tmp_seq
-                    int start = i - 1;
-                    State_vector st_vec;
-                    st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
-                    st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
-                    st_vec.set_cam_vel(Point3d(0, 0, 0));// јјјјјјјјјјјаајјјјјјјјј тут нужно будет в бинсовом разбиении оставить стейты, как € буду тут пользоватьс€ скоростью???7????
-                    st_vec.set_s_pose(s_point);
-
-                    Measurement_vector ms_vec(trail[i]);
-
-                    double timestamp = this->bins_model.bins_timestamps[i];
-                    tmp_seq = Trail_sequence(start, timestamp, st_vec, ms_vec);
-                    seq_valid = true;
-                    seq_broken = false;
-                };
-
-                i++;
-            }; // while (i < trail.size())
-            
-            //если путь был до самого конца
-            if (seq_valid && seq_broken) {
-                //сохранить
-                this->trail_sequences.push_back(tmp_seq);
-                tmp_seq = Trail_sequence();
-                //очистить tmp_seq
-                seq_valid = false;
-                seq_broken = false;
-            }
-           
-        };
-        //for 
+    void Kalman_filter() {
+        this->trail_sequences_estimate(this->trail_sequences[0]);
     };
+
+    void trail_sequences_estimate(Trail_sequence _trail_sequence) {
+        Mat P = load_csv_Mat(this->dir_name + "Mats/P_0.csv", Point2i(12, 12));
+        Mat Q = load_csv_Mat(this->dir_name + "Mats/Q_0.csv", Point2i(12, 12));
+
+        double R_arr[2][2] = {
+            {1, 0},
+            {0, 1}
+        };
+
+        Mat R = Mat(2, 2, CV_64F, R_arr);
+
+        vector<State_vector> state_vector = _trail_sequence.model_state_vector;
+        vector<Measurement_vector> measurement_vector = _trail_sequence.model_measurement_vector;
+        vector<Control_vector> control_vector = _trail_sequence.model_control_vector;
+        vector<double> timestamps = _trail_sequence.timestamps;
+
+        double prev_state_arr[12][1] = {
+            {control_vector[0].get(0)},
+            {control_vector[0].get(1)},
+            {control_vector[0].get(2)},
+
+            {control_vector[0].get(3)},
+            {control_vector[0].get(4)},
+            {control_vector[0].get(5)},
+
+            {control_vector[0].get(6)},
+            {control_vector[0].get(7)},
+            {control_vector[0].get(8)},
+
+            {control_vector[0].get(9)},
+            {control_vector[0].get(10)},
+            {control_vector[0].get(11)},
+        };
+
+        Mat prev_state = Mat(12, 1, CV_64F, prev_state_arr);
+
+        for (int i = 1; i < timestamps.size(); i++) {
+            //estimate x
+
+            Mat H = this->senseMat(
+                measurement_vector[i].get_point2d(),
+                state_vector[i].get_s_pose(),
+                state_vector[i].get_cam_pose(),
+                state_vector[i].get_orient()
+            );
+
+            double dt = timestamps[i] - timestamps[i - 1];
+
+            double F_arr[12][12] = F_ARR(dt);
+
+            //double F_arr[12][12] = {
+            //    {1,0,0,  0,0,0,  dt,0,0, 0,0,0},
+            //    {0,1,0,  0,0,0,  0,dt,0, 0,0,0},
+            //    {0,0,1,  0,0,0,  0,0,dt, 0,0,0},
+
+            //    {0,0,0,  1,0,0,  0,0,0,  0,0,0},
+            //    {0,0,0,  0,1,0,  0,0,0,  0,0,0},
+            //    {0,0,0,  0,0,1,  0,0,0,  0,0,0},
+
+            //    {0,0,0,  0,0,0,  1,0,0,  0,0,0},
+            //    {0,0,0,  0,0,0,  0,1,0,  0,0,0},
+            //    {0,0,0,  0,0,0,  0,0,1,  0,0,0},
+
+            //    {0,0,0,  0,0,0,  dt,0,0, 1,0,0},
+            //    {0,0,0,  0,0,0,  0,dt,0, 0,1,0},
+            //    {0,0,0,  0,0,0,  0,0,dt, 0,0,1}
+            //};
+
+            Mat F = Mat(12, 12, CV_64F, F_arr);
+
+            double B_arr[12][6] = B_ARR(dt);
+            //double B_arr[12][6] = {
+            //    {dt * dt / 2,0,0,   0,0,0},
+            //    {0,dt * dt / 2,0,   0,0,0},
+            //    {0,0,dt * dt / 2,   0,0,0},
+
+            //    {0,0,0,  dt,0,0},
+            //    {0,0,0,  0,dt,0},
+            //    {0,0,0,  0,0,dt},
+
+            //    {dt,0,0,  0,0,0},
+            //    {0,dt,0,  0,0,0},
+            //    {0,0,dt,  0,0,0},
+
+            //    {-dt * dt / 2,0,0,   0,0,0},
+            //    {0,-dt * dt / 2,0,   0,0,0},
+            //    {0,0,-dt * dt / 2,   0,0,0}
+            //};
+            
+            Mat B = Mat(12, 6, CV_64F, B_arr);
+
+            double U_arr[6][1] = {
+                {control_vector[i].get(0)},
+                {control_vector[i].get(1)},
+                {control_vector[i].get(2)},
+
+                {control_vector[i].get(3)},
+                {control_vector[i].get(4)},
+                {control_vector[i].get(5)}
+            };
+
+            Mat U = Mat(6, 1, CV_64F, U_arr);
+
+            Mat x_est = F * prev_state + B * U;
+            Mat P_est = F * P * F.t() + Q;
+            Mat H_t = H.t();
+            Mat tmp3 = P_est * H_t;
+            Mat tmp2 = tmp3 * H_t;
+            Mat tmp = (tmp2 + R);
+            Mat K = P_est * H.t() * tmp.inv();
+            Mat P = K * H;
+
+        
+        
+        };
+    
+    };
+
+   
 
 public:
     Test_model(string name, string dir_name) {
@@ -333,7 +376,7 @@ public:
 
     void generate_track_model() {
         this->track_model.generate_track(this->gen_restrictions);
-        this->track_model.save_csv(this->dir_name + "track.csv");
+        this->track_model.save_csv_track(this->dir_name + "track.csv");
     };
 
     //void read_restriction_file(string filename);
@@ -356,26 +399,9 @@ public:
 };
 
 DataSeq_model_Type generate_old_model(
-    double mean_1,
-    const int size,
-    double stddev,
-    Point3d w,
-    Point3d ang_0,
-    double deltatime,
-    double accel_stddev,
-    Point3d accel,
-    Point3d vel_0
-    );/*double mean_1,
-    const int size,
-    double stddev,
-    Point3d w,
-    Point3d ang_0,
-    Point3d ang_0,
-    double deltatime,
-    double accel_stddev,
-    Point3d accel = Point3d(0, 0, 0),
-    Point3d vel_0 = Point3d(0, 0, 0)*/
-
-
+    double mean_1, const int size, double stddev,
+    Point3d w,  Point3d ang_0, double deltatime,
+    double accel_stddev, Point3d accel, Point3d vel_0
+);
 void old_motion_Test(double accel_std = 1, double sko = 0.2, double delta = 0.004, double duration = 10);
 void old_angle_Test(double w_std = 0.0001 * M_PI/180, Point3d vel_0 = Point3d(0,0,0), double sko = 0.000001 * M_PI/180, double delta = 0.004, double duration = 60);
