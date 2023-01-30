@@ -255,9 +255,10 @@ private:
     vector<Trail_sequence> trail_sequences;
 
     void generate_trail_sequences() {
+        //for (vector<Point2d> trail : this->point_trails)
 
         for (vector<Point2d> trail : this->point_trails) {
-            
+            //vector<Point2d> trail = this->point_trails[0];
             Point3d s_point = this->s_points[int(trail[0].x)];
 
             int i = 1;
@@ -267,7 +268,7 @@ private:
 
             while (i < trail.size()) {
                 Point2d trail_point = trail[i];
-                if (trail_point.x == -999.0 || trail_point.y == -999.0) seq_broken = true;
+                seq_broken = (trail_point.x == -999.0 || trail_point.y == -999.0) ? true : false;
 
                 if (seq_valid && seq_broken) {
                     //сохранить

@@ -145,6 +145,7 @@ void Test_model::save_csv_s_points(string filename, string sep) {
 };
 
 void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename) {
+    std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
     if (gen_restr_filename != "") {
         this->gen_restrictions.load_restriction_file(gen_restr_filename);
     }
@@ -154,6 +155,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     }
 
     // сгенерировать трак в соответствии с ограничениями или загрузить его
+    std::cout << "\n----<<<< track_model >>>>----" << std::endl;
     if (options[0]) {
         this->track_model.load_csv(this->dir_name + "track.csv");
     }
@@ -164,6 +166,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
 
     // сгенерировать состояний в соответствии с ограничениями или загрузить их
+    std::cout << "\n----<<<< motion_model >>>>----" << std::endl;
     if (options[1]) {
         this->motion_model.load_csv_states(this->dir_name + "states.csv");
     }
@@ -229,10 +232,12 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     //this->motion_model.regenerate_gt_points();
 
     // расставить точки
+    std::cout << "\n----<<<< s_points >>>>----" << std::endl;
     generate_s_points(this->gen_restrictions.s_points_generation_mode);
     save_csv_s_points(this->dir_name + "s_points.csv");
 
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
+    std::cout << "\n----<<<< bins_model >>>>----" << std::endl;
     if (options[6]) {
         this->bins_model.load_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
         this->bins_model.load_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
@@ -275,6 +280,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     setCameraModel(fr_size, cam_limits, A);
     generate_camera_proections(this->gen_restrictions.camera_proection_mode);
 
+    std::cout << "\n----<<<< trails >>>>----" << std::endl;
     generate_point_trails(this->gen_restrictions.camera_proection_mode);
     generate_trail_sequences();
     save_csv_point_trails(this->dir_name);
