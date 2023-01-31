@@ -256,33 +256,8 @@ private:
         cout << "Kalman_filter start" << endl;
     };
 
-    void save_csv_state_estimated(std::string _dir, std::string _sep = ";"){
-
-        string cmd_clear_image_dir = "del /f /q " + _dir;
-        system(cmd_clear_image_dir.c_str());
-
-        int i = 0;
-        cout << "save_csv_state_estimated start" << endl;
-        for (Trail_sequence state_estimated : states_estimated) {
-            state_estimated.save_csv_trail_sequence(_dir + to_string(i) + ".csv", _sep);
-            i++;
-        };
-        cout << "save_csv_state_estimated end" << endl;
-    };
-
-    void save_csv_trail_sequences(std::string _dir, std::string _sep = ";") {
-
-        string cmd_clear_image_dir = "del /f /q " + _dir;
-        system(cmd_clear_image_dir.c_str());
-
-        int i = 0;
-        cout << "save_csv_trail_sequences start" << endl;
-        for (Trail_sequence trail_sequence : trail_sequences) {
-            trail_sequence.save_csv_trail_sequence(_dir + to_string(i) + ".csv", _sep);
-            i++;
-        };
-        cout << "save_csv_trail_sequences end" << endl;
-    };
+    void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
+    void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
    
 
