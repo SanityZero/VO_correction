@@ -118,30 +118,30 @@ void Test_model::Test_track_model::generate_track(Test_model::Test_model_restric
     this->track.push_back(Track_part_type(
         cv::Point2d(0, 0),
         cv::Point2d(1, 0),
-        restr.min_line_length,
-        restr.max_line_length,
-        restr.mean_corner_radius,
-        restr.stddev_radius,
-        restr.mean_corner_angle,
-        restr.stddev_angle,
-        restr.average_vel,
-        restr.stddev_vel
+        restr.double_data["min_line_length"],
+        restr.double_data["max_line_length"],
+        restr.double_data["mean_corner_radius"],
+        restr.double_data["stddev_radius"],
+        restr.double_data["mean_corner_angle"],
+        restr.double_data["stddev_angle"],
+        restr.double_data["average_vel"],
+        restr.double_data["stddev_vel"]
     ));
 
     this->track_length.push_back(this->track[0].len());
     this->total_length = track_length[0];
-    for (int i = 1; i < restr.max_track_parts; i++) {
+    for (int i = 1; i < restr.int_data["max_track_parts"]; i++) {
         track.push_back(Track_part_type(
             this->track[i - 1].end,
             this->track[i - 1].exit_vec,
-            restr.min_line_length,
-            restr.max_line_length,
-            restr.mean_corner_radius,
-            restr.stddev_radius,
-            restr.mean_corner_angle,
-            restr.stddev_angle,
-            restr.average_vel,
-            restr.stddev_vel
+            restr.double_data["min_line_length"],
+            restr.double_data["max_line_length"],
+            restr.double_data["mean_corner_radius"],
+            restr.double_data["stddev_radius"],
+            restr.double_data["mean_corner_angle"],
+            restr.double_data["stddev_angle"],
+            restr.double_data["average_vel"],
+            restr.double_data["stddev_vel"]
         ));
         this->track_length.push_back(this->track[i].len());
         this->total_length += this->track_length[i];

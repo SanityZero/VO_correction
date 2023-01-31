@@ -4,6 +4,8 @@
 
 #include <omp.h>
 
+#include <map>
+
 #define F_ARR(dt) {\
                 { 1,0,0,    0,0,0,  dt,0,0, 0,0,0},\
                 { 0,1,0,    0,0,0,  0,dt,0, 0,0,0 },\
@@ -21,6 +23,7 @@
                 { 0,0,0,    0,0,0,  0,dt,0, 0,1,0 },\
                 { 0,0,0,    0,0,0,  0,0,dt, 0,0,1 }\
             }
+
 #define B_ARR(dt) {\
                 { dt * dt / 2,0,0,   0,0,0},\
                 { 0,dt * dt / 2,0,   0,0,0 },\
@@ -63,58 +66,14 @@ private:
     //ограничения генерации
     struct Test_model_restrictions {
         string filename;
-        int max_track_parts;
 
-        double dicret;
-        double min_line_length;
-        double max_line_length;
-
-        double mean_corner_radius;
-        double stddev_radius;
-
-        double mean_corner_angle;
-        double stddev_angle;
-
-        double average_vel;
-        double stddev_vel;
-
-        double T;
-        double U1;
-        double U2;
-
-        double focus;
-
-        double extra_border;
-
-        double z_lim_min;
-        double z_lim_max;
-
-        double grid_step_x;
-        double grid_step_y;
-        double grid_step_z;
-
-        double grid_disp;
-
-        int camera_matrix_x;
-        int camera_matrix_y;
-        int camera_frame_size_x;
-        int camera_frame_size_y;
-
-        double camera_FOV_xoy;
-        double camera_FOV_zoy;
-
-        double camera_fitting_x;
-        double camera_fitting_y;
-        double camera_fitting_z;
-
-
-        int s_points_generation_mode;
-        int camera_proection_mode;
+        map <string, int> int_data;
+        map <string, double> double_data;
 
         Test_model_restrictions() {};
-        void set(string filename, vector<int> int_data, vector<double> float_data);
+
+        void set(string _filename, vector<int> _int_data, vector<double> _float_data);
         void load_restriction_file(string filename);
-        void show();
     } gen_restrictions;
 
 
@@ -204,8 +163,6 @@ private:
         return Point2i(point_d.x, point_d.y);
     };
 
-    Point2i point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation);
-
     void generate_camera_proections(int mode);
     void generate_point_trails(int mode);
     void save_csv_point_trails(string dirname, string sep = ";");
@@ -248,7 +205,6 @@ private:
     void Kalman_filter() {
         cout << "Kalman_filter start" << endl;
 
-//#pragma omp parallel for
         for (Trail_sequence trail_sequence : trail_sequences) {
             this->trail_sequences_estimate(trail_sequence);
         };
@@ -262,28 +218,12 @@ private:
    
 
 public:
-    Test_model(string name, string dir_name) {
-        this->name = name;
-        this->dir_name = dir_name;
-    };
-
-    void generate_track_model() {
-        this->track_model.generate_track(this->gen_restrictions);
-        this->track_model.save_csv_track(this->dir_name + "track.csv");
-    };
-
-    //void read_restriction_file(string filename);
-
-    void save_test_model(string filename) {
-    };
-
+    Test_model(string name, string dir_name);
+    void generate_track_model();
+    void save_test_model(string filename) {};
 
     ///////////////////aaaAAAaaAA!1!!!1!!!!!
-    void generate_test_model(
-        vector<bool> options,
-        string gen_restr_filename = ""
-    );// вот эта функция вызывается
-
+    void generate_test_model(vector<bool> options, string gen_restr_filename = "");// вот эта функция вызывается
 
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_bins_gt(bool pause_enable = false);

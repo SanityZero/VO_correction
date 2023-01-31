@@ -10,7 +10,6 @@
 #include <cmath>
 
 
-
 //using namespace cv;
 using namespace std;
 
@@ -39,11 +38,22 @@ typedef cv::Point2i Point2i;
 //
 //    cout << "Kalman_filter start" << endl;
 //};
+
+Test_model::Test_model(string name, string dir_name) {
+    this->name = name;
+    this->dir_name = dir_name;
+};
+
+void Test_model::generate_track_model() {
+    this->track_model.generate_track(this->gen_restrictions);
+    this->track_model.save_csv_track(this->dir_name + "track.csv");
+};
+
 void Test_model::setCameraModel(Test_model_restrictions _gen_restrictions) {
 
-    double focus = _gen_restrictions.focus;
-    double yScale = cos(_gen_restrictions.camera_FOV_zoy) / sin(_gen_restrictions.camera_FOV_zoy);
-    double xScale = cos(_gen_restrictions.camera_FOV_xoy) / sin(_gen_restrictions.camera_FOV_xoy);
+    double focus = _gen_restrictions.double_data["focus"];
+    double yScale = cos(_gen_restrictions.double_data["camera_FOV_zoy"]) / sin(_gen_restrictions.double_data["camera_FOV_zoy"]);
+    double xScale = cos(_gen_restrictions.double_data["camera_FOV_xoy"]) / sin(_gen_restrictions.double_data["camera_FOV_xoy"]);
 
     double IternalCalib_ar[4][4] = {
     {xScale,    0,      0,  0},
@@ -59,8 +69,8 @@ void Test_model::setCameraModel(Test_model_restrictions _gen_restrictions) {
     //    };
     this->A = Mat(4, 4, CV_64F, IternalCalib_ar).clone();
     this->frame_size = Point2i(
-        _gen_restrictions.camera_frame_size_x,
-        _gen_restrictions.camera_frame_size_y
+        _gen_restrictions.int_data["camera_frame_size_x"],
+        _gen_restrictions.int_data["camera_frame_size_y"]
     );
     this->cam_range = Point2d(0.1, 100000000);
 };
@@ -115,9 +125,33 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence) {
         double B_arr[12][6] = B_ARR(dt);
         Mat B = Mat(12, 6, CV_64F, B_arr);
 
+        double std_dev_ax = 1;
+        double std_dev_ay = 1;
+        double std_dev_az = 1;
+
+        double std_dev_wx = 1;
+        double std_dev_wy = 1;
+        double std_dev_wz = 1;
+
+        std::random_device rd;
+        std::default_random_engine generator(rd());
+        std::normal_distribution<double> distribution_accel_x(0, std_dev_ax);
+        std::normal_distribution<double> distribution_accel_y(0, std_dev_ay);
+        std::normal_distribution<double> distribution_accel_z(0, std_dev_az);
+
+        std::normal_distribution<double> distribution_w_x(0, std_dev_wx);
+        std::normal_distribution<double> distribution_w_y(0, std_dev_wy);
+        std::normal_distribution<double> distribution_w_z(0, std_dev_wz);
+
+
+
         double U_arr[6][1] = {
-            {control_vector[i].get(0)}, {control_vector[i].get(1)}, {control_vector[i].get(2)},
-            {control_vector[i].get(3)}, {control_vector[i].get(4)}, {control_vector[i].get(5)}
+            {control_vector[i].get(0) + distribution_accel_x(generator)},
+            {control_vector[i].get(1) + distribution_accel_x(generator)},
+            {control_vector[i].get(2) + distribution_accel_x(generator)},
+            {control_vector[i].get(3) + distribution_w_x(generator)},
+            {control_vector[i].get(4) + distribution_w_y(generator)},
+            {control_vector[i].get(5) + distribution_w_z(generator)}
         };
 
         Mat U = Mat(6, 1, CV_64F, U_arr);
@@ -343,7 +377,7 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
     Mat point_camera_coord = cameraCSMat(camera_orient, camera_pose) * point_Pose;
 
     Point3d local_point_pose = Point3d(point_camera_coord.at<double>(0, 0), point_camera_coord.at<double>(1, 0), point_camera_coord.at<double>(2, 0));
-    double w = local_point_pose.x / this->gen_restrictions.focus;
+    double w = local_point_pose.x / this->gen_restrictions.double_data["focus"];
     //double Ex_calib_ar[4][4] = {
     //    {Ex_calib.at<double>(0, 0), Ex_calib.at<double>(0, 1), Ex_calib.at<double>(0, 2), Ex_calib.at<double>(0, 3)},
     //    {Ex_calib.at<double>(1, 0), Ex_calib.at<double>(1, 1), Ex_calib.at<double>(1, 2), Ex_calib.at<double>(1, 3)},
@@ -367,8 +401,8 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
     point_camera_coord = Mat(4, 1, CV_64F, point_camera_coord_ar2);
 
     Point2d point_double = Point2d(
-        point_camera_coord.at<double>(0, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0)),
-        point_camera_coord.at<double>(1, 0) * (this->gen_restrictions.focus / point_camera_coord.at<double>(2, 0))
+        point_camera_coord.at<double>(0, 0) * (this->gen_restrictions.double_data["focus"] / point_camera_coord.at<double>(2, 0)),
+        point_camera_coord.at<double>(1, 0) * (this->gen_restrictions.double_data["focus"] / point_camera_coord.at<double>(2, 0))
     );
 
     if (point_camera_coord.at<double>(2, 0) < 0.0) point_double = this->frame_size;
@@ -392,98 +426,6 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
     else {
         return this->frame_size;
     };
-};
-
-Point2i Test_model::point_proection_linear(Point3d point_pose, Point3d camera_pose, Point3d cam_rotation) {
-    //говнина, не работает
-
-    Point2d FOV_xoy = Point2d(
-        -this->gen_restrictions.camera_FOV_xoy / 2,
-        this->gen_restrictions.camera_FOV_xoy / 2
-    );
-
-    Point2d FOV_zoy = Point2d(
-        -this->gen_restrictions.camera_FOV_zoy / 2,
-        this->gen_restrictions.camera_FOV_zoy / 2
-    );
-
-    int pixels_xoy = this->gen_restrictions.camera_matrix_x;
-    int pixels_zoy = this->gen_restrictions.camera_matrix_y;
-
-    double a = cam_rotation.x + this->gen_restrictions.camera_fitting_x;
-    double b = cam_rotation.y + this->gen_restrictions.camera_fitting_y;
-    double c = cam_rotation.z + this->gen_restrictions.camera_fitting_z;
-
-    //double rotMat_ar[4][4] = {
-    //    {cos(c) * cos(b),                               -cos(b) * sin(c),                               sin(b),              0},
-    //    {cos(a) * sin(c) + cos(c) * sin(b) * sin(a),    cos(c) * cos(a) - sin(a) * sin(b) * sin(c),     -cos(b) * sin(a),    0},
-    //    {sin(c) * sin(a) - cos(c) * cos(a) * sin(b),    cos(a) * sin(b) * sin(c) + cos(c) * sin(a),     cos(b) * cos(a),     0},
-    //    {0, 0, 0, 1}
-    //};
-
-    double rotMat_ar[4][4] = {
-        {cos(c),    -sin(c),    0,  0},
-        {sin(c),    cos(c),     0,  0},
-        {0,         0,          1,  0},
-        {0,         0,          0,  1}
-    };
-    Mat R = Mat(4, 4, CV_64F, rotMat_ar);
-
-    double Translation_ar[4][1] = {
-        {camera_pose.x},
-        {camera_pose.y},
-        {camera_pose.z},
-        {0}
-    };
-
-    Mat Translation = Mat(4, 1, CV_64F, Translation_ar);
-
-    double Camera_ar[4][1] = {
-        {camera_pose.x},
-        {camera_pose.y},
-        {camera_pose.z},
-        {1}
-    };
-
-    Mat mat_camera_pose = Mat(4, 1, CV_64F, Camera_ar);
-
-    double Point_ar[4][1] = {
-        {point_pose.x},
-        {point_pose.y},
-        {point_pose.z},
-        {1}
-    };
-
-    Mat mat_point_pose = Mat(4, 1, CV_64F, Point_ar);
-
-    Mat res_vec = R * (mat_point_pose - mat_camera_pose);
-
-    double x = res_vec.at<double>(0, 0);
-    double y = res_vec.at<double>(1, 0);
-    double z = res_vec.at<double>(2, 0);
-
-    Point2d sphe_coord = Point2d(
-        atan2(sqrt(x * x + y * y), z), //угол места
-        atan2(y, x) - M_PI//азимут
-    );
-
-    Point2d scale = Point2d(
-        (FOV_xoy.y - FOV_xoy.x) / pixels_xoy,
-        (FOV_zoy.y - FOV_zoy.x) / pixels_zoy
-    );
-
-    Point2i cam_poection = Point2i(this->frame_size.x, this->frame_size.y);
-    if (
-        (sphe_coord.x >= FOV_zoy.x) and (sphe_coord.x <= FOV_zoy.y)
-        and (sphe_coord.y >= FOV_xoy.x) and (sphe_coord.y <= FOV_xoy.y)
-        )
-    {
-        cam_poection = Point2i(
-            sphe_coord.x * scale.x,
-            sphe_coord.y * scale.y
-        );
-    };
-    return cam_poection;
 };
 
 void Test_model::generate_camera_proections(int mode = 1) {
@@ -510,7 +452,7 @@ void Test_model::generate_camera_proections(int mode = 1) {
                 tmp = point_proection(this->s_points[i_points], cam_pose, cam_orient);
                 break;
             case 0:
-                tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
+                //tmp = point_proection_linear(this->s_points[i_points], cam_pose, this->bins_model.bins_gt_points[i].getOrient());
                 break;
             };
            
@@ -526,9 +468,9 @@ void Test_model::generate_camera_proections(int mode = 1) {
 Mat Test_model::cameraCSMat(Point3d angles, Point3d _cam_pose) {
     //Point3d angles = this->bins_model.bins_gt_points[i].getOrient();
 
-    double a = angles.x + this->gen_restrictions.camera_fitting_x;
-    double b = angles.y + this->gen_restrictions.camera_fitting_y;
-    double c = angles.z + this->gen_restrictions.camera_fitting_z;
+    double a = angles.x + this->gen_restrictions.double_data["camera_fitting_x"];
+    double b = angles.y + this->gen_restrictions.double_data["camera_fitting_y"];
+    double c = angles.z + this->gen_restrictions.double_data["camera_fitting_z"];
 
 
     double rotMat_ar[3][3] = {
@@ -675,10 +617,14 @@ void Test_model::generate_s_points(
         break;
     case 1:
     {
-        double border = this->gen_restrictions.extra_border;
-        Point3d z_limits = Point3d(this->gen_restrictions.z_lim_min, this->gen_restrictions.z_lim_max, 0);
-        Point3d grid_spacing = Point3d(this->gen_restrictions.grid_step_x, this->gen_restrictions.grid_step_y, this->gen_restrictions.grid_step_z);
-        Point2d displacement = Point2d(0, this->gen_restrictions.grid_disp);
+        double border = this->gen_restrictions.double_data["extra_border"];
+        Point3d z_limits = Point3d(this->gen_restrictions.double_data["z_lim_min"], this->gen_restrictions.double_data["z_lim_max"], 0);
+        Point3d grid_spacing = Point3d(
+            this->gen_restrictions.double_data["grid_step_x"], 
+            this->gen_restrictions.double_data["grid_step_y"],
+            this->gen_restrictions.double_data["grid_step_z"]
+        );
+        Point2d displacement = Point2d(0, this->gen_restrictions.double_data["grid_disp"]);
 
         double max_x = this->motion_model.gt_point[0].lon;
         double max_y = this->motion_model.gt_point[0].lat;

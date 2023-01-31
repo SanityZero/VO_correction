@@ -44,7 +44,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
     }
     else {
-        this->motion_model.generate_states(this->track_model, this->gen_restrictions.dicret);
+        this->motion_model.generate_states(this->track_model, this->gen_restrictions.double_data["dicret"]);
 
         //this->motion_model.smooth_anqular_vel(
     //    this->gen_restrictions.T,
@@ -57,8 +57,8 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     //    this->gen_restrictions.U1 / 10000);
     //this->motion_model.regenerate_gt_points();
 
-        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.dicret);
-        this->motion_model.generate_timestamps(this->gen_restrictions.dicret, this->gen_restrictions.average_vel);
+        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.double_data["dicret"]);
+        this->motion_model.generate_timestamps(this->gen_restrictions.double_data["dicret"], this->gen_restrictions.double_data["average_vel"]);
         for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
             this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
         this->motion_model.integrate_old_gt();
@@ -77,7 +77,7 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         load_csv_s_points(this->dir_name + "s_points.csv");
     }
     else {
-        generate_s_points(this->gen_restrictions.s_points_generation_mode);
+        generate_s_points(this->gen_restrictions.int_data["s_points_generation_mode"]);
         save_csv_s_points(this->dir_name + "s_points.csv");
     };
 
@@ -92,11 +92,11 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     else {
         this->bins_model.generate_bins_gt_points(
             this->motion_model,
-            this->gen_restrictions.T
+            this->gen_restrictions.double_data["T"]
         );
         this->bins_model.generate_bins_measured_states(
             this->motion_model,
-            this->gen_restrictions.T
+            this->gen_restrictions.double_data["T"]
         );
         this->bins_model.save_csv_bins_measured_states(this->dir_name + "bins_measured_states.csv");
         this->bins_model.save_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
@@ -105,8 +105,8 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
     std::cout << "\n----<<<< camera_model >>>>----" << std::endl;
     setCameraModel(this->gen_restrictions);
-    generate_camera_proections(this->gen_restrictions.camera_proection_mode);
-    generate_point_trails(this->gen_restrictions.camera_proection_mode);
+    generate_camera_proections(this->gen_restrictions.int_data["camera_proection_mode"]);
+    generate_point_trails(this->gen_restrictions.int_data["camera_proection_mode"]);
 
     save_csv_point_trails(this->dir_name);
 
