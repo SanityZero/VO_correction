@@ -9,6 +9,8 @@
 #include <random>
 #include <cmath>
 
+
+
 //using namespace cv;
 using namespace std;
 
@@ -26,6 +28,106 @@ typedef cv::Point2i Point2i;
 //inline Point3d smooth(Point3d p_0, Point3d p_1, Point3d p_2, double k1 = 1.0, double k2 = 1.0, double dt = 1.0, double limit_1 = -1, double limit_2 = -1) {
 //    
 //};
+
+//void Test_model::Kalman_filter() {
+//    cout << "Kalman_filter start" << endl;
+//
+//    #pragma omp parallel for
+//    for (Trail_sequence trail_sequence : trail_sequences) { 
+//        this->trail_sequences_estimate(trail_sequence);
+//    };
+//
+//    cout << "Kalman_filter start" << endl;
+//};
+
+void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence) {
+
+    Trail_sequence res(
+        _trail_sequence.start,
+        _trail_sequence.timestamps[0],
+        _trail_sequence.model_state_vector[0],
+        _trail_sequence.model_measurement_vector[0],
+        _trail_sequence.model_control_vector[0]
+    );
+
+    Mat P = load_csv_Mat(this->dir_name + "Mats/P_0.csv", Point2i(12, 12));
+    Mat Q = load_csv_Mat(this->dir_name + "Mats/Q_0.csv", Point2i(12, 12));
+
+    double R_arr[2][2] = {
+        {1, 0},
+        {0, 1}
+    };
+
+    Mat R = Mat(2, 2, CV_64F, R_arr);
+
+    vector<State_vector> state_vector = _trail_sequence.model_state_vector;
+    vector<Measurement_vector> measurement_vector = _trail_sequence.model_measurement_vector;
+    vector<Control_vector> control_vector = _trail_sequence.model_control_vector;
+    vector<double> timestamps = _trail_sequence.timestamps;
+
+    double prev_state_arr[12][1] = {
+        {state_vector[0].get(0)}, {state_vector[0].get(1)}, {state_vector[0].get(2)},
+        {state_vector[0].get(3)}, {state_vector[0].get(4)}, {state_vector[0].get(5)},
+        {state_vector[0].get(6)}, {state_vector[0].get(7)}, {state_vector[0].get(8)},
+        {state_vector[0].get(9)}, {state_vector[0].get(10)}, {state_vector[0].get(11)},
+    };
+
+    Mat x = Mat(12, 1, CV_64F, prev_state_arr);
+
+    for (int i = 1; i < timestamps.size(); i++) {
+        //estimate x
+
+        Mat H = this->senseMat(
+            measurement_vector[i].get_point2d(), state_vector[i].get_s_pose(),
+            state_vector[i].get_cam_pose(), state_vector[i].get_orient()
+        );
+
+        double dt = timestamps[i] - timestamps[i - 1];
+
+        double F_arr[12][12] = F_ARR(dt);
+        Mat F = Mat(12, 12, CV_64F, F_arr);
+
+        double B_arr[12][6] = B_ARR(dt);
+        Mat B = Mat(12, 6, CV_64F, B_arr);
+
+        double U_arr[6][1] = {
+            {control_vector[i].get(0)}, {control_vector[i].get(1)}, {control_vector[i].get(2)},
+            {control_vector[i].get(3)}, {control_vector[i].get(4)}, {control_vector[i].get(5)}
+        };
+
+        Mat U = Mat(6, 1, CV_64F, U_arr);
+
+        Mat x_next = F * x + B * U;
+        Mat P_est = F * P * F.t() + Q;
+        Mat H_t = H.t();
+
+        Mat tmp = (H * P_est * H.t() + R);
+
+        double tmp_arr[2][2] = {
+            {tmp.at<double>(0, 0), tmp.at<double>(0, 1)},
+            {tmp.at<double>(1, 0), tmp.at<double>(1, 1)}
+        };
+
+        Mat K = P_est * H.t() * tmp.inv();
+        Mat P_next = (Mat::eye(12, 12, CV_64F) - K * H) * P_est;
+
+        P = P_next.clone();
+        x = x_next.clone();
+
+        State_vector estimated_state;
+        estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+        estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
+        estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
+        estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
+
+        double time = timestamps[i];
+
+        res.push_back(timestamps[i], estimated_state, measurement_vector[i], control_vector[i]);
+    };
+
+
+    this->states_estimated.push_back(res);
+};
 
 Point2d Test_model::part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta) {
     Point2d res = (
@@ -65,21 +167,22 @@ Mat Test_model::senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, 
     point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_y));
     point_pose.push_back(part_der_h(_P, _point_pose, _camera_pose, _camera_orient, delta_co_z));
 
-    double senseMat_ar[9][2] = {
-        {point_pose[0].x, point_pose[0].y},
-        {point_pose[1].x, point_pose[1].y},
-        {point_pose[2].x, point_pose[2].y},
-
-        {point_pose[3].x, point_pose[3].y},
-        {point_pose[4].x, point_pose[4].y},
-        {point_pose[5].x, point_pose[5].y},
-
-        {point_pose[6].x, point_pose[6].y},
-        {point_pose[7].x, point_pose[7].y},
-        {point_pose[8].x, point_pose[8].y}
+    double senseMat_ar[2][12] = {
+        {
+            point_pose[0].x, point_pose[1].x, point_pose[2].x,
+            point_pose[3].x, point_pose[4].x, point_pose[5].x,
+            0.0,             0.0,             0.0,
+            point_pose[6].x, point_pose[7].x, point_pose[8].x
+        },
+        {
+            point_pose[0].y, point_pose[1].y, point_pose[2].y,
+            point_pose[3].y, point_pose[4].y, point_pose[5].y,
+            0.0,             0.0,             0.0,
+            point_pose[6].y, point_pose[7].y, point_pose[8].y
+        }
     };
 
-    return  Mat(9, 2, CV_64F, senseMat_ar).clone();
+    return  Mat(2, 12, CV_64F, senseMat_ar).clone();
 };
 
 
@@ -114,13 +217,11 @@ void Test_model::generate_point_trails(int mode) {
 };
 
 void Test_model::print_camera_proections() {
-    cout << "print_camera_proections" << endl;
+    cout << "print_camera_proections start" << endl;
     string dir_frames = this->dir_name + "frames\\";
     string cmd_clear_image_dir = "del /f /q " + dir_frames;
     system(cmd_clear_image_dir.c_str());
-    cout << "start";
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
-        cout << ".";
         Mat frame(this->frame_size.y, this->frame_size.x, CV_8UC3, Scalar(255, 255, 255));
         vector<Point2i> frame_points = this->point_camera_proections[i];
 
@@ -141,7 +242,7 @@ void Test_model::print_camera_proections() {
         string filename = dir_frames + to_string(i) + ".jpg";
         imwrite(filename, frame);
     };
-    cout << "end"<< endl;
+    cout << "print_camera_proections end" << endl;
 
     string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 " + this->dir_name + this->name + ".mp4";
     

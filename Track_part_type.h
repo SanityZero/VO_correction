@@ -62,7 +62,7 @@ public:
     cv::Point3d get_anqular_accel() { return cv::Point3d(this->get(4)); };
 
     void read_csv(std::string line, std::string sep = ";");
-    std::string get_csv_data(std::string sep = ";");
+    std::string get_csv_line(std::string sep = ";");
 };
 
 class Line_track_type {
@@ -86,7 +86,7 @@ public:
     cv::Point2d part(double dist = 0);
     State_type orientation(double dist);
 
-    std::string get_csv_data(std::string sep = ",") {
+    std::string get_csv_line(std::string sep = ",") {
         std::string result = std::to_string(start.x) + sep + std::to_string(start.y) + sep;
         result += std::to_string(end.x) + sep + std::to_string(end.y) + sep;
         result += std::to_string(time);
@@ -122,7 +122,7 @@ public:
     cv::Point2d part(double dist);
     State_type orientation(double dist);
 
-    std::string get_csv_data(std::string sep = ",") {
+    std::string get_csv_line(std::string sep = ",") {
         std::string result = std::to_string(start.x) + sep + std::to_string(start.y) + sep;
         result += std::to_string(start_vec.x) + sep + std::to_string(start_vec.y) + sep;
         result += std::to_string(end.x) + sep + std::to_string(end.y) + sep;
@@ -181,10 +181,10 @@ public:
     cv::Point2d part(double dist);
     State_type orientation(double dist);
 
-    std::string get_csv_data(std::string sep = ";") {
+    std::string get_csv_line(std::string sep = ";") {
         std::string result = "";
-        result += line.get_csv_data(sep) + sep;
-        result += turn.get_csv_data(sep) + sep;
+        result += line.get_csv_line(sep) + sep;
+        result += turn.get_csv_line(sep) + sep;
         result += std::to_string(exit_vec.x) + sep + std::to_string(exit_vec.y) + sep;
         result += std::to_string(end.x) + sep + std::to_string(end.y);
         return result;

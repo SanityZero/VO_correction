@@ -12,7 +12,7 @@ double Track_part_type::len() {
     return line.len() + turn.len();
 };
 
-std::string State_type::get_csv_data(std::string sep) {
+std::string State_type::get_csv_line(std::string sep) {
     std::string result = "";
     result += std::to_string(vel.x) + sep + std::to_string(vel.y) + sep + std::to_string(vel.z) + sep;
     result += std::to_string(accel.x) + sep + std::to_string(accel.y) + sep + std::to_string(accel.z) + sep;

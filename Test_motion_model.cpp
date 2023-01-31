@@ -20,7 +20,7 @@ void Test_model::Test_motion_model::save_csv_gt_point(string filename, string se
     vector<string> csv_data;
     cout << "save_csv_gt_point" << endl;
     for (int i = 0; i < this->gt_point.size(); i++) {
-        csv_data.push_back(this->gt_point[i].get_csv_data(sep));
+        csv_data.push_back(this->gt_point[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);
@@ -45,7 +45,7 @@ void Test_model::Test_motion_model::save_csv_old_gt_point(string filename, strin
     vector<string> csv_data;
     cout << "save_csv_old_gt_point" << endl;
     for (int i = 0; i < this->old_gt_point.size(); i++) {
-        csv_data.push_back(this->old_gt_point[i].get_csv_data(sep));
+        csv_data.push_back(this->old_gt_point[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);
@@ -70,7 +70,7 @@ void Test_model::Test_motion_model::save_csv_eval_old_gt_point(string filename, 
     vector<string> csv_data;
     cout << "save_csv_eval_old_gt_point" << endl;
     for (int i = 0; i < this->eval_old_gt_point.size(); i++) {
-        csv_data.push_back(this->eval_old_gt_point[i].get_csv_data(sep));
+        csv_data.push_back(this->eval_old_gt_point[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);
@@ -95,7 +95,7 @@ void Test_model::Test_motion_model::save_csv_states(string filename, string sep)
     vector<string> csv_data;
     cout << "save_csv_states" << endl;
     for (int i = 0; i < this->states.size(); i++) {
-        csv_data.push_back(this->states[i].get_csv_data(sep));
+        csv_data.push_back(this->states[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);

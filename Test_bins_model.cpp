@@ -254,7 +254,7 @@ void Test_model::Test_bins_model::save_csv_bins_measured_states(string filename,
     vector<string> csv_data;
     cout << "save_csv_bins_measured_states" << endl;
     for (int i = 0; i < this->bins_measured_states.size(); i++) {
-        csv_data.push_back(this->bins_measured_states[i].get_csv_data(sep));
+        csv_data.push_back(this->bins_measured_states[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);
@@ -279,7 +279,7 @@ void Test_model::Test_bins_model::save_csv_bins_gt_points(string filename, strin
     vector<string> csv_data;
     cout << "save_csv_bins_gt_points" << endl;
     for (int i = 0; i < this->bins_gt_points.size(); i++) {
-        csv_data.push_back(this->bins_gt_points[i].get_csv_data(sep));
+        csv_data.push_back(this->bins_gt_points[i].get_csv_line(sep));
     };
 
     ofstream fout(filename);

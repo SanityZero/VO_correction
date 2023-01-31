@@ -59,7 +59,7 @@ public:
         this->setW(cv::Point3d(double_buffer[9], double_buffer[10], double_buffer[11]));
     };
 
-    std::string get_csv_data(std::string sep = ",") {
+    std::string get_csv_line(std::string sep = ",") {
         std::string result = "";
         result += std::to_string(lat) + sep + std::to_string(lon) + sep + std::to_string(alt) + sep;
         result += std::to_string(roll) + sep + std::to_string(pitch) + sep + std::to_string(yaw) + sep;

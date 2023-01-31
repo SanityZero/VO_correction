@@ -90,6 +90,7 @@ Mat Test_model::load_csv_Mat(string filename, Point2i _size, string _sep) {
 
         for (std::string item : values) {
             if (item.find(",") != -1) item.replace(item.find(","), 1, ".");
+            while (item.find("\"") != -1) item.replace(item.find("\""), 1, "");
             double_buffer.push_back(std::stod(item));
             //cout << "_" << stod(item) << "_" << endl;
         }; //for (std::string item : values)
@@ -110,14 +111,12 @@ Mat Test_model::load_csv_Mat(string filename, Point2i _size, string _sep) {
 };
 
 void Test_model::save_csv_point_trails(string dirname, string sep) {
-    cout << "save_csv_point_trails" << endl;
+    cout << "save_csv_point_trails start" << endl;
     string dir_frames = this->dir_name + "trails\\";
     string cmd_clear_image_dir = "del /f /q " + dir_frames;
     system(cmd_clear_image_dir.c_str());
 
-    cout << "start";
     for (vector<Point2d> trail : this->point_trails) {
-        cout << ".";
         vector<string> csv_data;
         for (int i = 1; i < trail.size(); i++) {
             csv_data.push_back(to_string(double(trail[i].x)) + sep + to_string(double(trail[i].y)));
@@ -141,7 +140,7 @@ void Test_model::save_csv_point_trails(string dirname, string sep) {
 
         fout.close();
     };
-    cout << "end" << endl;
+    cout << "save_csv_point_trails start" << endl;
 
 };
 

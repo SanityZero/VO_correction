@@ -2,6 +2,8 @@
 #include "Track_part_type.h"
 #include "Test_model_sequence.h"
 
+#include <omp.h>
+
 #define F_ARR(dt) {\
                 { 1,0,0,    0,0,0,  dt,0,0, 0,0,0},\
                 { 0,1,0,    0,0,0,  0,dt,0, 0,0,0 },\
@@ -188,10 +190,31 @@ private:
 
     Mat cameraCSMat(Point3d angles, Point3d _cam_pose);
     Mat generateTransitionM(int i);
-    void setCameraModel(Point2i _frame_size, Point2d _cam_range, Mat _A) {
-        this->frame_size = _frame_size;
-        this->cam_range = _cam_range;
-        this->A = _A;
+
+    void setCameraModel(Test_model_restrictions _gen_restrictions) {
+        
+        double focus = _gen_restrictions.focus;
+        double yScale = cos(_gen_restrictions.camera_FOV_zoy) / sin(_gen_restrictions.camera_FOV_zoy);
+        double xScale = cos(_gen_restrictions.camera_FOV_xoy) / sin(_gen_restrictions.camera_FOV_xoy);
+
+        double IternalCalib_ar[4][4] = {
+        {xScale,    0,      0,  0},
+        {0,         yScale, 0,  0},
+        {0,         0,      1,  1 / focus},
+        {0,         0,      0,  0}
+        };
+
+        //    double IternalCalib_ar[3][3] = {
+        //{xScale,    0,  0},
+        //{0, yScale, 0},
+        //{0, 0,  1 / focus}
+        //    };
+        this->A = Mat(4, 4, CV_64F, IternalCalib_ar).clone();
+        this->frame_size = Point2i(
+            _gen_restrictions.camera_frame_size_x,
+            _gen_restrictions.camera_frame_size_y
+        );
+        this->cam_range = Point2d(0.1, 100000000);
     };
 
     //модель движения блестящих точек
@@ -236,7 +259,7 @@ private:
     //обработка 
     vector<Point2d> s_sequence;
     vector<Trail_sequence> trail_sequences;
-    vector<Trail_sequence> trail_sequences_estimated;
+    vector<Trail_sequence> states_estimated;
 
 
     Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta);
@@ -244,126 +267,45 @@ private:
 
     void generate_trail_sequences();
 
+    void trail_sequences_estimate(Trail_sequence _trail_sequence);
+
     void Kalman_filter() {
-        this->trail_sequences_estimate(this->trail_sequences[0]);
+        cout << "Kalman_filter start" << endl;
+
+//#pragma omp parallel for
+        for (Trail_sequence trail_sequence : trail_sequences) {
+            this->trail_sequences_estimate(trail_sequence);
+        };
+
+        cout << "Kalman_filter start" << endl;
     };
 
-    void trail_sequences_estimate(Trail_sequence _trail_sequence) {
-        Mat P = load_csv_Mat(this->dir_name + "Mats/P_0.csv", Point2i(12, 12));
-        Mat Q = load_csv_Mat(this->dir_name + "Mats/Q_0.csv", Point2i(12, 12));
+    void save_csv_state_estimated(std::string _dir, std::string _sep = ";"){
 
-        double R_arr[2][2] = {
-            {1, 0},
-            {0, 1}
+        string cmd_clear_image_dir = "del /f /q " + _dir;
+        system(cmd_clear_image_dir.c_str());
+
+        int i = 0;
+        cout << "save_csv_state_estimated start" << endl;
+        for (Trail_sequence state_estimated : states_estimated) {
+            state_estimated.save_csv_trail_sequence(_dir + to_string(i) + ".csv", _sep);
+            i++;
         };
+        cout << "save_csv_state_estimated end" << endl;
+    };
 
-        Mat R = Mat(2, 2, CV_64F, R_arr);
+    void save_csv_trail_sequences(std::string _dir, std::string _sep = ";") {
 
-        vector<State_vector> state_vector = _trail_sequence.model_state_vector;
-        vector<Measurement_vector> measurement_vector = _trail_sequence.model_measurement_vector;
-        vector<Control_vector> control_vector = _trail_sequence.model_control_vector;
-        vector<double> timestamps = _trail_sequence.timestamps;
+        string cmd_clear_image_dir = "del /f /q " + _dir;
+        system(cmd_clear_image_dir.c_str());
 
-        double prev_state_arr[12][1] = {
-            {control_vector[0].get(0)},
-            {control_vector[0].get(1)},
-            {control_vector[0].get(2)},
-
-            {control_vector[0].get(3)},
-            {control_vector[0].get(4)},
-            {control_vector[0].get(5)},
-
-            {control_vector[0].get(6)},
-            {control_vector[0].get(7)},
-            {control_vector[0].get(8)},
-
-            {control_vector[0].get(9)},
-            {control_vector[0].get(10)},
-            {control_vector[0].get(11)},
+        int i = 0;
+        cout << "save_csv_trail_sequences start" << endl;
+        for (Trail_sequence trail_sequence : trail_sequences) {
+            trail_sequence.save_csv_trail_sequence(_dir + to_string(i) + ".csv", _sep);
+            i++;
         };
-
-        Mat prev_state = Mat(12, 1, CV_64F, prev_state_arr);
-
-        for (int i = 1; i < timestamps.size(); i++) {
-            //estimate x
-
-            Mat H = this->senseMat(
-                measurement_vector[i].get_point2d(),
-                state_vector[i].get_s_pose(),
-                state_vector[i].get_cam_pose(),
-                state_vector[i].get_orient()
-            );
-
-            double dt = timestamps[i] - timestamps[i - 1];
-
-            double F_arr[12][12] = F_ARR(dt);
-
-            //double F_arr[12][12] = {
-            //    {1,0,0,  0,0,0,  dt,0,0, 0,0,0},
-            //    {0,1,0,  0,0,0,  0,dt,0, 0,0,0},
-            //    {0,0,1,  0,0,0,  0,0,dt, 0,0,0},
-
-            //    {0,0,0,  1,0,0,  0,0,0,  0,0,0},
-            //    {0,0,0,  0,1,0,  0,0,0,  0,0,0},
-            //    {0,0,0,  0,0,1,  0,0,0,  0,0,0},
-
-            //    {0,0,0,  0,0,0,  1,0,0,  0,0,0},
-            //    {0,0,0,  0,0,0,  0,1,0,  0,0,0},
-            //    {0,0,0,  0,0,0,  0,0,1,  0,0,0},
-
-            //    {0,0,0,  0,0,0,  dt,0,0, 1,0,0},
-            //    {0,0,0,  0,0,0,  0,dt,0, 0,1,0},
-            //    {0,0,0,  0,0,0,  0,0,dt, 0,0,1}
-            //};
-
-            Mat F = Mat(12, 12, CV_64F, F_arr);
-
-            double B_arr[12][6] = B_ARR(dt);
-            //double B_arr[12][6] = {
-            //    {dt * dt / 2,0,0,   0,0,0},
-            //    {0,dt * dt / 2,0,   0,0,0},
-            //    {0,0,dt * dt / 2,   0,0,0},
-
-            //    {0,0,0,  dt,0,0},
-            //    {0,0,0,  0,dt,0},
-            //    {0,0,0,  0,0,dt},
-
-            //    {dt,0,0,  0,0,0},
-            //    {0,dt,0,  0,0,0},
-            //    {0,0,dt,  0,0,0},
-
-            //    {-dt * dt / 2,0,0,   0,0,0},
-            //    {0,-dt * dt / 2,0,   0,0,0},
-            //    {0,0,-dt * dt / 2,   0,0,0}
-            //};
-            
-            Mat B = Mat(12, 6, CV_64F, B_arr);
-
-            double U_arr[6][1] = {
-                {control_vector[i].get(0)},
-                {control_vector[i].get(1)},
-                {control_vector[i].get(2)},
-
-                {control_vector[i].get(3)},
-                {control_vector[i].get(4)},
-                {control_vector[i].get(5)}
-            };
-
-            Mat U = Mat(6, 1, CV_64F, U_arr);
-
-            Mat x_est = F * prev_state + B * U;
-            Mat P_est = F * P * F.t() + Q;
-            Mat H_t = H.t();
-            Mat tmp3 = P_est * H_t;
-            Mat tmp2 = tmp3 * H_t;
-            Mat tmp = (tmp2 + R);
-            Mat K = P_est * H.t() * tmp.inv();
-            Mat P = K * H;
-
-        
-        
-        };
-    
+        cout << "save_csv_trail_sequences end" << endl;
     };
 
    

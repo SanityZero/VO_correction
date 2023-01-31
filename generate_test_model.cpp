@@ -104,39 +104,17 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     };
 
     std::cout << "\n----<<<< camera_model >>>>----" << std::endl;
-    Point2i fr_size = Point2i(
-        this->gen_restrictions.camera_frame_size_x,
-        this->gen_restrictions.camera_frame_size_y
-    );
-    Point2d cam_limits = Point2d(0.1, 100000000);
-    double focus = this->gen_restrictions.focus;
-
-    double yScale = cos(this->gen_restrictions.camera_FOV_zoy) / sin(this->gen_restrictions.camera_FOV_zoy);
-    double xScale = cos(this->gen_restrictions.camera_FOV_xoy) / sin(this->gen_restrictions.camera_FOV_xoy);
-
-    double IternalCalib_ar[4][4] = {
-    {xScale,    0,      0,  0},
-    {0,         yScale, 0,  0},
-    {0,         0,      1,  1 / focus},
-    {0,         0,      0,  0}
-    };
-
-    //    double IternalCalib_ar[3][3] = {
-    //{xScale,    0,  0},
-    //{0, yScale, 0},
-    //{0, 0,  1 / focus}
-    //    };
-    Mat A = Mat(4, 4, CV_64F, IternalCalib_ar);
-
-    //Mat mat = load_csv_Mat(this->dir_name + "Mat.csv", Point2i(2,3));
-    setCameraModel(fr_size, cam_limits, A);
+    setCameraModel(this->gen_restrictions);
     generate_camera_proections(this->gen_restrictions.camera_proection_mode);
-
-    std::cout << "\n----<<<< trails >>>>----" << std::endl;
     generate_point_trails(this->gen_restrictions.camera_proection_mode);
+
+    save_csv_point_trails(this->dir_name);
+
+
+    std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
     generate_trail_sequences();
     Kalman_filter();
-    save_csv_point_trails(this->dir_name);
-    // сгенерировать изображения в соответствии с точками
 
+    save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+    save_csv_state_estimated(this->dir_name + "states_estimated\\");
 };

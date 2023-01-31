@@ -60,7 +60,7 @@ void Test_model::Test_track_model::save_csv_track(std::string filename, std::str
     std::vector<std::string> csv_data;
     std::cout << "save_csv_track" << std::endl;
     for (int i = 0; i < track.size(); i++) {
-        csv_data.push_back(track[i].get_csv_data(sep) + sep + std::to_string(track_length[i]));
+        csv_data.push_back(track[i].get_csv_line(sep) + sep + std::to_string(track_length[i]));
     };
 
     std::vector<std::string> header;
