@@ -39,6 +39,31 @@ typedef cv::Point2i Point2i;
 //
 //    cout << "Kalman_filter start" << endl;
 //};
+void Test_model::setCameraModel(Test_model_restrictions _gen_restrictions) {
+
+    double focus = _gen_restrictions.focus;
+    double yScale = cos(_gen_restrictions.camera_FOV_zoy) / sin(_gen_restrictions.camera_FOV_zoy);
+    double xScale = cos(_gen_restrictions.camera_FOV_xoy) / sin(_gen_restrictions.camera_FOV_xoy);
+
+    double IternalCalib_ar[4][4] = {
+    {xScale,    0,      0,  0},
+    {0,         yScale, 0,  0},
+    {0,         0,      1,  1 / focus},
+    {0,         0,      0,  0}
+    };
+
+    //    double IternalCalib_ar[3][3] = {
+    //{xScale,    0,  0},
+    //{0, yScale, 0},
+    //{0, 0,  1 / focus}
+    //    };
+    this->A = Mat(4, 4, CV_64F, IternalCalib_ar).clone();
+    this->frame_size = Point2i(
+        _gen_restrictions.camera_frame_size_x,
+        _gen_restrictions.camera_frame_size_y
+    );
+    this->cam_range = Point2d(0.1, 100000000);
+};
 
 void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence) {
 
