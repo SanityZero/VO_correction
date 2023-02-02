@@ -39,6 +39,32 @@ typedef cv::Point2i Point2i;
 //    cout << "Kalman_filter start" << endl;
 //};
 
+void Test_model::_generate_err_times_for_seq(Trail_sequence _gt, Trail_sequence _est) {
+    err_times.push_back(Point2i(_gt.start, _gt.end));
+};
+
+void Test_model::generate_pose_err_for_seq(Trail_sequence _gt, Trail_sequence _est) {
+
+    vector<Point3d> gt_pose_vec = _gt.get_pose_vec();
+    vector<Point3d> est_pose_vec = _est.get_pose_vec();
+
+    vector<Point3d> res_vec;
+    for (int i : _gt.range()) res_vec.push_back(est_pose_vec[i] - gt_pose_vec[i]);
+
+    pose_err.push_back(res_vec);
+};
+
+void Test_model::generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence _est) {
+
+    vector<Point3d> gt_orient_vec = _gt.get_orient_vec();
+    vector<Point3d> est_orient_vec = _est.get_orient_vec();
+
+    vector<Point3d> res_vec;
+    for (int i : _gt.range()) res_vec.push_back(est_orient_vec[i] - gt_orient_vec[i]);
+
+    orient_err.push_back(res_vec);
+};
+
 Test_model::Test_model(string name, string dir_name) {
     this->name = name;
     this->dir_name = dir_name;

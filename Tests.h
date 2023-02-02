@@ -194,11 +194,40 @@ private:
     vector<Trail_sequence> trail_sequences;
     vector<Trail_sequence> states_estimated;
 
+    vector<vector<Point3d>> pose_err;
+    vector<vector<Point3d>> orient_err;
+    vector<Point2i> err_times;
+
 
     Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta);
     Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient);
 
     void generate_trail_sequences();
+    void _generate_err_times_for_seq(Trail_sequence _gt, Trail_sequence _est);
+    void generate_pose_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
+    void generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
+
+    void generate_err() {
+        for (int i = 0; i < trail_sequences.size(); i++) {
+            Trail_sequence gt = this->trail_sequences[i];
+            Trail_sequence est = this->states_estimated[i];
+
+            this->_generate_err_times_for_seq(gt, est);
+            this->generate_pose_err_for_seq(gt, est);
+            this->generate_orient_err_for_seq(gt, est);
+        };
+    };
+
+    void save_csv_err(std::string _dir, std::string _sep = ";") {
+        this->save_csv_time_err(_dir + "time_err.csv", _sep);
+        this->save_csv_pose_err(_dir + "pose_err\\", _sep);
+        this->save_csv_orient_err(_dir + "orient_err\\", _sep);
+    };
+
+    void save_csv_pose_err(std::string _dir, std::string _sep = ";");
+    void save_csv_orient_err(std::string _dir, std::string _sep = ";");
+
+    void save_csv_time_err(std::string _filename, std::string _sep = ";");
 
     void trail_sequences_estimate(Trail_sequence _trail_sequence);
 
@@ -209,13 +238,13 @@ private:
             this->trail_sequences_estimate(trail_sequence);
         };
 
-        cout << "Kalman_filter start" << endl;
+        cout << "Kalman_filter end" << endl;
     };
 
     void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
     void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
-   
+    void save_csv_vector_Point3d(vector<Point3d> _vec, string _filename,  int _start, int _end, std::string _sep = ";");
 
 public:
     Test_model(string name, string dir_name);

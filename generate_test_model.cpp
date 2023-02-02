@@ -46,18 +46,21 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     else {
         this->motion_model.generate_states(this->track_model, this->gen_restrictions.double_data["dicret"]);
 
-        //this->motion_model.smooth_anqular_vel(
-    //    this->gen_restrictions.T,
-    //    this->gen_restrictions.U1,
-    //    this->gen_restrictions.U2
-    //);
+        this->motion_model.smooth_anqular_vel(
+            this->gen_restrictions.double_data["T"],
+            this->gen_restrictions.double_data["U1"],
+            this->gen_restrictions.double_data["U2"]
+        );
 
-    //this->motion_model.smooth_vel(
-    //    this->gen_restrictions.T,
-    //    this->gen_restrictions.U1 / 10000);
-    //this->motion_model.regenerate_gt_points();
+        this->motion_model.smooth_vel(
+            this->gen_restrictions.double_data["T"],
+            this->gen_restrictions.double_data["U2"]
+        );
+        
 
         this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.double_data["dicret"]);
+        //this->motion_model.regenerate_gt_points();
+
         this->motion_model.generate_timestamps(this->gen_restrictions.double_data["dicret"], this->gen_restrictions.double_data["average_vel"]);
         for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
             this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
@@ -114,7 +117,9 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
     std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
     generate_trail_sequences();
     Kalman_filter();
+    generate_err();
 
     save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
     save_csv_state_estimated(this->dir_name + "states_estimated\\");
+    save_csv_err(this->dir_name + "errors\\");
 };

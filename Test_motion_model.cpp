@@ -322,10 +322,18 @@ void Test_model::Test_motion_model::smooth_anqular_vel(double T, double U1, doub
     //for (int i = 1; i < this->states.size() - 1; i++) res_orient_vec.push_back(this->get_state(i).orient);
     for (int i = 1; i < this->states.size() - 1; i++) res_ang_vel_vec.push_back(this->get_state(i).anqular_vel);
 
+    vector<Point3d> res_ang_vel_vec_last;
+    res_ang_vel_vec_last.push_back(res_ang_vel_vec[0]);
+
+    //for (int i = 1; i < res_ang_vel_vec.size(); i++) {
+    //    Point3d tmp = U1 * res_ang_vel_vec[i] + (1 - U1) * res_ang_vel_vec_last[i - 1];
+    //    res_ang_vel_vec_last.push_back(tmp);
+    //};
+
     int window2 = 100;
     int n2 = res_ang_vel_vec.size() - 1;
     int hw2 = (window2 - 1) / 2;
-    vector<Point3d> res_ang_vel_vec_last;
+    //vector<Point3d> res_ang_vel_vec_last;
     int k12, k22, z2;
     for (int i = 1; i < n2; i++) {
         Point3d tmp = Point3d(0.0, 0.0, 0.0);
@@ -361,11 +369,20 @@ void Test_model::Test_motion_model::smooth_vel(double T, double U) {
 
     for (State_type tmp_state : this->states) res_vel_vec.push_back(tmp_state.vel);
 
+    vector<Point3d> res_vel_vec_last;
+    res_vel_vec_last.push_back(res_vel_vec[0]);
+
+    //for (int i = 1; i < res_vel_vec.size(); i++) {
+    //    Point3d tmp = U * res_vel_vec[i] + (1 - U) * res_vel_vec_last[i - 1];
+    //    res_vel_vec_last.push_back(tmp);
+    //};
+
+
     int window = 30;
     int n = res_vel_vec.size() - 1;
     if (fmod(window, 2) == 0) window++;
     int hw = (window - 1) / 2;
-    vector<Point3d> res_vel_vec_last;
+    //vector<Point3d> res_vel_vec_last;
     int k1, k2, z;
     for (int i = 1; i < n; i++) {
         Point3d tmp = Point3d(0.0, 0.0, 0.0);
@@ -395,7 +412,8 @@ void Test_model::Test_motion_model::smooth_vel(double T, double U) {
 
     for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_vel(res_vel_vec_last[i]);
     for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_accel(
-        Point3d(0, 0, 9.80665) + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]));
+        Point3d(0, 0, 9.80665)
+        + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]));
 };
 
 

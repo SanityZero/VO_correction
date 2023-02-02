@@ -217,6 +217,21 @@ public:
 		return result;
 	};
 
+	std::vector<Point3d> get_pose_vec() {
+		std::vector<Point3d> res;
+
+		for (int i : this->range()) res.push_back(this->model_state_vector[i].get_cam_pose());
+		return res;
+	};
+
+	std::vector<Point3d> get_orient_vec() {
+		std::vector<Point3d> res;
+
+		for (int i : this->range()) res.push_back(this->model_state_vector[i].get_orient());
+		return res;
+	};
+
+
 	void save_csv_trail_sequence(std::string _filename, std::string _sep = ";") {
 		std::vector<std::string> csv_data;
 		for (int i: this->range()) {

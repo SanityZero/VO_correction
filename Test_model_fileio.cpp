@@ -19,6 +19,106 @@ typedef cv::Point2d Point2d;
 typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
+void Test_model::save_csv_time_err(std::string _filename, std::string _sep) {
+    std::vector<std::string> csv_data;
+    for (Point2i err_time : err_times) {
+        csv_data.push_back(std::to_string(err_time.x) + _sep + std::to_string(err_time.y));
+    };
+
+    std::vector<std::string> header;
+    header.push_back("start");
+    header.push_back("end");
+
+    std::string header_line = "";
+    for (std::string item : header)
+        header_line += "\"" + item + "\"" + _sep;
+
+
+    ofstream fout(_filename);
+    fout << header_line << '\n';
+
+    for (std::string row : csv_data) {
+
+        size_t start_pos = 0;
+        std::string from = ".";
+        std::string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::save_csv_vector_Point3d(vector<Point3d> _vec, string _filename, int _start, int _end, std::string _sep) {
+    std::vector<std::string> csv_data;
+    for (int i = 0; i < _end - _start; i++) {
+        csv_data.push_back(std::to_string(_start + i) + _sep + this->get_csv_Point3d(_vec[i], _sep));
+    };
+
+    std::vector<std::string> header;
+    header.push_back("timest");
+
+    header.push_back("x");
+    header.push_back("y");
+    header.push_back("z");
+
+    header.push_back(std::to_string(_start));
+    header.push_back(std::to_string(_end));
+
+    std::string header_line = "";
+    for (std::string item : header)
+        header_line += "\"" + item + "\"" + _sep;
+
+
+    ofstream fout(_filename);
+    fout << header_line << '\n';
+
+    for (std::string row : csv_data) {
+
+        size_t start_pos = 0;
+        std::string from = ".";
+        std::string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
+void Test_model::save_csv_pose_err(std::string _dir, std::string _sep) {
+
+    string cmd_clear_image_dir = "del /f /q " + _dir;
+    system(cmd_clear_image_dir.c_str());
+
+    int i = 0;
+    cout << "save_csv_pose_err start" << endl;
+    for (vector<Point3d> err_vec : this->pose_err) {
+        this->save_csv_vector_Point3d(err_vec, _dir + to_string(i) + ".csv", this->err_times[i].x, this->err_times[i].y, _sep);
+        i++;
+    };
+    cout << "save_csv_pose_err end" << endl;
+};
+
+void Test_model::save_csv_orient_err(std::string _dir, std::string _sep) {
+
+    string cmd_clear_image_dir = "del /f /q " + _dir;
+    system(cmd_clear_image_dir.c_str());
+
+    int i = 0;
+    cout << "save_csv_pose_err start" << endl;
+    for (vector<Point3d> err_vec : this->orient_err) {
+        this->save_csv_vector_Point3d(err_vec, _dir + to_string(i) + ".csv", this->err_times[i].x, this->err_times[i].y, _sep);
+        i++;
+    };
+    cout << "save_csv_pose_err end" << endl;
+};
+
 void Test_model::save_csv_state_estimated(std::string _dir, std::string _sep) {
 
     string cmd_clear_image_dir = "del /f /q " + _dir;
