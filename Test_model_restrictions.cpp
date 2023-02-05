@@ -23,10 +23,12 @@ void Test_model::Test_model_restrictions::load_restriction_file(string filename)
         string tp;
         while (getline(restr_file, tp)) { //read data from file object and put it into string.
             //cout << "~)\t" << tp.substr(tp.find(separator) + separator.length()) << endl;
-            tp = tp.substr(tp.find(separator) + separator.length());
-            if (int_data.size() == 0) int_data.push_back(stoi(tp));
-            else
-                float_data.push_back(stod(tp));
+            if (tp != "") {
+                tp = tp.substr(tp.find(separator) + separator.length());
+                if (int_data.size() == 0) int_data.push_back(stoi(tp));
+                else
+                    float_data.push_back(stod(tp));
+            };
         }
         restr_file.close(); //close the file object.
     };
@@ -35,7 +37,7 @@ void Test_model::Test_model_restrictions::load_restriction_file(string filename)
 
 void Test_model::Test_model_restrictions::set(string _filename, vector<int> _int_data, vector<double> _float_data) {
     this->filename = _filename;
-    if ((_int_data.size() == 1) and (_float_data.size() == 31)) {
+    if ((_int_data.size() == 1) and (_float_data.size() == 36)) {
         int_data["max_track_parts"] = _int_data[0];
 
         double_data["dicret"] = _float_data[0];
@@ -80,6 +82,12 @@ void Test_model::Test_model_restrictions::set(string _filename, vector<int> _int
 
         int_data["s_points_generation_mode"] = int(_float_data[29]);
         int_data["camera_proection_mode"] = int(_float_data[30]);
+        int_data["kalman_mode"] = int(_float_data[31]);
+
+        int_data["save_load_track_model"] = int(_float_data[32]);
+        int_data["save_load_motion_model"] = int(_float_data[33]);
+        int_data["save_load_s_points"] = int(_float_data[34]);
+        int_data["save_load_bins_model"] = int(_float_data[35]);
     }
     else
         cout << "Test_model_restrictions initial arrays sizes dont match" << endl;

@@ -6,41 +6,6 @@
 
 #include <map>
 
-#define F_ARR(dt) {\
-                { 1,0,0,    0,0,0,  dt,0,0, 0,0,0},\
-                { 0,1,0,    0,0,0,  0,dt,0, 0,0,0 },\
-                { 0,0,1,    0,0,0,  0,0,dt, 0,0,0 },\
-                    \
-                { 0,0,0,    1,0,0,  0,0,0,  0,0,0 },\
-                { 0,0,0,    0,1,0,  0,0,0,  0,0,0 },\
-                { 0,0,0,    0,0,1,  0,0,0,  0,0,0 },\
-                    \
-                { 0,0,0,    0,0,0,  1,0,0,  0,0,0 },\
-                { 0,0,0,    0,0,0,  0,1,0,  0,0,0 },\
-                { 0,0,0,    0,0,0,  0,0,1,  0,0,0 },\
-                    \
-                { 0,0,0,    0,0,0,  dt,0,0, 1,0,0 },\
-                { 0,0,0,    0,0,0,  0,dt,0, 0,1,0 },\
-                { 0,0,0,    0,0,0,  0,0,dt, 0,0,1 }\
-            }
-
-#define B_ARR(dt) {\
-                { dt * dt / 2,0,0,   0,0,0},\
-                { 0,dt * dt / 2,0,   0,0,0 },\
-                { 0,0,dt * dt / 2,   0,0,0 },\
-\
-                { 0,0,0,  dt,0,0 },\
-                { 0,0,0,  0,dt,0 },\
-                { 0,0,0,  0,0,dt },\
-\
-                { dt,0,0,  0,0,0 },\
-                { 0,dt,0,  0,0,0 },\
-                { 0,0,dt,  0,0,0 },\
-\
-                { -dt * dt / 2,0,0,   0,0,0 },\
-                { 0,-dt * dt / 2,0,   0,0,0 },\
-                { 0,0,-dt * dt / 2,   0,0,0 }\
-}
 
 
 using namespace cv;
@@ -123,8 +88,8 @@ private:
         void generate_states(Test_track_model track_model, double delta_m, int point_num = 0);
         void generate_timestamps(double delta_m, double vel);
 
-        void smooth_anqular_vel(double T, double U1, double U2);
-        void smooth_vel(double T, double U);
+        void smooth_anqular_vel_states(double T, double U1, double U2);
+        void smooth_vel_accel_states(double T, double U);
 
         void regenerate_gt_points();
         void integrate_old_gt();
@@ -197,7 +162,8 @@ private:
     vector<vector<Point3d>> pose_err;
     vector<vector<Point3d>> orient_err;
     vector<Point2i> err_times;
-
+    double score_pose;
+    double score_orient;
 
     Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta);
     Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient);
@@ -216,26 +182,48 @@ private:
             this->generate_pose_err_for_seq(gt, est);
             this->generate_orient_err_for_seq(gt, est);
         };
+
+        double data_size = 0;
+
+        for (vector<Point3d> vec : this->pose_err) data_size += vec.size();
+
+        double tmp = 0;
+
+        for (vector<Point3d> seq_err : this->pose_err) {
+            for (Point3d point : seq_err) {
+                tmp += sqrt(point.x * point.x + point.y * point.y)/ data_size;
+                //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+            };
+        };
+
+        this->score_pose = tmp;
+
+
+        tmp = 0;
+
+        for (vector<Point3d> seq_err : this->orient_err) {
+            for (Point3d point : seq_err) {
+                //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+                tmp += sqrt(point.z * point.z)/ data_size;
+            };
+        };
+
+        this->score_orient = tmp;
     };
 
-    void save_csv_err(std::string _dir, std::string _sep = ";") {
-        this->save_csv_time_err(_dir + "time_err.csv", _sep);
-        this->save_csv_pose_err(_dir + "pose_err\\", _sep);
-        this->save_csv_orient_err(_dir + "orient_err\\", _sep);
-    };
-
+    void save_scopes(string filename);
+    void save_csv_err(std::string _dir, std::string _sep = ";");
     void save_csv_pose_err(std::string _dir, std::string _sep = ";");
     void save_csv_orient_err(std::string _dir, std::string _sep = ";");
-
     void save_csv_time_err(std::string _filename, std::string _sep = ";");
 
-    void trail_sequences_estimate(Trail_sequence _trail_sequence);
+    void trail_sequences_estimate(Trail_sequence _trail_sequence, int _mode=0);
 
-    void Kalman_filter() {
+    void Kalman_filter(int _mode) {
         cout << "Kalman_filter start" << endl;
 
         for (Trail_sequence trail_sequence : trail_sequences) {
-            this->trail_sequences_estimate(trail_sequence);
+            this->trail_sequences_estimate(trail_sequence, _mode);
         };
 
         cout << "Kalman_filter end" << endl;
@@ -251,8 +239,13 @@ public:
     void generate_track_model();
     void save_test_model(string filename) {};
 
+    void show_score() {
+        cout << "Error score pose:\t" << this->score_pose << endl;
+        cout << "Error score orient:\t" << this->score_orient << endl;
+    };
+
     ///////////////////aaaAAAaaAA!1!!!1!!!!!
-    void generate_test_model(vector<bool> options, string gen_restr_filename = "");// вот эта функция вызывается
+    void generate_test_model(string gen_restr_filename = "");// вот эта функция вызывается
 
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_bins_gt(bool pause_enable = false);

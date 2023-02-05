@@ -24,6 +24,43 @@ typedef cv::Point2d Point2d;
 typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
+#define F_ARR(dt) {\
+                { 1,0,0,    0,0,0,  dt,0,0, 0,0,0},\
+                { 0,1,0,    0,0,0,  0,dt,0, 0,0,0 },\
+                { 0,0,1,    0,0,0,  0,0,dt, 0,0,0 },\
+                    \
+                { 0,0,0,    1,0,0,  0,0,0,  0,0,0 },\
+                { 0,0,0,    0,1,0,  0,0,0,  0,0,0 },\
+                { 0,0,0,    0,0,1,  0,0,0,  0,0,0 },\
+                    \
+                { 0,0,0,    0,0,0,  1,0,0,  0,0,0 },\
+                { 0,0,0,    0,0,0,  0,1,0,  0,0,0 },\
+                { 0,0,0,    0,0,0,  0,0,1,  0,0,0 },\
+                    \
+                { 0,0,0,    0,0,0,  dt,0,0, 1,0,0 },\
+                { 0,0,0,    0,0,0,  0,dt,0, 0,1,0 },\
+                { 0,0,0,    0,0,0,  0,0,dt, 0,0,1 }\
+            }
+
+#define B_ARR(dt) {\
+                { dt * dt / 2,0,0,   0,0,0},\
+                { 0,dt * dt / 2,0,   0,0,0 },\
+                { 0,0,dt * dt / 2,   0,0,0 },\
+\
+                { 0,0,0,  dt,0,0 },\
+                { 0,0,0,  0,dt,0 },\
+                { 0,0,0,  0,0,dt },\
+\
+                { dt,0,0,  0,0,0 },\
+                { 0,dt,0,  0,0,0 },\
+                { 0,0,dt,  0,0,0 },\
+\
+                { -dt * dt / 2,0,0,   0,0,0 },\
+                { 0,-dt * dt / 2,0,   0,0,0 },\
+                { 0,0,-dt * dt / 2,   0,0,0 }\
+}
+
+
 //inline Point3d smooth(Point3d p_0, Point3d p_1, Point3d p_2, double k1 = 1.0, double k2 = 1.0, double dt = 1.0, double limit_1 = -1, double limit_2 = -1) {
 //    
 //};
@@ -68,6 +105,9 @@ void Test_model::generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence 
 Test_model::Test_model(string name, string dir_name) {
     this->name = name;
     this->dir_name = dir_name;
+    cout << "Test model:" << endl;
+    cout << this->name << endl;
+    cout << this->dir_name << endl;
 };
 
 void Test_model::generate_track_model() {
@@ -101,7 +141,7 @@ void Test_model::setCameraModel(Test_model_restrictions _gen_restrictions) {
     this->cam_range = Point2d(0.1, 100000000);
 };
 
-void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence) {
+void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _mode) {
 
     Trail_sequence res(
         _trail_sequence.start,
@@ -135,80 +175,196 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence) {
 
     Mat x = Mat(12, 1, CV_64F, prev_state_arr);
 
-    for (int i = 1; i < timestamps.size(); i++) {
-        //estimate x
+    switch(_mode) {
+    case 0:
+    {
+        // оценка и есть отклонение
 
-        Mat H = this->senseMat(
-            measurement_vector[i].get_point2d(), state_vector[i].get_s_pose(),
-            state_vector[i].get_cam_pose(), state_vector[i].get_orient()
-        );
+        Mat std_dev = load_csv_Mat(this->dir_name + "Mats/std_dev.csv", Point2i(6, 1));
 
-        double dt = timestamps[i] - timestamps[i - 1];
+        for (int i = 1; i < timestamps.size(); i++) {
+            //estimate x
 
-        double F_arr[12][12] = F_ARR(dt);
-        Mat F = Mat(12, 12, CV_64F, F_arr);
+            Mat H = this->senseMat(
+                measurement_vector[i].get_point2d(), state_vector[i].get_s_pose(),
+                state_vector[i].get_cam_pose(), state_vector[i].get_orient()
+            );
 
-        double B_arr[12][6] = B_ARR(dt);
-        Mat B = Mat(12, 6, CV_64F, B_arr);
+            double dt = timestamps[i] - timestamps[i - 1];
 
-        double std_dev_ax = 1;
-        double std_dev_ay = 1;
-        double std_dev_az = 1;
+            double F_arr[12][12] = F_ARR(dt);
+            Mat F = Mat(12, 12, CV_64F, F_arr);
 
-        double std_dev_wx = 1;
-        double std_dev_wy = 1;
-        double std_dev_wz = 1;
+            double B_arr[12][6] = B_ARR(dt);
+            Mat B = Mat(12, 6, CV_64F, B_arr);
 
-        std::random_device rd;
-        std::default_random_engine generator(rd());
-        std::normal_distribution<double> distribution_accel_x(0, std_dev_ax);
-        std::normal_distribution<double> distribution_accel_y(0, std_dev_ay);
-        std::normal_distribution<double> distribution_accel_z(0, std_dev_az);
+            double std_dev_ax = std_dev.at<double>(0, 0);
+            double std_dev_ay = std_dev.at<double>(1, 0);
+            double std_dev_az = std_dev.at<double>(2, 0);
 
-        std::normal_distribution<double> distribution_w_x(0, std_dev_wx);
-        std::normal_distribution<double> distribution_w_y(0, std_dev_wy);
-        std::normal_distribution<double> distribution_w_z(0, std_dev_wz);
+            double std_dev_wx = std_dev.at<double>(3, 0);
+            double std_dev_wy = std_dev.at<double>(4, 0);
+            double std_dev_wz = std_dev.at<double>(5, 0);
+
+            std::random_device rd;
+            std::default_random_engine generator(rd());
+            std::normal_distribution<double> distribution_accel_x(0, std_dev_ax);
+            std::normal_distribution<double> distribution_accel_y(0, std_dev_ay);
+            std::normal_distribution<double> distribution_accel_z(0, std_dev_az);
+
+            std::normal_distribution<double> distribution_w_x(0, std_dev_wx);
+            std::normal_distribution<double> distribution_w_y(0, std_dev_wy);
+            std::normal_distribution<double> distribution_w_z(0, std_dev_wz);
 
 
 
-        double U_arr[6][1] = {
-            {control_vector[i].get(0) + distribution_accel_x(generator)},
-            {control_vector[i].get(1) + distribution_accel_x(generator)},
-            {control_vector[i].get(2) + distribution_accel_x(generator)},
-            {control_vector[i].get(3) + distribution_w_x(generator)},
-            {control_vector[i].get(4) + distribution_w_y(generator)},
-            {control_vector[i].get(5) + distribution_w_z(generator)}
+            double U_arr[6][1] = {
+                {control_vector[i].get(0) + distribution_accel_x(generator)},
+                {control_vector[i].get(1) + distribution_accel_x(generator)},
+                {control_vector[i].get(2) + distribution_accel_x(generator)},
+                {control_vector[i].get(3) + distribution_w_x(generator)},
+                {control_vector[i].get(4) + distribution_w_y(generator)},
+                {control_vector[i].get(5) + distribution_w_z(generator)}
+            };
+
+            Mat U = Mat(6, 1, CV_64F, U_arr);
+
+            Mat x_next = F * x + B * U;
+            Mat P_est = F * P * F.t() + Q;
+            Mat H_t = H.t();
+
+            Mat tmp = (H * P_est * H.t() + R);
+
+            double tmp_arr[2][2] = {
+                {tmp.at<double>(0, 0), tmp.at<double>(0, 1)},
+                {tmp.at<double>(1, 0), tmp.at<double>(1, 1)}
+            };
+
+            Mat K = P_est * H.t() * tmp.inv();
+            Mat P_next = (Mat::eye(12, 12, CV_64F) - K * H) * P_est;
+
+            P = P_next.clone();
+            x = x_next.clone();
+
+            State_vector estimated_state;
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
+            estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
+            estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
+
+            double time = timestamps[i];
+
+            res.push_back(timestamps[i], estimated_state, measurement_vector[i], control_vector[i]);
         };
-
-        Mat U = Mat(6, 1, CV_64F, U_arr);
-
-        Mat x_next = F * x + B * U;
-        Mat P_est = F * P * F.t() + Q;
-        Mat H_t = H.t();
-
-        Mat tmp = (H * P_est * H.t() + R);
-
-        double tmp_arr[2][2] = {
-            {tmp.at<double>(0, 0), tmp.at<double>(0, 1)},
-            {tmp.at<double>(1, 0), tmp.at<double>(1, 1)}
-        };
-
-        Mat K = P_est * H.t() * tmp.inv();
-        Mat P_next = (Mat::eye(12, 12, CV_64F) - K * H) * P_est;
-
-        P = P_next.clone();
-        x = x_next.clone();
-
-        State_vector estimated_state;
-        estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
-        estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
-        estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
-        estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
-
-        double time = timestamps[i];
-
-        res.push_back(timestamps[i], estimated_state, measurement_vector[i], control_vector[i]);
     };
+        break;
+    case 1:
+    {
+        // нет оценки и есть отклонение
+
+        Mat std_dev = load_csv_Mat(this->dir_name + "Mats/std_dev.csv", Point2i(6, 1));
+
+        for (int i = 1; i < timestamps.size(); i++) {
+            //estimate x
+
+            double dt = timestamps[i] - timestamps[i - 1];
+
+            double F_arr[12][12] = F_ARR(dt);
+            Mat F = Mat(12, 12, CV_64F, F_arr);
+
+            double B_arr[12][6] = B_ARR(dt);
+            Mat B = Mat(12, 6, CV_64F, B_arr);
+
+            double std_dev_ax = std_dev.at<double>(0, 0);
+            double std_dev_ay = std_dev.at<double>(1, 0);
+            double std_dev_az = std_dev.at<double>(2, 0);
+
+            double std_dev_wx = std_dev.at<double>(3, 0);
+            double std_dev_wy = std_dev.at<double>(4, 0);
+            double std_dev_wz = std_dev.at<double>(5, 0);
+
+            std::random_device rd;
+            std::default_random_engine generator(rd());
+            std::normal_distribution<double> distribution_accel_x(0, std_dev_ax);
+            std::normal_distribution<double> distribution_accel_y(0, std_dev_ay);
+            std::normal_distribution<double> distribution_accel_z(0, std_dev_az);
+
+            std::normal_distribution<double> distribution_w_x(0, std_dev_wx);
+            std::normal_distribution<double> distribution_w_y(0, std_dev_wy);
+            std::normal_distribution<double> distribution_w_z(0, std_dev_wz);
+
+            double U_arr[6][1] = {
+                {control_vector[i].get(0) + distribution_accel_x(generator)},
+                {control_vector[i].get(1) + distribution_accel_x(generator)},
+                {control_vector[i].get(2) + distribution_accel_x(generator)},
+                {control_vector[i].get(3) + distribution_w_x(generator)},
+                {control_vector[i].get(4) + distribution_w_y(generator)},
+                {control_vector[i].get(5) + distribution_w_z(generator)}
+            };
+
+            Mat U = Mat(6, 1, CV_64F, U_arr);
+
+            Mat x_next = F * x + B * U;
+
+            x = x_next.clone();
+
+            State_vector estimated_state;
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
+            estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
+            estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
+
+            double time = timestamps[i];
+
+            res.push_back(timestamps[i], estimated_state, measurement_vector[i], control_vector[i]);
+        };
+    };
+        
+        break; 
+    case 2:
+    {
+        //  нет оценки и нет отклонение
+        for (int i = 1; i < timestamps.size(); i++) {
+            //estimate x
+
+            double dt = timestamps[i] - timestamps[i - 1];
+
+            double F_arr[12][12] = F_ARR(dt);
+            Mat F = Mat(12, 12, CV_64F, F_arr);
+
+            double B_arr[12][6] = B_ARR(dt);
+            Mat B = Mat(12, 6, CV_64F, B_arr);
+
+            double U_arr[6][1] = {
+                {control_vector[i].get(0)},
+                {control_vector[i].get(1)},
+                {control_vector[i].get(2)},
+                {control_vector[i].get(3)},
+                {control_vector[i].get(4)},
+                {control_vector[i].get(5)}
+            };
+
+            Mat U = Mat(6, 1, CV_64F, U_arr);
+
+            Mat x_next = F * x + B * U;
+
+            x = x_next.clone();
+
+            State_vector estimated_state;
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
+            estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
+            estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
+
+            double time = timestamps[i];
+
+            res.push_back(timestamps[i], estimated_state, measurement_vector[i], control_vector[i]);
+        };
+    };
+        break;
+    };
+
+   
 
 
     this->states_estimated.push_back(res);
@@ -329,7 +485,7 @@ void Test_model::print_camera_proections() {
     };
     cout << "print_camera_proections end" << endl;
 
-    string cmd_make_vid = "ffmpeg -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 " + this->dir_name + this->name + ".mp4";
+    string cmd_make_vid = "ffmpeg -framerate 30 -start_number 0 -y -i " + dir_frames + "%d.jpg -vcodec mpeg4 " + this->dir_name + this->name + ".mp4";
     
     system(cmd_make_vid.c_str());
     cout << "---<<< video generation ended >>>---" << endl;

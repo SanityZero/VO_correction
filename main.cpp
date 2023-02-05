@@ -46,26 +46,37 @@ int main(int argc, char** argv) {
     };
 
     if (TEST_MOTION) {
-        Test_model tm1("test1", "C:\\ProgStaff\\NIRS_models\\test1\\");
 
-        //tm1.read_restriction_file();
+        for (int i = 0; i < argc; i++) {
+            cout << "arg\t\t" << argv[i] << endl;
+        };
+
+        string model_dir1 = "C:\\ProgStaff\\NIRS_models\\test1\\";
+        string model_dir2 = "C:\\ProgStaff\\NIRS_models\\test2\\";
+        string model_dir3 = "C:\\ProgStaff\\NIRS_models\\test3\\";
+
+        string model_name1 = "test1";
+        string model_name2 = "test2";
+        string model_name3 = "test3";
+
+        //C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\OpenCV-Nirs.exe "C:\\ProgStaff\\NIRS_models\\test2" "test2"
+
+        if (argc == 3) {
+            model_name1 = argv[1];
+            model_dir1 = argv[2];
+        };
+        
+        Test_model tm1(model_name1, model_dir1);
+        //Test_model tm2(model_name2, model_dir2);
+        //Test_model tm3(model_name3, model_dir3);
 
 
-        vector<bool> options;
+        tm1.generate_test_model();
+        //tm2.generate_test_model();
+        //tm3.generate_test_model();
 
-        // настройки загрузки/сохранения
-        options.push_back(true); // track_model
-        options.push_back(true); // motion_model
-        options.push_back(false); // s_points
-        options.push_back(true); // bins_model
-
-
-        tm1.generate_test_model(options);
-        //tm1.print_states("C:/ProgStaff/NIRS_models/test1/states.txt");
-        //tm1.print_bins_gts("C:/ProgStaff/NIRS_models/test1/bins_gt_points.txt");
-        ////system("del /f /s /q C:\\ProgStaff\\test_generated_images");
-        tm1.print_camera_proections();
-        tm1.show_bins_gt();
+        //tm1.print_camera_proections();
+        //tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();
         //system("C:\\ProgStaff\\NIRS_precentation\\dist\\main.exe");

@@ -11,7 +11,7 @@ typedef cv::Point2d Point2d;
 typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
-void Test_model::generate_test_model(vector<bool> options, string gen_restr_filename) {
+void Test_model::generate_test_model(string gen_restr_filename) {
 
     std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
     if (gen_restr_filename != "") {
@@ -24,39 +24,34 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
     // сгенерировать трак в соответствии с ограничениями или загрузить его
     std::cout << "\n----<<<< track_model >>>>----" << std::endl;
-    if (options[0]) {
-        this->track_model.load_csv_track(this->dir_name + "track.csv");
-    }
-    else {
+    switch (this->gen_restrictions.int_data["save_load_track_model"]) {
+    case 0:
         this->track_model.generate_track(this->gen_restrictions);
         this->track_model.save_csv_track(this->dir_name + "track.csv");
+        break;
+    case 1:
+        this->track_model.load_csv_track(this->dir_name + "track.csv");
+        break;
     };
 
 
     // сгенерировать состояний в соответствии с ограничениями или загрузить их
     std::cout << "\n----<<<< motion_model >>>>----" << std::endl;
-    if (options[1]) {
-        this->motion_model.load_csv_states(this->dir_name + "states.csv");
-        this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
-        this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
-        this->motion_model.update_total_time();
-        this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
-        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
-    }
-    else {
+    switch (this->gen_restrictions.int_data["save_load_motion_model"]) {
+    case 0:
         this->motion_model.generate_states(this->track_model, this->gen_restrictions.double_data["dicret"]);
 
-        this->motion_model.smooth_anqular_vel(
-            this->gen_restrictions.double_data["T"],
+        this->motion_model.smooth_anqular_vel_states(
+            this->gen_restrictions.double_data["dicret"],
             this->gen_restrictions.double_data["U1"],
             this->gen_restrictions.double_data["U2"]
         );
 
-        this->motion_model.smooth_vel(
-            this->gen_restrictions.double_data["T"],
+        this->motion_model.smooth_vel_accel_states(
+            this->gen_restrictions.double_data["dicret"],
             this->gen_restrictions.double_data["U2"]
         );
-        
+
 
         this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.double_data["dicret"]);
         //this->motion_model.regenerate_gt_points();
@@ -71,28 +66,36 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         this->motion_model.save_csv_timestamps(this->dir_name + "timestamps.csv");
         this->motion_model.save_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
         this->motion_model.save_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+        break;
+    case 1:
+        this->motion_model.load_csv_states(this->dir_name + "states.csv");
+        this->motion_model.load_csv_gt_point(this->dir_name + "gt_point.csv");
+        this->motion_model.load_csv_timestamps(this->dir_name + "timestamps.csv");
+        this->motion_model.update_total_time();
+        this->motion_model.load_csv_eval_old_gt_point(this->dir_name + "eval_old_gt_point.csv");
+        this->motion_model.load_csv_old_gt_point(this->dir_name + "old_gt_point.csv");
+        break;
     };
+
 
 
     // расставить точки
     std::cout << "\n----<<<< s_points >>>>----" << std::endl;
-    if (options[2]) {
-        load_csv_s_points(this->dir_name + "s_points.csv");
-    }
-    else {
+    switch (this->gen_restrictions.int_data["save_load_s_points"]) {
+    case 0:
         generate_s_points(this->gen_restrictions.int_data["s_points_generation_mode"]);
         save_csv_s_points(this->dir_name + "s_points.csv");
+        break;
+    case 1:
+        load_csv_s_points(this->dir_name + "s_points.csv");
+        break;
     };
 
 
     // сгенерировать бинс данные по ограничениям, т.е. набор значений
     std::cout << "\n----<<<< bins_model >>>>----" << std::endl;
-    if (options[3]) {
-        this->bins_model.load_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
-        this->bins_model.load_csv_bins_measured_states(this->dir_name + "bins_measured_states.csv");
-        this->bins_model.load_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
-    }
-    else {
+    switch (this->gen_restrictions.int_data["save_load_bins_model"]) {
+    case 0:
         this->bins_model.generate_bins_gt_points(
             this->motion_model,
             this->gen_restrictions.double_data["T"]
@@ -104,7 +107,14 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
         this->bins_model.save_csv_bins_measured_states(this->dir_name + "bins_measured_states.csv");
         this->bins_model.save_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
         this->bins_model.save_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
+        break;
+    case 1:
+        this->bins_model.load_csv_bins_gt_points(this->dir_name + "bins_gt_points.csv");
+        this->bins_model.load_csv_bins_measured_states(this->dir_name + "bins_measured_states.csv");
+        this->bins_model.load_csv_bins_timestamps(this->dir_name + "bins_timestamps.csv");
+        break;
     };
+
 
     std::cout << "\n----<<<< camera_model >>>>----" << std::endl;
     setCameraModel(this->gen_restrictions);
@@ -116,8 +126,12 @@ void Test_model::generate_test_model(vector<bool> options, string gen_restr_file
 
     std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
     generate_trail_sequences();
-    Kalman_filter();
+    std::cout << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
+    Kalman_filter(this->gen_restrictions.int_data["kalman_mode"]);
     generate_err();
+
+    show_score();
+    save_scopes(this->dir_name + "scores.txt");
 
     save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
     save_csv_state_estimated(this->dir_name + "states_estimated\\");

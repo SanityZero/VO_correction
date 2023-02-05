@@ -238,6 +238,35 @@ Mat Test_model::load_csv_Mat(string filename, Point2i _size, string _sep) {
     return mat.clone();
 };
 
+void Test_model::save_csv_err(std::string _dir, std::string _sep) {
+    this->save_csv_time_err(_dir + "time_err.csv", _sep);
+    this->save_csv_pose_err(_dir + "pose_err\\", _sep);
+    this->save_csv_orient_err(_dir + "orient_err\\", _sep);
+};
+
+void Test_model::save_scopes(string filename) {
+    vector<string> csv_data;
+    cout << "save_scopes" << endl;
+    csv_data.push_back(to_string(this->score_pose));
+    csv_data.push_back(to_string(this->score_orient));
+
+    ofstream fout(filename);
+
+    for (string row : csv_data) {
+
+        size_t start_pos = 0;
+        string from = ".";
+        string to = ",";
+        while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+            row.replace(start_pos, from.length(), to);
+            start_pos += to.length();
+        }
+        fout << row << '\n';
+    };
+
+    fout.close();
+};
+
 void Test_model::save_csv_point_trails(string dirname, string sep) {
     cout << "save_csv_point_trails start" << endl;
     string dir_frames = this->dir_name + "trails\\";

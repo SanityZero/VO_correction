@@ -315,7 +315,7 @@ void Test_model::Test_motion_model::generate_timestamps(double delta_m, double v
 };
 
 
-void Test_model::Test_motion_model::smooth_anqular_vel(double T, double U1, double U2) {
+void Test_model::Test_motion_model::smooth_anqular_vel_states(double T, double U1, double U2) {
     vector<Point3d> res_orient_vec;
     vector<Point3d> res_ang_vel_vec;
     smooth_p2d();
@@ -330,7 +330,7 @@ void Test_model::Test_motion_model::smooth_anqular_vel(double T, double U1, doub
     //    res_ang_vel_vec_last.push_back(tmp);
     //};
 
-    int window2 = 100;
+    int window2 = 100/T;
     int n2 = res_ang_vel_vec.size() - 1;
     int hw2 = (window2 - 1) / 2;
     //vector<Point3d> res_ang_vel_vec_last;
@@ -364,7 +364,7 @@ void Test_model::Test_motion_model::smooth_anqular_vel(double T, double U1, doub
 };
 
 
-void Test_model::Test_motion_model::smooth_vel(double T, double U) {
+void Test_model::Test_motion_model::smooth_vel_accel_states(double T, double U) {
     vector<Point3d> res_vel_vec;
 
     for (State_type tmp_state : this->states) res_vel_vec.push_back(tmp_state.vel);
@@ -378,7 +378,7 @@ void Test_model::Test_motion_model::smooth_vel(double T, double U) {
     //};
 
 
-    int window = 30;
+    int window = 100/T;
     int n = res_vel_vec.size() - 1;
     if (fmod(window, 2) == 0) window++;
     int hw = (window - 1) / 2;
