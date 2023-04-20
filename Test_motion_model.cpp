@@ -10,6 +10,8 @@ using namespace std;
 
 #include "Types.h"
 #include "Tests.h"
+#include <omp.h>
+//#pragma omp
 
 
 void Test_model::Test_motion_model::update_total_time() {
@@ -275,6 +277,7 @@ void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_mo
 
     gt_point.push_back(pose1_tmp);
 
+//#pragma omp parallel num_threads(3)
     for (int i = 1; i < point_num; i++) {
         //Point2d pose_delta = track_model.part(i * delta_length) - track_model.part((i - 1) * delta_length);
 
@@ -409,17 +412,27 @@ void Test_model::Test_motion_model::smooth_vel_accel_states(double T, double U) 
     }
 
 
-
-    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_vel(res_vel_vec_last[i]);
-    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) this->states[i].change_accel(
-        Point3d(0, 0, 9.80665)
-        + (res_vel_vec_last[i] - res_vel_vec_last[i - 1]) / (this->timestamps[i] - this->timestamps[i - 1]));
+    for (int i = 1; i < res_vel_vec_last.size(); i++) this->states[i].change_vel(res_vel_vec_last[i]);
+    for (int i = 1; i < res_vel_vec_last.size() - 1; i++) {
+        double d_time = this->timestamps[i] - this->timestamps[i - 1];
+        Point3d d_vec = res_vel_vec_last[i] - res_vel_vec_last[i - 1];
+        Point3d g_force = Point3d(0, 0, 9.80665);
+        this->states[i].change_accel(g_force + d_vec / d_time);
+    };
 };
 
 
 void Test_model::Test_motion_model::regenerate_gt_points() {
     for (int i = 1; i < this->gt_point.size(); i++) {
         double deltatime = (this->timestamps[i] - this->timestamps[i - 1]);
+        //Point3d ori = this->gt_point[i - 1].getOrient();
+        //Point3d tmp = this->states[i].anqular_vel;
+        //if (this->states[i].anqular_vel.z != 0.0) {
+        //    tmp = tmp * deltatime;
+        //    tmp = ori + tmp;
+        //};
+        
+        
         this->gt_point[i].setPose(this->gt_point[i - 1].getPose() + this->states[i].vel * deltatime);
         this->gt_point[i].setOrient(this->gt_point[i - 1].getOrient() + this->states[i].anqular_vel * deltatime);
         this->gt_point[i].setAccel(states[i].accel);

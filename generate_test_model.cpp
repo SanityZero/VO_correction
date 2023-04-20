@@ -19,7 +19,7 @@ void Test_model::generate_test_model(string gen_restr_filename) {
     }
     else
     {
-        this->gen_restrictions.load_restriction_file(this->dir_name + "init.txt");
+        this->gen_restrictions.load_restriction_file(this->dir_name + "\\init.txt");
     }
 
     // сгенерировать трак в соответствии с ограничениями или загрузить его
@@ -39,24 +39,33 @@ void Test_model::generate_test_model(string gen_restr_filename) {
     std::cout << "\n----<<<< motion_model >>>>----" << std::endl;
     switch (this->gen_restrictions.int_data["save_load_motion_model"]) {
     case 0:
+        std::cout << "generate_states" << std::endl;
         this->motion_model.generate_states(this->track_model, this->gen_restrictions.double_data["dicret"]);
 
+        std::cout << "generate_timestamps" << std::endl;
+        this->motion_model.generate_timestamps(this->gen_restrictions.double_data["dicret"], this->gen_restrictions.double_data["average_vel"]);
+
+        std::cout << "generate_gt_points" << std::endl;
+        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.double_data["dicret"]);
+
+        std::cout << "smooth_anqular_vel_states" << std::endl;
         this->motion_model.smooth_anqular_vel_states(
             this->gen_restrictions.double_data["dicret"],
             this->gen_restrictions.double_data["U1"],
             this->gen_restrictions.double_data["U2"]
         );
 
+        std::cout << "smooth_vel_accel_states" << std::endl;
         this->motion_model.smooth_vel_accel_states(
             this->gen_restrictions.double_data["dicret"],
             this->gen_restrictions.double_data["U2"]
         );
 
 
-        this->motion_model.generate_gt_points(this->track_model, this->gen_restrictions.double_data["dicret"]);
-        //this->motion_model.regenerate_gt_points();
+        
+        this->motion_model.regenerate_gt_points();
 
-        this->motion_model.generate_timestamps(this->gen_restrictions.double_data["dicret"], this->gen_restrictions.double_data["average_vel"]);
+        
         for (int i = 0; i < this->motion_model.gt_point.size() - 1; i++)
             this->motion_model.old_gt_point.push_back(this->motion_model.gt_point[i]);
         this->motion_model.integrate_old_gt();
@@ -126,7 +135,7 @@ void Test_model::generate_test_model(string gen_restr_filename) {
 
     std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
     generate_trail_sequences();
-    std::cout << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
+    std::cout << "mode:\t" << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
     Kalman_filter(this->gen_restrictions.int_data["kalman_mode"]);
     generate_err();
 

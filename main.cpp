@@ -62,8 +62,8 @@ int main(int argc, char** argv) {
         //C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\OpenCV-Nirs.exe "C:\\ProgStaff\\NIRS_models\\test2" "test2"
 
         if (argc == 3) {
-            model_name1 = argv[1];
-            model_dir1 = argv[2];
+            model_name1 = argv[2];
+            model_dir1 = argv[1];
         };
         
         Test_model tm1(model_name1, model_dir1);
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
         //tm2.generate_test_model();
         //tm3.generate_test_model();
 
-        //tm1.print_camera_proections();
+        tm1.print_camera_proections();
         //tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();

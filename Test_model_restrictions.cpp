@@ -14,7 +14,6 @@ using namespace cv;
 void Test_model::Test_model_restrictions::load_restriction_file(string filename) {
     vector<int> int_data;
     vector<double> float_data;
-
     string separator = ":\t";
 
     fstream restr_file;
@@ -91,5 +90,6 @@ void Test_model::Test_model_restrictions::set(string _filename, vector<int> _int
     }
     else
         cout << "Test_model_restrictions initial arrays sizes dont match" << endl;
+        cout << _int_data.size() << " "<< _float_data.size() << endl;
 
 };

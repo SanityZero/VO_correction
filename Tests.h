@@ -222,6 +222,12 @@ private:
     void Kalman_filter(int _mode) {
         cout << "Kalman_filter start" << endl;
 
+        int computing_size = 0;
+        for (Trail_sequence trail_sequence : trail_sequences) {
+            computing_size += trail_sequence.timestamps.size();
+        };
+        cout << computing_size;
+        //_trail_sequence.timestamps
         for (Trail_sequence trail_sequence : trail_sequences) {
             this->trail_sequences_estimate(trail_sequence, _mode);
         };

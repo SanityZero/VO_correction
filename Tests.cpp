@@ -8,7 +8,7 @@
 #include <opencv2/imgproc.hpp>
 #include <random>
 #include <cmath>
-
+#include <omp.h>
 
 //using namespace cv;
 using namespace std;
@@ -626,6 +626,7 @@ void Test_model::generate_camera_proections(int mode = 1) {
         Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
         Point3d cam_orient = this->bins_model.bins_gt_points[i].getOrient();
 
+       // #pragma omp parallel num_threads(4)
         for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
             Point2i tmp = Point2i(this->frame_size.x, this->frame_size.y);
