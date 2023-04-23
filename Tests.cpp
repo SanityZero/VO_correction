@@ -428,11 +428,17 @@ Mat Test_model::senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, 
 
 
 void Test_model::generate_point_trails(int mode) {
+    cout << "generate_point_trails" << endl;
+
+    int computing_size = this->bins_model.bins_timestamps.size() * this->s_points.size();
+    int current_progress = 0;
+    //cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+
     for (int i_points = 0; i_points < this->s_points.size(); i_points++) {
 
         vector<Point2d> s_point_trail;
         s_point_trail.push_back(Point2d(i_points, 0));
-
+        cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
         for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
             //Mat ex_calib_m = cameraCSMat(this->bins_model.bins_gt_points[i].getOrient(), );
             Point3d cam_pose = this->bins_model.bins_gt_points[i].getPose();
@@ -451,10 +457,11 @@ void Test_model::generate_point_trails(int mode) {
             if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) tmp = Point2d(-999.0, -999.0);
             s_point_trail.push_back(tmp);
         };
-
+        current_progress += this->bins_model.bins_timestamps.size();
         this->point_trails.push_back(s_point_trail);
         s_point_trail.clear();
     };
+    cout << "\033[1K\r"
 };
 
 void Test_model::print_camera_proections() {
@@ -611,11 +618,15 @@ Point2d Test_model::point_proection_D(Point3d point_pose, Point3d camera_pose, P
 };
 
 void Test_model::generate_camera_proections(int mode = 1) {
-
+    cout << "generate_camera_proections" << endl;
+    int computing_size = this->bins_model.bins_timestamps.size() * this->s_points.size();
+    int current_progress = 0;
+    //cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
     for (int i = 0; i < this->bins_model.bins_timestamps.size() - 1; i++) {
         vector<Point2i> frame_points;
         //Mat ex_calib_m = generateExCalibM(i);
-
+        
+        cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
         //double Ex_calib_ar[4][4] = {
         //{ex_calib_m.at<double>(0, 0), ex_calib_m.at<double>(0, 1), ex_calib_m.at<double>(0, 2), ex_calib_m.at<double>(0, 3)},
         //{ex_calib_m.at<double>(1, 0), ex_calib_m.at<double>(1, 1), ex_calib_m.at<double>(1, 2), ex_calib_m.at<double>(1, 3)},
@@ -643,9 +654,12 @@ void Test_model::generate_camera_proections(int mode = 1) {
             if ((tmp.x == this->frame_size.x) && (tmp.y == this->frame_size.y)) continue;
             frame_points.push_back(tmp);
         };
+        current_progress += this->s_points.size();
         this->point_camera_proections.push_back(frame_points);
         frame_points.clear();
     };
+
+    cout << "\033[1K\r";
 };
 
 Mat Test_model::cameraCSMat(Point3d angles, Point3d _cam_pose) {

@@ -34,7 +34,7 @@ void Test_model::generate_test_model(string gen_restr_filename) {
         break;
     };
 
-
+    // cout << "asf" << "\033[1K\r" << "12" << "\033[1K\r" << to_string(12) + "%";
     // сгенерировать состояний в соответствии с ограничениями или загрузить их
     std::cout << "\n----<<<< motion_model >>>>----" << std::endl;
     switch (this->gen_restrictions.int_data["save_load_motion_model"]) {

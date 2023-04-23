@@ -268,12 +268,22 @@ void Test_model::save_scopes(string filename) {
 };
 
 void Test_model::save_csv_point_trails(string dirname, string sep) {
-    cout << "save_csv_point_trails start" << endl;
+    cout << "save_csv_point_trails" << endl;
+
+    int computing_size = 0;
+    for (vector<Point2d> trail : this->point_trails) {
+        computing_size += trail.size();
+    };
+
+    int current_progress = 0;
+    //cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+
     string dir_frames = this->dir_name + "trails\\";
     string cmd_clear_image_dir = "del /f /q " + dir_frames;
     system(cmd_clear_image_dir.c_str());
 
     for (vector<Point2d> trail : this->point_trails) {
+        cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
         vector<string> csv_data;
         for (int i = 1; i < trail.size(); i++) {
             csv_data.push_back(to_string(double(trail[i].x)) + sep + to_string(double(trail[i].y)));
@@ -296,9 +306,9 @@ void Test_model::save_csv_point_trails(string dirname, string sep) {
         };
 
         fout.close();
+        current_progress += trail.size();
     };
-    cout << "save_csv_point_trails start" << endl;
-
+    cout << "\033[1K\r"
 };
 
 void Test_model::load_csv_s_points(string filename, string sep) {

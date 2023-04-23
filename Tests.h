@@ -223,16 +223,20 @@ private:
         cout << "Kalman_filter start" << endl;
 
         int computing_size = 0;
+        int current_progress = 0;
         for (Trail_sequence trail_sequence : trail_sequences) {
             computing_size += trail_sequence.timestamps.size();
         };
-        cout << computing_size;
+        cout << "0%";
         //_trail_sequence.timestamps
+        //cout << "asf" << "\033[1K\r" << "12" << "\033[1K\r" << to_string(12) + "%";
         for (Trail_sequence trail_sequence : trail_sequences) {
+            current_progress += trail_sequence.timestamps.size();
+            cout << "\033[1K\r" << to_string(100 * (double)current_progress/ (double)computing_size) + "%";
             this->trail_sequences_estimate(trail_sequence, _mode);
         };
 
-        cout << "Kalman_filter end" << endl;
+        cout << "\033[1K\r";
     };
 
     void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
