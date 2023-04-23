@@ -461,7 +461,7 @@ void Test_model::generate_point_trails(int mode) {
         this->point_trails.push_back(s_point_trail);
         s_point_trail.clear();
     };
-    cout << "\033[1K\r"
+    cout << "\033[1K\r";
 };
 
 void Test_model::print_camera_proections() {

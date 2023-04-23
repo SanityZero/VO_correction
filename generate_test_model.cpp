@@ -13,6 +13,7 @@ typedef cv::Point2i Point2i;
 
 void Test_model::generate_test_model(string gen_restr_filename) {
 
+
     std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
     if (gen_restr_filename != "") {
         this->gen_restrictions.load_restriction_file(gen_restr_filename);
@@ -127,22 +128,27 @@ void Test_model::generate_test_model(string gen_restr_filename) {
 
     std::cout << "\n----<<<< camera_model >>>>----" << std::endl;
     setCameraModel(this->gen_restrictions);
-    generate_camera_proections(this->gen_restrictions.int_data["camera_proection_mode"]);
-    generate_point_trails(this->gen_restrictions.int_data["camera_proection_mode"]);
+    load_csv_camera_proections(this->dir_name + "proections\\");
+    load_csv_point_trails(this->dir_name + "trails\\");
+    //generate_camera_proections(this->gen_restrictions.int_data["camera_proection_mode"]);
+    //generate_point_trails(this->gen_restrictions.int_data["camera_proection_mode"]);
 
     save_csv_point_trails(this->dir_name);
+    save_csv_camera_proections((this->dir_name));
 
 
     std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
     generate_trail_sequences();
-    std::cout << "mode:\t" << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
+    save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+
+    std::cout << "Kalman mode:\t" << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
     Kalman_filter(this->gen_restrictions.int_data["kalman_mode"]);
     generate_err();
 
     show_score();
     save_scopes(this->dir_name + "scores.txt");
 
-    save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+    
     save_csv_state_estimated(this->dir_name + "states_estimated\\");
     save_csv_err(this->dir_name + "errors\\");
 };

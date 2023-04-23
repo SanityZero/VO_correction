@@ -167,6 +167,26 @@ Point2d Test_model::read_csv_Point2d(string _string, string _sep) {
     return Point2d(double_buffer[0], double_buffer[1]);
 };
 
+Point2i Test_model::read_csv_Point2i(string _string, string _sep) {
+    size_t pos = 0;
+    string line(_string);
+
+    std::vector<std::string> values;
+    while ((pos = line.find(_sep)) != std::string::npos) {
+        values.push_back(line.substr(0, pos));
+        //std::cout << values << std::endl;
+        line.erase(0, pos + _sep.length());
+    };
+    values.push_back(line);
+    std::vector<int> int_buffer;
+    for (std::string item : values) {
+        //item.replace(item.find(","), 1, ".");
+        int_buffer.push_back(std::stoi(item));
+        //cout << "_" << stod(item) << "_" << endl;
+    };
+    return Point2d(int_buffer[0], int_buffer[1]);
+};
+
 string Test_model::get_csv_Point3d(Point3d _point, string _sep) {
     string result = to_string(_point.x) + _sep + to_string(_point.y) + _sep + to_string(_point.z);
     return result;
@@ -267,6 +287,56 @@ void Test_model::save_scopes(string filename) {
     fout.close();
 };
 
+void Test_model::save_csv_camera_proections(string dirname, string sep) {
+    cout << "save_csv_camera_proections" << endl;
+
+    int computing_size = 0;
+    for (vector<Point2i> frame : this->point_camera_proections) {
+        computing_size += frame.size();
+    };
+
+    int current_progress = 0;
+    //cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+
+    string dir_frames = this->dir_name + "proections\\";
+    string dir_create = "mkdir " + dir_frames;
+    system(dir_create.c_str());
+
+    string cmd_clear_image_dir = "del /f /q " + dir_frames;
+    system(cmd_clear_image_dir.c_str());
+    int frame_num = 0;
+
+    for (vector<Point2i> frame : this->point_camera_proections) {
+        cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+        vector<string> csv_data;
+        for (int i = 1; i < frame.size(); i++) {
+            csv_data.push_back(to_string(int(frame[i].x)) + sep + to_string(int(frame[i].y)));
+        };
+
+        string filename = dirname + "proections\\" + to_string(frame_num++) + ".csv";
+        //cout << filename << endl;
+        ofstream fout(filename);
+        fout << "x" + sep + "y" << '\n';
+
+        for (string row : csv_data) {
+            size_t start_pos = 0;
+            string from = ".";
+            string to = ",";
+            while ((start_pos = row.find(from, start_pos)) != std::string::npos) {
+                row.replace(start_pos, from.length(), to);
+                start_pos += to.length();
+            }
+            fout << row << '\n';
+        };
+
+        fout.close();
+        current_progress += frame.size();
+    };
+    cout << "\033[1K\r";
+
+
+};
+
 void Test_model::save_csv_point_trails(string dirname, string sep) {
     cout << "save_csv_point_trails" << endl;
 
@@ -308,7 +378,7 @@ void Test_model::save_csv_point_trails(string dirname, string sep) {
         fout.close();
         current_progress += trail.size();
     };
-    cout << "\033[1K\r"
+    cout << "\033[1K\r";
 };
 
 void Test_model::load_csv_s_points(string filename, string sep) {

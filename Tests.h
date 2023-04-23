@@ -26,6 +26,7 @@ private:
 
     Point3d read_csv_Point3d(string _string, string _sep = ";");
     Point2d read_csv_Point2d(string _string, string _sep = ";");
+    Point2i read_csv_Point2i(string _string, string _sep = ";");
     Mat load_csv_Mat(string filename, Point2i _size, string _sep = ";");
 
     //ограничения генерации
@@ -111,6 +112,7 @@ private:
     void generate_s_points(int mode);
     void save_csv_s_points(string filename, string sep = ";");
     void load_csv_s_points(string filename, string sep = ";");
+    
 
     Mat cameraCSMat(Point3d angles, Point3d _cam_pose);
     Mat generateTransitionM(int i);
@@ -130,6 +132,83 @@ private:
 
     void generate_camera_proections(int mode);
     void generate_point_trails(int mode);
+
+    void _load_csv_camera_proections_file(string filename, string sep = ";") {
+        ifstream fin(filename);
+        char buffer[255];
+        vector<Point2i> frame_points;
+        fin.getline(buffer, 255);
+
+        vector<string> line_buffer;
+        while (fin.getline(buffer, 255)) {
+            line_buffer.push_back(buffer);
+            string line(buffer);
+
+            Point2i tmp = read_csv_Point2i(line, sep);
+            frame_points.push_back(tmp);
+        };
+        fin.close();
+        this->point_camera_proections.push_back(frame_points);
+    };
+
+    void load_csv_camera_proections(string dirname, string sep = ";"){
+        cout << "load_csv_camera_proections" << endl;
+        
+        //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+        int i = 0;
+        for (;;i++) {
+            string filename = dirname + to_string(i) + ".csv";
+            ifstream fin(filename);
+            if (fin.fail()) {
+                //cout << filename << "\tfile dont exist" << endl;
+                break;
+            }
+            else {
+                this->_load_csv_camera_proections_file(filename, sep);
+            }
+            fin.close();
+        };
+    };
+
+    void _load_csv_point_trail(string filename, int s_point_id, string sep = ";") {
+        ifstream fin(filename);
+        char buffer[255];
+        vector<Point2d> trail_points;
+        fin.getline(buffer, 255);
+        trail_points.push_back(Point2d(s_point_id, 0));
+
+        vector<string> line_buffer;
+        while (fin.getline(buffer, 255)) {
+            line_buffer.push_back(buffer);
+            string line(buffer);
+
+            Point2d tmp = read_csv_Point2d(line, sep);
+            trail_points.push_back(tmp);
+        };
+        fin.close();
+        this->point_trails.push_back(trail_points);
+    };
+
+    void load_csv_point_trails(string dirname, string sep = ";") {
+        cout << "load_csv_point_trails" << endl;
+
+        //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+        int i = 0;
+        for (;; i++) {
+            string filename = dirname + to_string(i) + ".csv";
+            ifstream fin(filename);
+            if (fin.fail()) {
+                //cout << filename << "\tfile dont exist" << endl;
+                break;
+            }
+            else {
+                this->_load_csv_point_trail(filename, i, sep);
+            }
+            fin.close();
+        };
+    };
+
+    void save_csv_camera_proections(string dirname, string sep = ";");
     void save_csv_point_trails(string dirname, string sep = ";");
 
     //модель БИНС
@@ -220,7 +299,7 @@ private:
     void trail_sequences_estimate(Trail_sequence _trail_sequence, int _mode=0);
 
     void Kalman_filter(int _mode) {
-        cout << "Kalman_filter start" << endl;
+        cout << "Kalman_filter" << endl;
 
         int computing_size = 0;
         int current_progress = 0;
@@ -239,9 +318,48 @@ private:
         cout << "\033[1K\r";
     };
 
-    void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
+    
     void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
+    void _load_csv_trail_sequences(string filename, string sep = ";") {
+        //ifstream fin(filename);
+        //char buffer[255];
+        //vector<Point2d> trail_points;
+        //fin.getline(buffer, 255);
+        //trail_points.push_back(Point2d(s_point_id, 0));
+
+        //vector<string> line_buffer;
+        //while (fin.getline(buffer, 255)) {
+        //    line_buffer.push_back(buffer);
+        //    string line(buffer);
+
+        //    Point2d tmp = read_csv_Point2d(line, sep);
+        //    trail_points.push_back(tmp);
+        //};
+        //fin.close();
+        //this->point_trails.push_back(trail_points);
+    };
+
+    void load_csv_trail_sequences(string dirname, string sep = ";") {
+        //cout << "load_csv_point_trails" << endl;
+
+        ////string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+        //int i = 0;
+        //for (;; i++) {
+        //    string filename = dirname + to_string(i) + ".csv";
+        //    ifstream fin(filename);
+        //    if (fin.fail()) {
+        //        //cout << filename << "\tfile dont exist" << endl;
+        //        break;
+        //    }
+        //    else {
+        //        this->_load_csv_point_trail(filename, i, sep);
+        //    }
+        //    fin.close();
+        //};
+    };
+
+    void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
     void save_csv_vector_Point3d(vector<Point3d> _vec, string _filename,  int _start, int _end, std::string _sep = ";");
 
 public:
