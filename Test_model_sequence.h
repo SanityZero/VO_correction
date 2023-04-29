@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 class State_vector {
 public:
 	Point3d cam_pose;
@@ -12,162 +13,66 @@ public:
 	State_vector() {};
 	State_vector(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose) : cam_pose(_cam_pose), orient(_orient), cam_vel(_cam_vel), s_pose(_s_pose){};
 
-	void set(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose) {
-		this->cam_pose = _cam_pose;
-		this->orient = _orient;
-		this->cam_vel = _cam_vel;
-		this->s_pose = _s_pose;
-	};
+	void set(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose);
+	void set_cam_pose(Point3d _cam_pose);
+	void set_orient(Point3d _orient);
+	void set_cam_vel(Point3d _cam_vel);
+	void set_s_pose(Point3d _s_pose);
 
-	void set_cam_pose(Point3d _cam_pose) {
-		this->cam_pose = _cam_pose;
-	};
+	Point3d get_cam_pose();
+	Point3d get_orient();
+	Point3d get_cam_vel();
+	Point3d get_s_pose();
 
-	void set_orient(Point3d _orient) {
-		this->orient = _orient;
-	};
+	double get(int _number);
+	string get_csv_line(std::string _sep = ";");
 
-	void set_cam_vel(Point3d _cam_vel) {
-		this->cam_vel = _cam_vel;
-	};
-
-	void set_s_pose(Point3d _s_pose) {
-		this->s_pose = _s_pose;
-	};
-
-	Point3d get_cam_pose() {
-		return this->cam_pose;
-	};
-
-	Point3d get_orient() {
-		return this->orient;
-	};
-
-	Point3d get_cam_vel() {
-		return this->cam_vel;
-	};
-
-	Point3d get_s_pose() {
-		return this->s_pose;
-	};
-
-	double get(int _number) {
-		switch (_number) {
-		case 0:	return this->cam_pose.x;
-		case 1: return this->cam_pose.y;
-		case 2:	return this->cam_pose.z;
-
-		case 3:	return this->orient.x;
-		case 4:	return this->orient.y;
-		case 5:	return this->orient.z;
-
-		case 6:	return this->cam_vel.x;
-		case 7:	return this->cam_vel.y;
-		case 8:	return this->cam_vel.z;
-
-		case 9:	return this->s_pose.x;
-		case 10:	return this->s_pose.y;
-		case 11:	return this->s_pose.z;
-		};
-	};
-
-	string get_csv_line(std::string _sep = ";") {
-		std::string result = std::to_string(this->get(0)) + _sep;
-		result += std::to_string(this->get(1)) + _sep;
-		result += std::to_string(this->get(2)) + _sep;
-		result += std::to_string(this->get(3)) + _sep;
-		result += std::to_string(this->get(4)) + _sep;
-		result += std::to_string(this->get(5)) + _sep;
-		result += std::to_string(this->get(6)) + _sep;
-		result += std::to_string(this->get(7)) + _sep;
-		result += std::to_string(this->get(8)) + _sep;
-		result += std::to_string(this->get(9)) + _sep;
-		result += std::to_string(this->get(10)) + _sep;
-		result += std::to_string(this->get(11));
-		return result;
+	void set_from_vector(vector<double> csv_data) {
+		this->set_cam_pose(Point3d(csv_data[0], csv_data[1], csv_data[2]));
+		this->set_orient(Point3d(csv_data[3], csv_data[4], csv_data[5]));
+		this->set_cam_vel(Point3d(csv_data[6], csv_data[7], csv_data[8]));
+		this->set_s_pose(Point3d(csv_data[9], csv_data[10], csv_data[11]));
 	};
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 class Measurement_vector {
 public:
-
 	Point2d proection;
 
 	Measurement_vector() {};
-	Measurement_vector(Point2d _poect) {
-		this->proection = _poect;
-	};
+	Measurement_vector(Point2d _poect);
 
-	double get(int _number) {
-		switch(_number){
-			case 0:
-				return this->proection.x;
-			case 1:
-				return this->proection.y;
-		};
-	};
+	double get(int _number);
+	string get_csv_line(std::string _sep = ";");
+	Point2d get_point2d();
 
-	string get_csv_line(std::string _sep = ";") {
-		std::string result = std::to_string(this->get(0)) + _sep;
-		result += std::to_string(this->get(1));
-		return result;
-	};
-
-	Point2d get_point2d() {
-		return this->proection;
-	};
-
-	void set(Point2d _poect) {
-		this->proection = _poect;
+	void set(Point2d _poect);
+	void set_from_vector(vector<double> csv_data) {
+		this->set(Point2d(csv_data[0], csv_data[1]));
 	};
 };
 
 class Control_vector {
 public:
-
 	Point3d accel;
 	Point3d w;
 
 	Control_vector() {};
 	Control_vector(Point3d _accel, Point3d _w) : accel(_accel), w(_w) {};
 
-	double get(int _number) {
-		switch (_number) {
-		case 0:
-			return this->accel.x;
-		case 1:
-			return this->accel.y;
-		case 2:
-			return this->accel.z;
+	double get(int _number);
+	string get_csv_line(std::string _sep = ";");
+	void set_accel(Point3d _accel);
+	void set_w(Point3d _w);
 
-		case 3:
-			return this->w.x;
-		case 4:
-			return this->w.y;
-		case 5:
-			return this->w.z;
-		};
-	};
-
-	string get_csv_line(std::string _sep = ";") {
-		std::string result = std::to_string(this->get(0)) + _sep;
-		result += std::to_string(this->get(1)) + _sep;
-		result += std::to_string(this->get(2)) + _sep;
-		result += std::to_string(this->get(3)) + _sep;
-		result += std::to_string(this->get(4)) + _sep;
-		result += std::to_string(this->get(5));
-		return result;
-	};
-
-	void set_accel(Point3d _accel) {
-		this->accel = _accel;
-	};
-
-	void set_w(Point3d _w) {
-		this->w = _w;
+	void set_from_vector(vector<double> csv_data) {
+		this->set_accel(Point3d(csv_data[0], csv_data[1], csv_data[2]));
+		this->set_w(Point3d(csv_data[3], csv_data[4], csv_data[5]));
 	};
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 class Trail_sequence {
 public:
 
@@ -215,6 +120,14 @@ public:
 		result += this->model_measurement_vector[_number].get_csv_line() + _sep;
 		result += this->model_control_vector[_number].get_csv_line();
 		return result;
+	};
+
+	void set_csv_line(std::string line, std::string _sep = ";") {
+		//std::string result = std::to_string(this->timestamps[_number]) + _sep;
+		//result += this->model_state_vector[_number].get_csv_line() + _sep;
+		//result += this->model_measurement_vector[_number].get_csv_line() + _sep;
+		//result += this->model_control_vector[_number].get_csv_line();
+		//return result;
 	};
 
 	std::vector<Point3d> get_pose_vec() {

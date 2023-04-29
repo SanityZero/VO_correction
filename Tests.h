@@ -321,11 +321,20 @@ private:
     
     void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
-    void _load_csv_trail_sequences(string filename, string sep = ";") {
-        //ifstream fin(filename);
-        //char buffer[255];
+    void _load_csv_trail_sequence(string filename, string sep = ";") {\
+    //    int start;
+    //int end;
+
+    //vector<double> timestamps;
+    //vector<State_vector> model_state_vector;
+    //vector<Measurement_vector> model_measurement_vector;
+    //vector<Control_vector> model_control_vector;
+        //Trail_sequence
+        ifstream fin(filename);
+        char buffer[255];
         //vector<Point2d> trail_points;
-        //fin.getline(buffer, 255);
+        fin.getline(buffer, 255);
+        Trail_sequence new_ts = Trail_sequence();
         //trail_points.push_back(Point2d(s_point_id, 0));
 
         //vector<string> line_buffer;
