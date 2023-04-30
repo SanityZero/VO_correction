@@ -66,6 +66,9 @@ int main(int argc, char** argv) {
             model_dir1 = argv[1];
         };
         
+        Trail_sequence test;
+        test.read_csv("C:\\ProgStaff\\NIRS_models\\test1\\trail_sequences\\1.csv");
+
         Test_model tm1(model_name1, model_dir1);
         //Test_model tm2(model_name2, model_dir2);
         //Test_model tm3(model_name3, model_dir3);
@@ -126,6 +129,7 @@ int main(int argc, char** argv) {
         cout << "-------------<<<" << sources[num_sources] << ">>>-------------" << endl;
         cout << endl;
         int i_main = 0;
+
 
         Data_seq ds(sources[num_sources] + "oxts/", calib_files[num_sources]);
 

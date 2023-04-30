@@ -45,7 +45,7 @@ public:
 
 	Measurement_vector() {};
 	Measurement_vector(vector<double> csv_data) {
-		this->set_from_vector(csv_data)
+		this->set_from_vector(csv_data);
 	};
 	Measurement_vector(Point2d _poect);
 
@@ -66,7 +66,7 @@ public:
 
 	Control_vector() {};
 	Control_vector(vector<double> csv_data){
-		this->set_from_vector(csv_data)
+		this->set_from_vector(csv_data);
 	};
 	Control_vector(Point3d _accel, Point3d _w) : accel(_accel), w(_w) {};
 
@@ -133,11 +133,22 @@ public:
 
 	void read_csv_line(std::string line, std::string _sep = ";") {
 		vector<double> values;
+
+		size_t start_pos = 0;
+		std::string from = ",";
+		std::string to = ".";
+		while ((start_pos = line.find(from, start_pos)) != std::string::npos) {
+			line.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
+
+		int pos;
     	while ((pos = line.find(_sep)) != std::string::npos) {
-        	values.push_back(line.substr(0, pos));
+        	values.push_back(std::stod(line.substr(0, pos)));
         	//std::cout << values << std::endl;
         	line.erase(0, pos + _sep.length());
     	};
+		values.push_back(std::stod(line.substr(0, pos)));
 
 		vector<double> state_init_vec;
 		vector<double> measurement_init_vec;
@@ -146,16 +157,29 @@ public:
 		for (int i = 0; i < 12; i++)
 			state_init_vec.push_back(values[i + 1]);
 
-		for (int i = 13; i < 15; i++)
+		for (int i = 12; i < 14; i++)
 			measurement_init_vec.push_back(values[i + 1]);
 
-		for (int i = 15; i < 21; i++)
+		for (int i = 14; i < 20; i++)
 			control_init_vec.push_back(values[i + 1]);
 
-		this->timestamps.push_back(values[0])
+		this->timestamps.push_back(values[0]);
 		this->model_state_vector.push_back(State_vector(state_init_vec));
 		this->model_measurement_vector.push_back(Measurement_vector(measurement_init_vec));
-		this->model_control_vector.push_back(Control_vector(control_init_vec))
+		this->model_control_vector.push_back(Control_vector(control_init_vec));
+	};
+
+	void read_csv(std::string filename, std::string _sep = ";") {
+		ifstream fin(filename);
+		char buffer[255];
+		fin.getline(buffer, 255);
+
+		while (fin.getline(buffer, 255)) {
+			string line(buffer);
+
+			this->read_csv_line(line, _sep);
+		};
+		fin.close();
 	};
 
 	std::vector<Point3d> get_pose_vec() {
