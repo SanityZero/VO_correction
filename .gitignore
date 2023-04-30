@@ -4,6 +4,7 @@ x64/Debug/*
 Debug/*
 *vcxproj*
 *.db
+*.json
 *.tlog
 *.log
 *.pdb

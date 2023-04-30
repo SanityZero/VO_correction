@@ -11,6 +11,9 @@ public:
 	Point3d s_pose;
 
 	State_vector() {};
+	State_vector(vector<double> csv_data){
+		this-> set_from_vector(csv_data);
+	};
 	State_vector(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose) : cam_pose(_cam_pose), orient(_orient), cam_vel(_cam_vel), s_pose(_s_pose){};
 
 	void set(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose);
@@ -41,6 +44,9 @@ public:
 	Point2d proection;
 
 	Measurement_vector() {};
+	Measurement_vector(vector<double> csv_data) {
+		this->set_from_vector(csv_data)
+	};
 	Measurement_vector(Point2d _poect);
 
 	double get(int _number);
@@ -59,6 +65,9 @@ public:
 	Point3d w;
 
 	Control_vector() {};
+	Control_vector(vector<double> csv_data){
+		this->set_from_vector(csv_data)
+	};
 	Control_vector(Point3d _accel, Point3d _w) : accel(_accel), w(_w) {};
 
 	double get(int _number);
@@ -122,12 +131,31 @@ public:
 		return result;
 	};
 
-	void set_csv_line(std::string line, std::string _sep = ";") {
-		//std::string result = std::to_string(this->timestamps[_number]) + _sep;
-		//result += this->model_state_vector[_number].get_csv_line() + _sep;
-		//result += this->model_measurement_vector[_number].get_csv_line() + _sep;
-		//result += this->model_control_vector[_number].get_csv_line();
-		//return result;
+	void read_csv_line(std::string line, std::string _sep = ";") {
+		vector<double> values;
+    	while ((pos = line.find(_sep)) != std::string::npos) {
+        	values.push_back(line.substr(0, pos));
+        	//std::cout << values << std::endl;
+        	line.erase(0, pos + _sep.length());
+    	};
+
+		vector<double> state_init_vec;
+		vector<double> measurement_init_vec;
+		vector<double> control_init_vec;
+
+		for (int i = 0; i < 12; i++)
+			state_init_vec.push_back(values[i + 1]);
+
+		for (int i = 13; i < 15; i++)
+			measurement_init_vec.push_back(values[i + 1]);
+
+		for (int i = 15; i < 21; i++)
+			control_init_vec.push_back(values[i + 1]);
+
+		this->timestamps.push_back(values[0])
+		this->model_state_vector.push_back(State_vector(state_init_vec));
+		this->model_measurement_vector.push_back(Measurement_vector(measurement_init_vec));
+		this->model_control_vector.push_back(Control_vector(control_init_vec))
 	};
 
 	std::vector<Point3d> get_pose_vec() {
