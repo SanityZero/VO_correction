@@ -19,6 +19,82 @@ typedef cv::Point2d Point2d;
 typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
+void Test_model::_load_csv_camera_proections_file(string filename, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    vector<Point2i> frame_points;
+    fin.getline(buffer, 255);
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        string line(buffer);
+
+        Point2i tmp = read_csv_Point2i(line, sep);
+        frame_points.push_back(tmp);
+    };
+    fin.close();
+    this->point_camera_proections.push_back(frame_points);
+};
+
+void Test_model::load_csv_camera_proections(string dirname, string sep) {
+    cout << "load_csv_camera_proections" << endl;
+
+    //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+    int i = 0;
+    for (;; i++) {
+        string filename = dirname + to_string(i) + ".csv";
+        ifstream fin(filename);
+        if (fin.fail()) {
+            //cout << filename << "\tfile dont exist" << endl;
+            break;
+        }
+        else {
+            this->_load_csv_camera_proections_file(filename, sep);
+        }
+        fin.close();
+    };
+};
+
+void Test_model::_load_csv_point_trail(string filename, int s_point_id, string sep) {
+    ifstream fin(filename);
+    char buffer[255];
+    vector<Point2d> trail_points;
+    fin.getline(buffer, 255);
+    trail_points.push_back(Point2d(s_point_id, 0));
+
+    vector<string> line_buffer;
+    while (fin.getline(buffer, 255)) {
+        line_buffer.push_back(buffer);
+        string line(buffer);
+
+        Point2d tmp = read_csv_Point2d(line, sep);
+        trail_points.push_back(tmp);
+    };
+    fin.close();
+    this->point_trails.push_back(trail_points);
+};
+
+void Test_model::load_csv_point_trails(string dirname, string sep) {
+    cout << "load_csv_point_trails" << endl;
+
+    //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+    int i = 0;
+    for (;; i++) {
+        string filename = dirname + to_string(i) + ".csv";
+        ifstream fin(filename);
+        if (fin.fail()) {
+            //cout << filename << "\tfile dont exist" << endl;
+            break;
+        }
+        else {
+            this->_load_csv_point_trail(filename, i, sep);
+        }
+        fin.close();
+    };
+};
+
+
 void Test_model::save_csv_time_err(std::string _filename, std::string _sep) {
     std::vector<std::string> csv_data;
     for (Point2i err_time : err_times) {

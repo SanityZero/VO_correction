@@ -133,80 +133,10 @@ private:
     void generate_camera_proections(int mode);
     void generate_point_trails(int mode);
 
-    void _load_csv_camera_proections_file(string filename, string sep = ";") {
-        ifstream fin(filename);
-        char buffer[255];
-        vector<Point2i> frame_points;
-        fin.getline(buffer, 255);
-
-        vector<string> line_buffer;
-        while (fin.getline(buffer, 255)) {
-            line_buffer.push_back(buffer);
-            string line(buffer);
-
-            Point2i tmp = read_csv_Point2i(line, sep);
-            frame_points.push_back(tmp);
-        };
-        fin.close();
-        this->point_camera_proections.push_back(frame_points);
-    };
-
-    void load_csv_camera_proections(string dirname, string sep = ";"){
-        cout << "load_csv_camera_proections" << endl;
-        
-        //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
-        int i = 0;
-        for (;;i++) {
-            string filename = dirname + to_string(i) + ".csv";
-            ifstream fin(filename);
-            if (fin.fail()) {
-                //cout << filename << "\tfile dont exist" << endl;
-                break;
-            }
-            else {
-                this->_load_csv_camera_proections_file(filename, sep);
-            }
-            fin.close();
-        };
-    };
-
-    void _load_csv_point_trail(string filename, int s_point_id, string sep = ";") {
-        ifstream fin(filename);
-        char buffer[255];
-        vector<Point2d> trail_points;
-        fin.getline(buffer, 255);
-        trail_points.push_back(Point2d(s_point_id, 0));
-
-        vector<string> line_buffer;
-        while (fin.getline(buffer, 255)) {
-            line_buffer.push_back(buffer);
-            string line(buffer);
-
-            Point2d tmp = read_csv_Point2d(line, sep);
-            trail_points.push_back(tmp);
-        };
-        fin.close();
-        this->point_trails.push_back(trail_points);
-    };
-
-    void load_csv_point_trails(string dirname, string sep = ";") {
-        cout << "load_csv_point_trails" << endl;
-
-        //string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
-        int i = 0;
-        for (;; i++) {
-            string filename = dirname + to_string(i) + ".csv";
-            ifstream fin(filename);
-            if (fin.fail()) {
-                //cout << filename << "\tfile dont exist" << endl;
-                break;
-            }
-            else {
-                this->_load_csv_point_trail(filename, i, sep);
-            }
-            fin.close();
-        };
-    };
+    void _load_csv_camera_proections_file(string filename, string sep = ";");
+    void load_csv_camera_proections(string dirname, string sep = ";");
+    void _load_csv_point_trail(string filename, int s_point_id, string sep = ";");
+    void load_csv_point_trails(string dirname, string sep = ";");
 
     void save_csv_camera_proections(string dirname, string sep = ";");
     void save_csv_point_trails(string dirname, string sep = ";");
@@ -252,43 +182,7 @@ private:
     void generate_pose_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
     void generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
 
-    void generate_err() {
-        for (int i = 0; i < trail_sequences.size(); i++) {
-            Trail_sequence gt = this->trail_sequences[i];
-            Trail_sequence est = this->states_estimated[i];
-
-            this->_generate_err_times_for_seq(gt, est);
-            this->generate_pose_err_for_seq(gt, est);
-            this->generate_orient_err_for_seq(gt, est);
-        };
-
-        double data_size = 0;
-
-        for (vector<Point3d> vec : this->pose_err) data_size += vec.size();
-
-        double tmp = 0;
-
-        for (vector<Point3d> seq_err : this->pose_err) {
-            for (Point3d point : seq_err) {
-                tmp += sqrt(point.x * point.x + point.y * point.y)/ data_size;
-                //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
-            };
-        };
-
-        this->score_pose = tmp;
-
-
-        tmp = 0;
-
-        for (vector<Point3d> seq_err : this->orient_err) {
-            for (Point3d point : seq_err) {
-                //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
-                tmp += sqrt(point.z * point.z)/ data_size;
-            };
-        };
-
-        this->score_orient = tmp;
-    };
+    void generate_err();
 
     void save_scopes(string filename);
     void save_csv_err(std::string _dir, std::string _sep = ";");
@@ -298,74 +192,32 @@ private:
 
     void trail_sequences_estimate(Trail_sequence _trail_sequence, int _mode=0);
 
-    void Kalman_filter(int _mode) {
-        cout << "Kalman_filter" << endl;
-
-        int computing_size = 0;
-        int current_progress = 0;
-        for (Trail_sequence trail_sequence : trail_sequences) {
-            computing_size += trail_sequence.timestamps.size();
-        };
-        cout << "0%";
-        //_trail_sequence.timestamps
-        //cout << "asf" << "\033[1K\r" << "12" << "\033[1K\r" << to_string(12) + "%";
-        for (Trail_sequence trail_sequence : trail_sequences) {
-            current_progress += trail_sequence.timestamps.size();
-            cout << "\033[1K\r" << to_string(100 * (double)current_progress/ (double)computing_size) + "%";
-            this->trail_sequences_estimate(trail_sequence, _mode);
-        };
-
-        cout << "\033[1K\r";
-    };
-
-    
     void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
-    void _load_csv_trail_sequence(string filename, string sep = ";") {\
-    //    int start;
-    //int end;
+    void _load_csv_trail_sequence(string filename, string sep = ";") {
 
-    //vector<double> timestamps;
-    //vector<State_vector> model_state_vector;
-    //vector<Measurement_vector> model_measurement_vector;
-    //vector<Control_vector> model_control_vector;
-        //Trail_sequence
-        ifstream fin(filename);
-        char buffer[255];
-        //vector<Point2d> trail_points;
-        fin.getline(buffer, 255);
         Trail_sequence new_ts = Trail_sequence();
-        //trail_points.push_back(Point2d(s_point_id, 0));
-
-        //vector<string> line_buffer;
-        //while (fin.getline(buffer, 255)) {
-        //    line_buffer.push_back(buffer);
-        //    string line(buffer);
-
-        //    Point2d tmp = read_csv_Point2d(line, sep);
-        //    trail_points.push_back(tmp);
-        //};
-        //fin.close();
-        //this->point_trails.push_back(trail_points);
+        new_ts.read_csv(filename, sep);
+        this->trail_sequences.push_back(new_ts);
     };
 
     void load_csv_trail_sequences(string dirname, string sep = ";") {
-        //cout << "load_csv_point_trails" << endl;
+        cout << "load_csv_trail_sequences" << endl;
 
         ////string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
-        //int i = 0;
-        //for (;; i++) {
-        //    string filename = dirname + to_string(i) + ".csv";
-        //    ifstream fin(filename);
-        //    if (fin.fail()) {
-        //        //cout << filename << "\tfile dont exist" << endl;
-        //        break;
-        //    }
-        //    else {
-        //        this->_load_csv_point_trail(filename, i, sep);
-        //    }
-        //    fin.close();
-        //};
+        int i = 0;
+        for (;; i++) {
+            string filename = dirname + to_string(i) + ".csv";
+            ifstream fin(filename);
+            if (fin.fail()) {
+                //cout << filename << "\tfile dont exist" << endl;
+                break;
+            }
+            else {
+                this->_load_csv_trail_sequence(filename, sep);
+            }
+            fin.close();
+        };
     };
 
     void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
@@ -383,6 +235,37 @@ public:
 
     ///////////////////aaaAAAaaAA!1!!!1!!!!!
     void generate_test_model(string gen_restr_filename = "");// вот эта функция вызывается
+
+    void Kalman_filter() {
+        std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
+        std::cout << "\nmode:\t" << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
+
+
+        int computing_size = 0;
+        int current_progress = 0;
+        for (Trail_sequence trail_sequence : trail_sequences) {
+            computing_size += trail_sequence.timestamps.size();
+        };
+        cout << "0%";
+        //_trail_sequence.timestamps
+        //cout << "asf" << "\033[1K\r" << "12" << "\033[1K\r" << to_string(12) + "%";
+        for (Trail_sequence trail_sequence : trail_sequences) {
+            current_progress += trail_sequence.timestamps.size();
+            cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+            this->trail_sequences_estimate(trail_sequence, this->gen_restrictions.int_data["kalman_mode"]);
+        };
+
+        cout << "\033[1K\r";
+        this->save_csv_state_estimated(this->dir_name + "states_estimated\\");
+    };
+
+    void estimate_errors() {
+        this->generate_err();
+
+        this->show_score();
+        this->save_scopes(this->dir_name + "scores.txt");
+        this->save_csv_err(this->dir_name + "errors\\");
+    };
 
     void show_gt(string mode = "screen", bool pause_enable = false);
     void show_bins_gt(bool pause_enable = false);

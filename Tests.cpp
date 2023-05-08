@@ -76,6 +76,44 @@ typedef cv::Point2i Point2i;
 //    cout << "Kalman_filter start" << endl;
 //};
 
+void Test_model::generate_err() {
+    for (int i = 0; i < trail_sequences.size(); i++) {
+        Trail_sequence gt = this->trail_sequences[i];
+        Trail_sequence est = this->states_estimated[i];
+
+        this->_generate_err_times_for_seq(gt, est);
+        this->generate_pose_err_for_seq(gt, est);
+        this->generate_orient_err_for_seq(gt, est);
+    };
+
+    double data_size = 0;
+
+    for (vector<Point3d> vec : this->pose_err) data_size += vec.size();
+
+    double tmp = 0;
+
+    for (vector<Point3d> seq_err : this->pose_err) {
+        for (Point3d point : seq_err) {
+            tmp += sqrt(point.x * point.x + point.y * point.y) / data_size;
+            //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+        };
+    };
+
+    this->score_pose = tmp;
+
+
+    tmp = 0;
+
+    for (vector<Point3d> seq_err : this->orient_err) {
+        for (Point3d point : seq_err) {
+            //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+            tmp += sqrt(point.z * point.z) / data_size;
+        };
+    };
+
+    this->score_orient = tmp;
+};
+
 void Test_model::_generate_err_times_for_seq(Trail_sequence _gt, Trail_sequence _est) {
     err_times.push_back(Point2i(_gt.start, _gt.end));
 };

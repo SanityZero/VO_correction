@@ -18,6 +18,16 @@ typedef cv::Point2i Point2i;
 
 void  Test_model::generate_trail_sequences() {
     //for (vector<Point2d> trail : this->point_trails)
+    cout << "generate_trail_sequences\n" << endl;
+
+    int computing_size = 0;
+    for (vector<Point2d> trail : this->point_trails) {
+        computing_size += trail.size();
+    };
+
+    int current_progress = 0;
+    //cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
+
 
     for (vector<Point2d> trail : this->point_trails) {
         //vector<Point2d> trail = this->point_trails[0];

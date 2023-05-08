@@ -169,16 +169,24 @@ public:
 		this->model_control_vector.push_back(Control_vector(control_init_vec));
 	};
 
+	void update_start_end() {
+		this->start = this->timestamps[0];
+		this->end = this->timestamps[this->timestamps.size() - 1];
+	};
+
 	void read_csv(std::string filename, std::string _sep = ";") {
 		ifstream fin(filename);
-		char buffer[255];
-		fin.getline(buffer, 255);
 
-		while (fin.getline(buffer, 255)) {
-			string line(buffer);
+		if (!fin.is_open())
+			cout << "failed to open file\n";
+		
+		string line;
+		getline(fin, line);
+		while (getline(fin, line)) {
 
 			this->read_csv_line(line, _sep);
 		};
+		this->update_start_end();
 		fin.close();
 	};
 
