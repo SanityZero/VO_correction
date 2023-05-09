@@ -194,31 +194,8 @@ private:
 
     void save_csv_trail_sequences(std::string _dir, std::string _sep = ";");
 
-    void _load_csv_trail_sequence(string filename, string sep = ";") {
-
-        Trail_sequence new_ts = Trail_sequence();
-        new_ts.read_csv(filename, sep);
-        this->trail_sequences.push_back(new_ts);
-    };
-
-    void load_csv_trail_sequences(string dirname, string sep = ";") {
-        cout << "load_csv_trail_sequences" << endl;
-
-        ////string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
-        int i = 0;
-        for (;; i++) {
-            string filename = dirname + to_string(i) + ".csv";
-            ifstream fin(filename);
-            if (fin.fail()) {
-                //cout << filename << "\tfile dont exist" << endl;
-                break;
-            }
-            else {
-                this->_load_csv_trail_sequence(filename, sep);
-            }
-            fin.close();
-        };
-    };
+    void _load_csv_trail_sequence(string filename, string sep = ";");
+    void load_csv_trail_sequences(string dirname, string sep = ";");
 
     void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
     void save_csv_vector_Point3d(vector<Point3d> _vec, string _filename,  int _start, int _end, std::string _sep = ";");

@@ -19,6 +19,32 @@ typedef cv::Point2d Point2d;
 typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
+void Test_model::_load_csv_trail_sequence(string filename, string sep) {
+
+    Trail_sequence new_ts = Trail_sequence();
+    new_ts.read_csv(filename, sep);
+    this->trail_sequences.push_back(new_ts);
+};
+
+void Test_model::load_csv_trail_sequences(string dirname, string sep) {
+    cout << "load_csv_trail_sequences" << endl;
+
+    ////string dirname = "C:\\ProgStaff\\NIRS_models\\test1\\proections\\";
+    int i = 0;
+    for (;; i++) {
+        string filename = dirname + to_string(i) + ".csv";
+        ifstream fin(filename);
+        if (fin.fail()) {
+            //cout << filename << "\tfile dont exist" << endl;
+            break;
+        }
+        else {
+            this->_load_csv_trail_sequence(filename, sep);
+        }
+        fin.close();
+    };
+};
+
 void Test_model::_load_csv_camera_proections_file(string filename, string sep) {
     ifstream fin(filename);
     char buffer[255];
