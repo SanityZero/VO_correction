@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
         //Test_model tm3(model_name3, model_dir3);
 
 
-        tm1.generate_test_model();
+        tm1.load_trail_sequence_model();
         tm1.Kalman_filter();
         tm1.estimate_errors();
         //tm2.generate_test_model();

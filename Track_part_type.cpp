@@ -16,7 +16,7 @@ std::string State_type::get_csv_line(std::string sep) {
     std::string result = "";
     result += std::to_string(vel.x) + sep + std::to_string(vel.y) + sep + std::to_string(vel.z) + sep;
     result += std::to_string(accel.x) + sep + std::to_string(accel.y) + sep + std::to_string(accel.z) + sep;
-    result += std::to_string(orient.x) + sep + std::to_string(orient.y) + sep + std::to_string(orient.z) + sep;
+    result += std::to_string(cam_orient.x) + sep + std::to_string(cam_orient.y) + sep + std::to_string(cam_orient.z) + sep;
     result += std::to_string(anqular_vel.x) + sep + std::to_string(anqular_vel.y) + sep + std::to_string(anqular_vel.z) + sep;
     result += std::to_string(anqular_accel.x) + sep + std::to_string(anqular_accel.y) + sep + std::to_string(anqular_accel.z);
     return result;
@@ -143,7 +143,7 @@ void State_type::change(cv::Point3d _arg, int _arg_num) {
         this->accel = _arg;
         break;
     case 2:
-        this->orient = _arg;
+        this->cam_orient = _arg;
         break;
     case 3:
         this->anqular_vel = _arg;
@@ -162,35 +162,35 @@ State_type::State_type(
     case 0:
         this->vel = _arg;
         this->accel = zeroPoint3d;
-        this->orient = zeroPoint3d;
+        this->cam_orient = zeroPoint3d;
         this->anqular_vel = zeroPoint3d;
         this->anqular_accel = zeroPoint3d;
         break;
     case 1:
         this->vel = zeroPoint3d;
         this->accel = _arg;
-        this->orient = zeroPoint3d;
+        this->cam_orient = zeroPoint3d;
         this->anqular_vel = zeroPoint3d;
         this->anqular_accel = zeroPoint3d;
         break;
     case 2:
         this->vel = zeroPoint3d;
         this->accel = zeroPoint3d;
-        this->orient = _arg;
+        this->cam_orient = _arg;
         this->anqular_vel = zeroPoint3d;
         this->anqular_accel = zeroPoint3d;
         break;
     case 3:
         this->vel = zeroPoint3d;
         this->accel = zeroPoint3d;
-        this->orient = zeroPoint3d;
+        this->cam_orient = zeroPoint3d;
         this->anqular_vel = _arg;
         this->anqular_accel = zeroPoint3d;
         break;
     case 4:
         this->vel = zeroPoint3d;
         this->accel = zeroPoint3d;
-        this->orient = zeroPoint3d;
+        this->cam_orient = zeroPoint3d;
         this->anqular_vel = zeroPoint3d;
         this->anqular_accel = _arg;
         break;

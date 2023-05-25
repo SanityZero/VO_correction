@@ -52,15 +52,15 @@ void  Test_model::generate_trail_sequences() {
             }
             else if (seq_valid && !seq_broken) {
                 //продолжить записывать tmp_seq
-                State_vector st_vec;
+                State_vector_type st_vec;
                 st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
                 st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
                 st_vec.set_cam_vel(this->bins_model.bins_measured_states[i].get_vel());
                 st_vec.set_s_pose(s_point);
 
-                Measurement_vector ms_vec(trail[i]);
+                Measurement_vector_type ms_vec(trail[i]);
 
-                Control_vector ctrl_vec;
+                Control_vector_type ctrl_vec;
                 ctrl_vec.set_accel(this->bins_model.bins_measured_states[i].get_accel());
                 ctrl_vec.set_w(this->bins_model.bins_measured_states[i].get_anqular_accel());
 
@@ -70,15 +70,15 @@ void  Test_model::generate_trail_sequences() {
             else if (!seq_valid && !seq_broken) {
                 //начать записывать новый tmp_seq
                 int start = i - 1;
-                State_vector st_vec;
+                State_vector_type st_vec;
                 st_vec.set_cam_pose(this->bins_model.bins_gt_points[i].getPose());
                 st_vec.set_orient(this->bins_model.bins_gt_points[i].getOrient());
                 st_vec.set_cam_vel(this->bins_model.bins_measured_states[i].get_vel());
                 st_vec.set_s_pose(s_point);
 
-                Measurement_vector ms_vec(trail[i]);
+                Measurement_vector_type ms_vec(trail[i]);
 
-                Control_vector ctrl_vec;
+                Control_vector_type ctrl_vec;
                 ctrl_vec.set_accel(this->bins_model.bins_measured_states[i].get_accel());
                 ctrl_vec.set_w(this->bins_model.bins_measured_states[i].get_anqular_accel());
 

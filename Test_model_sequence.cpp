@@ -11,17 +11,17 @@ using namespace std;
 #include "Test_model_sequence.h"
 //////////////////////////////////////////////////////////////////////////////////////////////
 // Trail_sequence
-void Trail_sequence::set_start(int _start, double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec, Control_vector _control_vector) {
+void Trail_sequence::set_start(int _start, double _timestamp, State_vector_type _state_vec, Measurement_vector_type _mes_vec, Control_vector_type _control_vector) {
 	this->push_back(_timestamp, _state_vec, _mes_vec, _control_vector);
 	this->start = _start;
 	this->end = _start;
 };
 
-void Trail_sequence::push_back(double _timestamp, State_vector _state_vec, Measurement_vector _mes_vec, Control_vector _control_vector) {
+void Trail_sequence::push_back(double _timestamp, State_vector_type _state_vec, Measurement_vector_type _mes_vec, Control_vector_type _control_vector) {
 	this->timestamps.push_back(_timestamp);
-	this->model_state_vector.push_back(_state_vec);
-	this->model_measurement_vector.push_back(_mes_vec);
-	this->model_control_vector.push_back(_control_vector);
+	this->state_vector.push_back(_state_vec);
+	this->measurement_vector.push_back(_mes_vec);
+	this->control_vector.push_back(_control_vector);
 	this->end++;
 };
 
@@ -37,9 +37,9 @@ vector<int> Trail_sequence::range() {
 
 string Trail_sequence::get_csv_line(int _number, std::string _sep) {
 	std::string result = std::to_string(this->timestamps[_number]) + _sep;
-	result += this->model_state_vector[_number].get_csv_line() + _sep;
-	result += this->model_measurement_vector[_number].get_csv_line() + _sep;
-	result += this->model_control_vector[_number].get_csv_line();
+	result += this->state_vector[_number].get_csv_line() + _sep;
+	result += this->measurement_vector[_number].get_csv_line() + _sep;
+	result += this->control_vector[_number].get_csv_line();
 	return result;
 };
 
@@ -76,9 +76,9 @@ void Trail_sequence::read_csv_line(std::string line, std::string _sep) {
 		control_init_vec.push_back(values[i + 1]);
 
 	this->timestamps.push_back(values[0]);
-	this->model_state_vector.push_back(State_vector(state_init_vec));
-	this->model_measurement_vector.push_back(Measurement_vector(measurement_init_vec));
-	this->model_control_vector.push_back(Control_vector(control_init_vec));
+	this->state_vector.push_back(State_vector_type(state_init_vec));
+	this->measurement_vector.push_back(Measurement_vector_type(measurement_init_vec));
+	this->control_vector.push_back(Control_vector_type(control_init_vec));
 };
 
 void Trail_sequence::update_start_end() {
@@ -105,14 +105,14 @@ void Trail_sequence::read_csv(std::string filename, std::string _sep) {
 std::vector<Point3d> Trail_sequence::get_pose_vec() {
 	std::vector<Point3d> res;
 
-	for (int i : this->range()) res.push_back(this->model_state_vector[i].get_cam_pose());
+	for (int i : this->range()) res.push_back(this->state_vector[i].get_cam_pose());
 	return res;
 };
 
 std::vector<Point3d> Trail_sequence::get_orient_vec() {
 	std::vector<Point3d> res;
 
-	for (int i : this->range()) res.push_back(this->model_state_vector[i].get_orient());
+	for (int i : this->range()) res.push_back(this->state_vector[i].get_orient());
 	return res;
 };
 
@@ -183,61 +183,61 @@ void Trail_sequence::save_csv_trail_sequence(std::string _filename, std::string 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // State_vector
-void State_vector::set_from_vector(vector<double> csv_data) {
+void State_vector_type::set_from_vector(vector<double> csv_data) {
 	this->set_cam_pose(Point3d(csv_data[0], csv_data[1], csv_data[2]));
 	this->set_orient(Point3d(csv_data[3], csv_data[4], csv_data[5]));
 	this->set_cam_vel(Point3d(csv_data[6], csv_data[7], csv_data[8]));
 	this->set_s_pose(Point3d(csv_data[9], csv_data[10], csv_data[11]));
 };
 
-void State_vector::set(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose) {
+void State_vector_type::set(Point3d _cam_pose, Point3d _orient, Point3d _cam_vel, Point3d _s_pose) {
 	this->cam_pose = _cam_pose;
-	this->orient = _orient;
+	this->cam_orient = _orient;
 	this->cam_vel = _cam_vel;
 	this->s_pose = _s_pose;
 };
 
-void State_vector::set_cam_pose(Point3d _cam_pose) {
+void State_vector_type::set_cam_pose(Point3d _cam_pose) {
 	this->cam_pose = _cam_pose;
 };
 
-void State_vector::set_orient(Point3d _orient) {
-	this->orient = _orient;
+void State_vector_type::set_orient(Point3d _orient) {
+	this->cam_orient = _orient;
 };
 
-void State_vector::set_cam_vel(Point3d _cam_vel) {
+void State_vector_type::set_cam_vel(Point3d _cam_vel) {
 	this->cam_vel = _cam_vel;
 };
 
-void State_vector::set_s_pose(Point3d _s_pose) {
+void State_vector_type::set_s_pose(Point3d _s_pose) {
 	this->s_pose = _s_pose;
 };
 
-Point3d State_vector::get_cam_pose() {
+Point3d State_vector_type::get_cam_pose() {
 	return this->cam_pose;
 };
 
-Point3d State_vector::get_orient() {
-	return this->orient;
+Point3d State_vector_type::get_orient() {
+	return this->cam_orient;
 };
 
-Point3d State_vector::get_cam_vel() {
+Point3d State_vector_type::get_cam_vel() {
 	return this->cam_vel;
 };
 
-Point3d State_vector::get_s_pose() {
+Point3d State_vector_type::get_s_pose() {
 	return this->s_pose;
 };
 
-double State_vector::get(int _number) {
+double State_vector_type::get(int _number) {
 	switch (_number) {
 	case 0:	return this->cam_pose.x;
 	case 1: return this->cam_pose.y;
 	case 2:	return this->cam_pose.z;
 
-	case 3:	return this->orient.x;
-	case 4:	return this->orient.y;
-	case 5:	return this->orient.z;
+	case 3:	return this->cam_orient.x;
+	case 4:	return this->cam_orient.y;
+	case 5:	return this->cam_orient.z;
 
 	case 6:	return this->cam_vel.x;
 	case 7:	return this->cam_vel.y;
@@ -249,7 +249,7 @@ double State_vector::get(int _number) {
 	};
 };
 
-string State_vector::get_csv_line(std::string _sep) {
+string State_vector_type::get_csv_line(std::string _sep) {
 	std::string result = std::to_string(this->get(0)) + _sep;
 	result += std::to_string(this->get(1)) + _sep;
 	result += std::to_string(this->get(2)) + _sep;
@@ -267,15 +267,15 @@ string State_vector::get_csv_line(std::string _sep) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // Measurement_vector
-void Measurement_vector::set_from_vector(vector<double> csv_data) {
+void Measurement_vector_type::set_from_vector(vector<double> csv_data) {
 	this->set(Point2d(csv_data[0], csv_data[1]));
 };
 
-Measurement_vector::Measurement_vector(Point2d _poect) {
+Measurement_vector_type::Measurement_vector_type(Point2d _poect) {
 	this->proection = _poect;
 };
 
-double Measurement_vector::get(int _number) {
+double Measurement_vector_type::get(int _number) {
 	switch (_number) {
 	case 0:
 		return this->proection.x;
@@ -284,28 +284,28 @@ double Measurement_vector::get(int _number) {
 	};
 };
 
-string Measurement_vector::get_csv_line(std::string _sep) {
+string Measurement_vector_type::get_csv_line(std::string _sep) {
 	std::string result = std::to_string(this->get(0)) + _sep;
 	result += std::to_string(this->get(1));
 	return result;
 };
 
-Point2d Measurement_vector::get_point2d() {
+Point2d Measurement_vector_type::get_point2d() {
 	return this->proection;
 };
 
-void Measurement_vector::set(Point2d _poect) {
+void Measurement_vector_type::set(Point2d _poect) {
 	this->proection = _poect;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Control_vector
-void Control_vector::set_from_vector(vector<double> csv_data) {
+void Control_vector_type::set_from_vector(vector<double> csv_data) {
 	this->set_accel(Point3d(csv_data[0], csv_data[1], csv_data[2]));
 	this->set_w(Point3d(csv_data[3], csv_data[4], csv_data[5]));
 };
 
-double Control_vector::get(int _number) {
+double Control_vector_type::get(int _number) {
 	switch (_number) {
 	case 0:
 		return this->accel.x;
@@ -323,7 +323,7 @@ double Control_vector::get(int _number) {
 	};
 };
 
-string Control_vector::get_csv_line(std::string _sep) {
+string Control_vector_type::get_csv_line(std::string _sep) {
 	std::string result = std::to_string(this->get(0)) + _sep;
 	result += std::to_string(this->get(1)) + _sep;
 	result += std::to_string(this->get(2)) + _sep;
@@ -333,10 +333,10 @@ string Control_vector::get_csv_line(std::string _sep) {
 	return result;
 };
 
-void Control_vector::set_accel(Point3d _accel) {
+void Control_vector_type::set_accel(Point3d _accel) {
 	this->accel = _accel;
 };
 
-void Control_vector::set_w(Point3d _w) {
+void Control_vector_type::set_w(Point3d _w) {
 	this->w = _w;
 };

@@ -13,7 +13,6 @@ using namespace std;
 #include <omp.h>
 //#pragma omp
 
-
 void Test_model::Test_motion_model::update_total_time() {
     this->total_time = this->timestamps[this->timestamps.size() - 1];
 };
@@ -271,7 +270,7 @@ void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_mo
 
     Pose_type pose1_tmp;
     pose1_tmp.setPose(Point3d(0, 0, 0));
-    pose1_tmp.setOrient(states[0].orient);
+    pose1_tmp.setOrient(states[0].cam_orient);
     pose1_tmp.setAccel(states[0].accel);
     pose1_tmp.setW(states[0].anqular_accel);
 
@@ -284,7 +283,7 @@ void Test_model::Test_motion_model::generate_gt_points(Test_track_model track_mo
         Pose_type pose_tmp;
         //pose_tmp.setPose(gt_point[i - 1].getPose() + Point3d(pose_delta.x, pose_delta.y, 0));
         pose_tmp.setPose(track_model.part(i * delta_length));
-        pose_tmp.setOrient(states[i].orient);
+        pose_tmp.setOrient(states[i].cam_orient);
         pose_tmp.setAccel(states[i].accel);
         pose_tmp.setW(states[i].anqular_accel);
 
@@ -298,7 +297,7 @@ void Test_model::Test_motion_model::generate_states(Test_track_model track_model
 
     for (int i = 0; i < point_num; i++) {
         State_type state = track_model.orientation(i * delta_m);
-        Point3d v3_orient = normalize(state.orient);
+        Point3d v3_orient = normalize(state.cam_orient);
         // double z_rot = (acos((v3_orient.y + v3_orient.x) / 2) + asin((v3_orient.y - v3_orient.x) / 2)) / 2;
 
         double z_rot = atan2(v3_orient.y, v3_orient.x);

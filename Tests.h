@@ -203,7 +203,10 @@ private:
 public:
     Test_model(string name, string dir_name);
     void generate_track_model();
-    void save_test_model(string filename) {};
+
+    void load_trail_sequence_model() {
+        load_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+    };
 
     void show_score() {
         cout << "Error score pose:\t" << this->score_pose << endl;
@@ -224,8 +227,6 @@ public:
             computing_size += trail_sequence.timestamps.size();
         };
         cout << "0%";
-        //_trail_sequence.timestamps
-        //cout << "asf" << "\033[1K\r" << "12" << "\033[1K\r" << to_string(12) + "%";
         for (Trail_sequence trail_sequence : trail_sequences) {
             current_progress += trail_sequence.timestamps.size();
             cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
@@ -234,6 +235,44 @@ public:
 
         cout << "\033[1K\r";
         this->save_csv_state_estimated(this->dir_name + "states_estimated\\");
+    };
+
+    void aggrigate_estimated() {
+        //найти минимальный/максимальный таймстемп
+        int min_tmst = this->states_estimated[0].start;
+        int max_tmst = this->states_estimated[0].end;
+        for (Trail_sequence item : this->states_estimated) {
+            min_tmst = item.start < min_tmst ? item.start : min_tmst;
+            max_tmst = item.end > max_tmst ? item.end : max_tmst;
+        };
+
+        //сформировать наборы оцененных точек для каждого таймстемпа
+        vector<int> tmst_range;
+        for (int i = min_tmst; i < max_tmst; i++) tmst_range.push_back(i);
+
+        vector<vector<Point3d>> estimated_poses(tmst_range.size());
+        vector<vector<Point3d>> estimated_orientations(tmst_range.size());
+
+
+        for (Trail_sequence item : this->states_estimated) {
+            for (int i : item.range()) {
+                estimated_poses[i].push_back(item.state_vector[i].cam_pose);
+                estimated_orientations[i].push_back(item.state_vector[i].cam_orient);
+            };
+        };
+
+        vector<Point3d> final_trajectory;
+
+        for (vector<Point3d> pose_est_frame : estimated_poses) {
+            Point3d aggrigated_frame_point = Point3d(0,0,0);
+            for (Point3d point : pose_est_frame) {
+                aggrigated_frame_point += point / double(pose_est_frame.size());
+            };
+            final_trajectory.push_back(aggrigated_frame_point);
+        }
+
+
+
     };
 
     void estimate_errors() {

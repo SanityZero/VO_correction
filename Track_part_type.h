@@ -20,7 +20,7 @@ class State_type {
 public:
     cv::Point3d vel;
     cv::Point3d accel;
-    cv::Point3d orient;
+    cv::Point3d cam_orient;
     cv::Point3d anqular_vel;
     cv::Point3d anqular_accel;
 
@@ -30,7 +30,7 @@ public:
         cv::Point3d _orient = zeroPoint3d,
         cv::Point3d _anqular_vel = zeroPoint3d,
         cv::Point3d _anqular_accel = zeroPoint3d
-    ) : vel(_vel), accel(_accel), orient(_orient), anqular_vel(_anqular_vel), anqular_accel(_anqular_accel) {};
+    ) : vel(_vel), accel(_accel), cam_orient(_orient), anqular_vel(_anqular_vel), anqular_accel(_anqular_accel) {};
 
     State_type(cv::Point3d _arg, int _arg_num);
 
@@ -48,7 +48,7 @@ public:
         case 1:
             return Point3d(this->accel);
         case 2:
-            return Point3d(this->orient);
+            return Point3d(this->cam_orient);
         case 3:
             return Point3d(this->anqular_vel);
         case 4:
