@@ -12,16 +12,12 @@ typedef cv::Point3d Point3d;
 typedef cv::Point2i Point2i;
 
 void Test_model::generate_test_model(string gen_restr_filename) {
+    this->gen_restrictions.double_data["camera_fitting_z"] = 0 * M_PI / 180;
 
-
-    std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
-    if (gen_restr_filename != "") {
-        this->gen_restrictions.load_restriction_file(gen_restr_filename);
-    }
-    else
-    {
-        this->gen_restrictions.load_restriction_file(this->dir_name + "\\init.txt");
-    }
+    std::cout << "\n----<<<< Model generation >>>>----" << std::endl;
+    cout << "Test model:" << endl;
+    cout << this->name << endl;
+    cout << this->dir_name << endl;
 
     // сгенерировать трак в соответствии с ограничениями или загрузить его
     std::cout << "\n----<<<< track_model >>>>----" << std::endl;
@@ -136,11 +132,13 @@ void Test_model::generate_test_model(string gen_restr_filename) {
         
         save_csv_point_trails(this->dir_name);
         save_csv_camera_proections((this->dir_name));
+        break;
     case 1:
         setCameraModel(this->gen_restrictions);
 
         load_csv_camera_proections(this->dir_name + "proections\\");
         load_csv_point_trails(this->dir_name + "trails\\");
+        break;
     };
     
 
@@ -150,7 +148,9 @@ void Test_model::generate_test_model(string gen_restr_filename) {
     case 0:
         generate_trail_sequences();
         save_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+        break;
     case 1:
         load_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+        break;
     };
 };

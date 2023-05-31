@@ -111,11 +111,26 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
 
             double dt = timestamps[i] - timestamps[i - 1];
 
+            //cv::Mat mask;
+            //cv::Mat E = cv::findEssentialMat(leftNormalizedPoints,
+            //    rightNormalizedPoints, cv::Mat_<double>::eye(3, 3), cv::Mat(),
+            //    cv::Mat_<double>::eye(3, 3), cv::Mat(), cv::RANSAC, 0.999, 1.0, mask);
+
+            //cv::Mat R, t;
+            //cv::recoverPose(E, leftNormalizedPoints, rightNormalizedPoints, cv::Mat_<double>::eye(3, 3), R, t, mask);
+
             double F_arr[12][12] = F_ARR(dt);
             Mat F = Mat(12, 12, CV_64F, F_arr);
 
             double B_arr[12][6] = B_ARR(dt);
             Mat B = Mat(12, 6, CV_64F, B_arr);
+
+            Point2d y_p2d = measurement_vector[i].get_point2d();
+            double y_arr[2][1] = {
+                {y_p2d.x},
+                {y_p2d.y}
+            };
+            Mat y = Mat(2, 1, CV_64F, y_arr);
 
             double std_dev_ax = std_dev.at<double>(0, 0);
             double std_dev_ay = std_dev.at<double>(1, 0);
@@ -135,12 +150,10 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
             std::normal_distribution<double> distribution_w_y(0, std_dev_wy);
             std::normal_distribution<double> distribution_w_z(0, std_dev_wz);
 
-
-
             double U_arr[6][1] = {
                 {control_vector[i].get(0) + distribution_accel_x(generator)},
-                {control_vector[i].get(1) + distribution_accel_x(generator)},
-                {control_vector[i].get(2) + distribution_accel_x(generator)},
+                {control_vector[i].get(1) + distribution_accel_y(generator)},
+                {control_vector[i].get(2) + distribution_accel_z(generator)},
                 {control_vector[i].get(3) + distribution_w_x(generator)},
                 {control_vector[i].get(4) + distribution_w_y(generator)},
                 {control_vector[i].get(5) + distribution_w_z(generator)}
@@ -161,12 +174,31 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
 
             Mat K = P_est * H.t() * tmp.inv();
             Mat P_next = (Mat::eye(12, 12, CV_64F) - K * H) * P_est;
+            //хуй
+            // 
+            // 
+            //
+            Point3d pnt_pose = Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0));
+            Point3d cam_pose = Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), 0);
+            Point3d cam_orient = Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0));
+            Point2d new_mes = this->point_proection_D(pnt_pose, cam_pose, cam_orient);
+
+            double new_mes_arr[2][1] = {
+                {new_mes.x},
+                {new_mes.y}
+            };
+            Mat est_mes = Mat(2, 1, CV_64F, y_arr);
+
+            x_next = x_next + K*(y + est_mes);
 
             P = P_next.clone();
             x = x_next.clone();
 
+            //Я скипнул этап коррекции вообще
+
             State_vector_type estimated_state;
-            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            //estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), 0));
             estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
             estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
             estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
@@ -214,8 +246,8 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
 
             double U_arr[6][1] = {
                 {control_vector[i].get(0) + distribution_accel_x(generator)},
-                {control_vector[i].get(1) + distribution_accel_x(generator)},
-                {control_vector[i].get(2) + distribution_accel_x(generator)},
+                {control_vector[i].get(1) + distribution_accel_y(generator)},
+                {control_vector[i].get(2) + distribution_accel_z(generator)},
                 {control_vector[i].get(3) + distribution_w_x(generator)},
                 {control_vector[i].get(4) + distribution_w_y(generator)},
                 {control_vector[i].get(5) + distribution_w_z(generator)}
@@ -228,7 +260,7 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
             x = x_next.clone();
 
             State_vector_type estimated_state;
-            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), 0));
             estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
             estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
             estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));
@@ -270,7 +302,7 @@ void Test_model::trail_sequences_estimate(Trail_sequence _trail_sequence, int _m
             x = x_next.clone();
 
             State_vector_type estimated_state;
-            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), x_next.at<double>(2, 0)));
+            estimated_state.set_cam_pose(Point3d(x_next.at<double>(0, 0), x_next.at<double>(1, 0), 0));
             estimated_state.set_orient(Point3d(x_next.at<double>(3, 0), x_next.at<double>(4, 0), x_next.at<double>(5, 0)));
             estimated_state.set_cam_vel(Point3d(x_next.at<double>(6, 0), x_next.at<double>(7, 0), x_next.at<double>(8, 0)));
             estimated_state.set_s_pose(Point3d(x_next.at<double>(9, 0), x_next.at<double>(10, 0), x_next.at<double>(11, 0)));

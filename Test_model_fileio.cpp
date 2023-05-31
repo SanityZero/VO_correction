@@ -156,6 +156,10 @@ void Test_model::save_csv_time_err(std::string _filename, std::string _sep) {
 
 void Test_model::save_csv_vector_Point3d(vector<Point3d> _vec, string _filename, int _start, int _end, std::string _sep) {
     std::vector<std::string> csv_data;
+
+    _end = _end != -1 ? _end : _vec.size();
+    _start = _start != -1 ? _start : 0;
+
     for (int i = 0; i < _end - _start; i++) {
         csv_data.push_back(std::to_string(_start + i) + _sep + this->get_csv_Point3d(_vec[i], _sep));
     };
@@ -369,8 +373,8 @@ void Test_model::save_csv_err(std::string _dir, std::string _sep) {
 void Test_model::save_scopes(string filename) {
     vector<string> csv_data;
     cout << "save_scopes" << endl;
-    csv_data.push_back(to_string(this->score_pose));
-    csv_data.push_back(to_string(this->score_orient));
+    csv_data.push_back(to_string(this->score_pose_total));
+    csv_data.push_back(to_string(this->score_orient_total));
 
     ofstream fout(filename);
 

@@ -41,6 +41,7 @@ typedef cv::Point2i Point2i;
 //};
 
 void Test_model::generate_err() {
+
     for (int i = 0; i < trail_sequences.size(); i++) {
         Trail_sequence gt = this->trail_sequences[i];
         Trail_sequence est = this->states_estimated[i];
@@ -54,8 +55,38 @@ void Test_model::generate_err() {
 
     for (vector<Point3d> vec : this->pose_err) data_size += vec.size();
 
-    double tmp = 0;
+    //final_trajectory_orient
+    //final_trajectory
 
+    //final_trajectory_orient_gt
+    //final_trajectory_gt
+
+    //final_orient_err
+    //final_pose_err
+    for (int i = 0; i < final_trajectory.size();i++) {
+        this->final_pose_err.push_back(this->final_trajectory_gt[i] - this->final_trajectory[i]);
+    };
+
+    for (int i = 0; i < final_trajectory_orient.size(); i++) {
+        this->final_orient_err.push_back(this->final_trajectory_orient_gt[i] - this->final_trajectory_orient[i]);
+    };
+
+    double tmp = 0;
+    for (Point3d point : final_pose_err) {
+        tmp += sqrt(point.x * point.x + point.y * point.y);
+        //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+    };
+    this->score_pose_agg = tmp;
+
+    tmp = 0;
+    for (Point3d point : final_orient_err) {
+        tmp += sqrt(point.x * point.x + point.y * point.y);
+        //tmp += sqrt(point.x * point.x + point.y * point.y + point.z * point.z)/ data_size;
+    };
+    this->score_orient_agg = tmp;
+
+    //for () this->
+    tmp = 0;
     for (vector<Point3d> seq_err : this->pose_err) {
         for (Point3d point : seq_err) {
             tmp += sqrt(point.x * point.x + point.y * point.y) / data_size;
@@ -63,7 +94,7 @@ void Test_model::generate_err() {
         };
     };
 
-    this->score_pose = tmp;
+    this->score_pose_total = tmp;
 
 
     tmp = 0;
@@ -75,7 +106,7 @@ void Test_model::generate_err() {
         };
     };
 
-    this->score_orient = tmp;
+    this->score_orient_total = tmp;
 };
 
 void Test_model::_generate_err_times_for_seq(Trail_sequence _gt, Trail_sequence _est) {
@@ -104,12 +135,21 @@ void Test_model::generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence 
     orient_err.push_back(res_vec);
 };
 
-Test_model::Test_model(string name, string dir_name) {
+Test_model::Test_model(string name, string dir_name, string gen_restr_filename) {
     this->name = name;
     this->dir_name = dir_name;
     cout << "Test model:" << endl;
     cout << this->name << endl;
     cout << this->dir_name << endl;
+
+    std::cout << "\n----<<<< gen_restrictions >>>>----" << std::endl;
+    if (gen_restr_filename != "") {
+        this->gen_restrictions.load_restriction_file(gen_restr_filename);
+    }
+    else
+    {
+        this->gen_restrictions.load_restriction_file(this->dir_name + "\\init.txt");
+    }
 };
 
 void Test_model::generate_track_model() {

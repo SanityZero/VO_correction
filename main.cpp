@@ -51,13 +51,15 @@ int main(int argc, char** argv) {
             cout << "arg\t\t" << argv[i] << endl;
         };
 
-        string model_dir1 = "C:\\ProgStaff\\NIRS_models\\test1\\";
-        string model_dir2 = "C:\\ProgStaff\\NIRS_models\\test2\\";
-        string model_dir3 = "C:\\ProgStaff\\NIRS_models\\test3\\";
+        string model_dir1 = "C:\\ProgStaff\\NIRS_models\\line\\";
+        string model_dir2 = "C:\\ProgStaff\\NIRS_models\\circle\\";
+        string model_dir3 = "C:\\ProgStaff\\NIRS_models\\single\\";
+        string model_dir4 = "C:\\ProgStaff\\NIRS_models\\complex\\";
 
-        string model_name1 = "test1";
-        string model_name2 = "test2";
-        string model_name3 = "test3";
+        string model_name1 = "line";
+        string model_name2 = "circle";
+        string model_name3 = "single";
+        string model_name4 = "complex";
 
         //C:\ProgStaff\VSproj\OpenCV-test\x64\Debug\OpenCV-Nirs.exe "C:\\ProgStaff\\NIRS_models\\test2" "test2"
 
@@ -70,17 +72,69 @@ int main(int argc, char** argv) {
         //test.read_csv("C:\\ProgStaff\\NIRS_models\\test1\\trail_sequences\\1.csv");
 
         Test_model tm1(model_name1, model_dir1);
-        //Test_model tm2(model_name2, model_dir2);
-        //Test_model tm3(model_name3, model_dir3);
+        Test_model tm2(model_name2, model_dir2);
+        Test_model tm3(model_name3, model_dir3);
+        Test_model tm4(model_name4, model_dir4);
+
+        //tm1.load_test_model();
+        //tm2.load_test_model();
+        //tm3.load_test_model();
+        //tm4.load_test_model();
+        //tm1.print_camera_proections();
+        //tm1.show_bins_gt();
+        //waitKey(0);
+        vector<Test_model> models_vector;
+        models_vector.push_back(tm1);
+        models_vector.push_back(tm2);
+        models_vector.push_back(tm3);
+        models_vector.push_back(tm4);
+        //models_vector.push_back(tm4);
+
+        for (Test_model model : models_vector) {
+            model.generate_test_model();
+            model.print_camera_proections();
+            //model.load_trail_sequence_model();
+            //model.Kalman_filter(0);
+            //model.estimate_errors();
+            //model.save_final_trajectory("filter.csv");
+            //model.save_final_trajectory_gt("filter.csv");
+            //model.save_final_trajectory_errors("filter.csv");
+
+            //model.Kalman_filter(1);
+            //model.estimate_errors();
+            //model.save_final_trajectory("noise.csv");
+            //model.save_final_trajectory_gt("noise.csv");
+            //model.save_final_trajectory_errors("noise.csv");
 
 
-        tm1.load_trail_sequence_model();
-        tm1.Kalman_filter();
-        tm1.estimate_errors();
+            //model.Kalman_filter(2);
+            //model.estimate_errors();
+            //model.save_final_trajectory("clear.csv");
+            //model.save_final_trajectory_gt("clear.csv");
+            //model.save_final_trajectory_errors("clear.csv");
+        };
+        //tm3.generate_test_model();
+
+        //tm1.load_trail_sequence_model();
+        //tm1.Kalman_filter(0);
+        //tm1.estimate_errors();
+        //tm1.save_final_trajectory("filter.csv");
+        //tm1.save_final_trajectory_errors("filter.csv");
+
+        //tm1.Kalman_filter(1);
+        //tm1.estimate_errors();
+        //tm1.save_final_trajectory("noise.csv");
+        //tm1.save_final_trajectory_errors("noise.csv");
+
+        //tm1.Kalman_filter(2);
+        //tm1.estimate_errors();
+        //tm1.save_final_trajectory("clear.csv");
+        //tm1.save_final_trajectory_errors("clear.csv");
+
         //tm2.generate_test_model();
         //tm3.generate_test_model();
 
-        tm1.print_camera_proections();
+        //tm1.print_camera_proections();
         //tm1.show_bins_gt();
         waitKey(0);
         //tm1.show_gt_measures();

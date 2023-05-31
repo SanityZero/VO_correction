@@ -168,11 +168,23 @@ private:
     vector<Trail_sequence> trail_sequences;
     vector<Trail_sequence> states_estimated;
 
+    vector<Point3d> final_trajectory;
+    vector<Point3d> final_trajectory_orient;
+
+    vector<Point3d> final_trajectory_gt;
+    vector<Point3d> final_trajectory_orient_gt;
+
     vector<vector<Point3d>> pose_err;
     vector<vector<Point3d>> orient_err;
+
+    vector<Point3d> final_pose_err;
+    vector<Point3d> final_orient_err;
+
     vector<Point2i> err_times;
-    double score_pose;
-    double score_orient;
+    double score_pose_total;
+    double score_orient_total;
+    double score_pose_agg;
+    double score_orient_agg;
 
     Point2d part_der_h(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient, Point3d _delta);
     Mat senseMat(Point2d _P, Point3d _point_pose, Point3d _camera_pose, Point3d _camera_orient);
@@ -181,6 +193,13 @@ private:
     void _generate_err_times_for_seq(Trail_sequence _gt, Trail_sequence _est);
     void generate_pose_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
     void generate_orient_err_for_seq(Trail_sequence _gt, Trail_sequence _est);
+
+    //void generate_gt() {
+    //    for (Pose_type gt_point: this->bins_model.bins_gt_points) {
+    //        this->final_trajectory_gt.push_back(gt_point.getPose());
+    //        this->final_trajectory_orient_gt.push_back(gt_point.getOrient());
+    //    };
+    //};
 
     void generate_err();
 
@@ -198,27 +217,67 @@ private:
     void load_csv_trail_sequences(string dirname, string sep = ";");
 
     void save_csv_state_estimated(std::string _dir, std::string _sep = ";");
-    void save_csv_vector_Point3d(vector<Point3d> _vec, string _filename,  int _start, int _end, std::string _sep = ";");
+    void save_csv_vector_Point3d(vector<Point3d> _vec, string _filename,  int _start=-1, int _end=-1, std::string _sep = ";");
 
 public:
-    Test_model(string name, string dir_name);
+    Test_model(string name, string dir_name, string gen_restr_filename="");
     void generate_track_model();
 
     void load_trail_sequence_model() {
-        load_csv_trail_sequences(this->dir_name + "trail_sequences\\");
+        this->load_csv_trail_sequences(this->dir_name + "trail_sequences\\");
     };
 
     void show_score() {
-        cout << "Error score pose:\t" << this->score_pose << endl;
-        cout << "Error score orient:\t" << this->score_orient << endl;
+        cout << "Error score pose:\t" << this->score_pose_total << endl;
+        cout << "Error score orient:\t" << this->score_orient_total << endl;
+        cout << "Error score pose agg:\t" << this->score_pose_agg << endl;
+        cout << "Error score orient agg:\t" << this->score_orient_agg << endl;
     };
 
     ///////////////////aaaAAAaaAA!1!!!1!!!!!
     void generate_test_model(string gen_restr_filename = "");// вот эта функция вызывается
 
-    void Kalman_filter() {
+    void load_test_model(string gen_restr_filename = "") {
+        this->gen_restrictions.int_data["save_load_ts_model"] = 1;
+        this->gen_restrictions.int_data["save_load_camera_model"] = 1;
+        this->gen_restrictions.int_data["save_load_bins_model"] = 1;
+        this->gen_restrictions.int_data["save_load_s_points"] = 1;
+        this->gen_restrictions.int_data["save_load_motion_model"] = 1;
+        this->gen_restrictions.int_data["save_load_track_model"] = 1;
+
+        this->generate_test_model(gen_restr_filename);
+    };// вот эта функция вызывается
+
+    void Kalman_filter(int mode = 10) {
+
+        this->states_estimated.clear();
+        this->final_trajectory.clear();
+
+        this->final_trajectory_gt.clear();
+        this->final_trajectory_orient_gt.clear();
+
+        this->final_trajectory.clear();
+        this->final_trajectory_orient.clear();
+
+        mode = (mode != 10) ? mode : this->gen_restrictions.int_data["kalman_mode"];
+
         std::cout << "\n----<<<< Kalman filter >>>>----" << std::endl;
-        std::cout << "\nmode:\t" << this->gen_restrictions.int_data["kalman_mode"] << std::endl;
+        cout << "Test model:\t";
+        cout << this->name << endl;
+
+        string mode_name = "invalid mode";
+        switch (mode) {
+        case 0:
+            mode_name = "filtered with noise";
+            break;
+        case 1:
+            mode_name = "not filtered";
+            break;
+        case 2:
+            mode_name = "no noise";
+            break;
+        };
+        std::cout << "mode:\t" << mode_name << std::endl;
 
 
         int computing_size = 0;
@@ -227,14 +286,30 @@ public:
             computing_size += trail_sequence.timestamps.size();
         };
         cout << "0%";
+
+
         for (Trail_sequence trail_sequence : trail_sequences) {
             current_progress += trail_sequence.timestamps.size();
             cout << "\033[1K\r" << to_string(100 * (double)current_progress / (double)computing_size) + "%";
-            this->trail_sequences_estimate(trail_sequence, this->gen_restrictions.int_data["kalman_mode"]);
+            this->trail_sequences_estimate(trail_sequence, mode);
         };
 
         cout << "\033[1K\r";
-        this->save_csv_state_estimated(this->dir_name + "states_estimated\\");
+        //this->save_csv_state_estimated(this->dir_name + "states_estimated\\");
+
+        this->aggrigate_estimated();
+    };
+
+    void save_final_trajectory(string filename) {
+        this->save_csv_vector_Point3d(this->final_trajectory, this->dir_name + "gt" +filename);
+    };
+
+    void save_final_trajectory_gt(string filename) {
+        this->save_csv_vector_Point3d(this->final_trajectory_gt, this->dir_name + filename);
+    };
+
+    void save_final_trajectory_errors(string filename) {
+        this->save_csv_vector_Point3d(this->final_pose_err, this->dir_name + "e" + filename);
     };
 
     void aggrigate_estimated() {
@@ -248,11 +323,10 @@ public:
 
         //сформировать наборы оцененных точек для каждого таймстемпа
         vector<int> tmst_range;
-        for (int i = min_tmst; i < max_tmst; i++) tmst_range.push_back(i);
+        for (int i = min_tmst; i <= max_tmst; i++) tmst_range.push_back(i);
 
         vector<vector<Point3d>> estimated_poses(tmst_range.size());
         vector<vector<Point3d>> estimated_orientations(tmst_range.size());
-
 
         for (Trail_sequence item : this->states_estimated) {
             for (int i : item.range()) {
@@ -261,26 +335,56 @@ public:
             };
         };
 
-        vector<Point3d> final_trajectory;
+        vector<Point3d> gt_poses(tmst_range.size());
+        vector<Point3d> gt_orient(tmst_range.size());
+
+        for (Trail_sequence item : this->trail_sequences) {
+            for (int i : item.range()) {
+                gt_poses[i] = item.state_vector[i].cam_pose;
+                gt_orient[i] = item.state_vector[i].cam_orient;
+            };
+        };
+
+        this->final_trajectory_gt = gt_poses;
+        this->final_trajectory_orient_gt = gt_orient;
+
+        
 
         for (vector<Point3d> pose_est_frame : estimated_poses) {
-            Point3d aggrigated_frame_point = Point3d(0,0,0);
+            Point3d aggrigated_frame_point = Point3d(0, 0, 0);
             for (Point3d point : pose_est_frame) {
                 aggrigated_frame_point += point / double(pose_est_frame.size());
             };
-            final_trajectory.push_back(aggrigated_frame_point);
+            this->final_trajectory.push_back(aggrigated_frame_point);
+        };
+
+        for (vector<Point3d> orient_est_frame : estimated_orientations) {
+            Point3d aggrigated_frame_point = Point3d(0, 0, 0);
+            for (Point3d point : orient_est_frame) {
+                aggrigated_frame_point += point / double(orient_est_frame.size());
+            };
+            this->final_trajectory_orient.push_back(aggrigated_frame_point);
         }
-
-
-
     };
 
     void estimate_errors() {
+        this->pose_err.clear();
+        this->orient_err.clear();
+
+        this->final_pose_err.clear();
+        this->final_orient_err.clear();
+
+        this->err_times.clear();
+        this->score_pose_total = -1;
+        this->score_orient_total = -1;
+        this->score_pose_agg = -1;
+        this->score_orient_agg = -1;
+
         this->generate_err();
 
         this->show_score();
-        this->save_scopes(this->dir_name + "scores.txt");
-        this->save_csv_err(this->dir_name + "errors\\");
+        //this->save_scopes(this->dir_name + "scores.txt");
+        //this->save_csv_err(this->dir_name + "errors\\");
     };
 
     void show_gt(string mode = "screen", bool pause_enable = false);
